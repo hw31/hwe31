@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Moon, Sun, LogOut, User } from "lucide-react";
-import authService from "../services/authService"; // <--- Asegúrate que este import exista
+import authService from "../services/authService"; 
 
 const Dashboard = () => {
   const [darkMode, setDarkMode] = useState(false);

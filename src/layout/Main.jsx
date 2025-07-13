@@ -9,15 +9,19 @@ const Main = () => {
       <div className="relative bg-white rounded-3xl shadow-2xl p-10 w-full max-w-md">
 
         {/* Logo dentro del container, posición absoluta arriba derecha */}
-        <div className="absolute top-5 right-5 bg-[#715cff] rounded-full w-[100px] h-[100px] flex items-center justify-center shadow-xl overflow-hidden">
-          <div className="bg-[#eceef7] rounded-full w-[90px] h-[90px] flex items-center justify-center overflow-hidden">
-            <img
-              src="/images/logo.png"
-              alt="Logo"
-              className="w-full h-full object-cover scale-110"
-            />
-          </div>
-        </div>
+    <div
+  className="absolute top-[-30px] right-0 bg-[#715cff] rounded-full w-[130px] h-[130px] flex items-center justify-center shadow-2xl overflow-hidden"
+  style={{ transform: "translateX(25%)" }}
+>
+  <div className="bg-[#eceef7] rounded-full w-[115px] h-[115px] flex items-center justify-center overflow-hidden">
+    <img
+      src="/images/logo.png"
+      alt="Logo"
+      className="w-full h-full object-cover scale-110"
+    />
+  </div>
+</div>
+
 
         <Outlet />
       </div>
