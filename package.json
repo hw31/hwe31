@@ -20,6 +20,7 @@
     "react-dom": "^19.1.0",
     "react-redux": "^9.2.0",
     "react-router-dom": "^7.6.3",
+    "redux-persist": "^6.0.0",
     "styled-components": "^6.1.19",
     "sweetalert2": "^11.22.2",
     "sweetalert2-react-content": "^5.1.0"

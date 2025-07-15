@@ -1,7 +1,9 @@
 import React, { useState } from "react";
-import loginService from "../services/authService";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Navigate } from "react-router-dom";
 import { motion } from "framer-motion";
+import loginService from "../services/authService";
+import { useDispatch, useSelector } from "react-redux";
+import { loginSuccess } from "../features/auth/authSlice";
 
 const fadeVariants = {
   hidden: { opacity: 0, y: 30 },
@@ -17,10 +19,19 @@ const fadeVariants = {
 };
 
 const Login = () => {
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
   const [form, setForm] = useState({ usuario: "", contrasena: "" });
   const [loading, setLoading] = useState(false);
-  const [loginSuccess, setLoginSuccess] = useState(false);
-  const navigate = useNavigate();
+  const [success, setSuccess] = useState(false);
+
+  // Si ya está autenticado, redirige automáticamente
+  const token = useSelector((state) => state.auth.token);
+  const idSesion = useSelector((state) => state.auth.idSesion);
+
+  if (token && idSesion) {
+    return <Navigate to="/dashboard" replace />;
+  }
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -39,17 +50,23 @@ const Login = () => {
       const data = await loginService.login(form.usuario, form.contrasena);
 
       if (data.success) {
-        localStorage.setItem("nombrePersona", data.persona);
-        localStorage.setItem("idUsuario", data.id_usuario);
+        dispatch(
+          loginSuccess({
+            usuario: data.usuario,
+            token: data.token,
+            id_sesion: data.id_sesion,
+            persona: data.persona,
+          })
+        );
 
-        setLoginSuccess(true);
+        setSuccess(true);
 
-        // Espera 2.5 segundos antes de redirigir
+        // Esperar y luego redirigir
         setTimeout(() => {
           navigate("/dashboard");
         }, 2500);
       } else {
-        alert(data.message || "Usuario o contraseña incorrectos.");
+        alert(data.mensaje || "Usuario o contraseña incorrectos.");
       }
     } catch (error) {
       alert(error.message || "No se pudo conectar al servidor.");
@@ -58,7 +75,8 @@ const Login = () => {
     }
   };
 
-  if (loginSuccess) {
+  // Animación de "BIENVENIDO"
+  if (success) {
     return (
       <div className="fixed inset-0 flex flex-col items-center justify-center bg-white z-50">
         <img

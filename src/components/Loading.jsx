@@ -227,3 +227,4 @@ const StyledWrapper = styled.div`
   }`;
 
 export default Loading;
+//ya te deberia salir actualizado el codigo 

@@ -1,28 +1,30 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useSelector, useDispatch } from "react-redux";
+import { logout as logoutAction } from "../features/auth/authSlice";
+import authService from "../services/authService";
 import { Moon, Sun, LogOut, User } from "lucide-react";
-import authService from "../services/authService"; 
 
 const Dashboard = () => {
   const [darkMode, setDarkMode] = useState(false);
-  const [persona, setPersona] = useState("");
   const [showDropdown, setShowDropdown] = useState(false);
   const dropdownRef = useRef(null);
   const navigate = useNavigate();
+  const dispatch = useDispatch();
 
-  useEffect(() => {
-    const nombre = localStorage.getItem("nombrePersona");
-    setPersona(nombre || "Usuario");
-  }, []);
 
+  const persona = useSelector((state) => state.auth.persona);
+  const idSesion = useSelector((state) => state.auth.idSesion);
+  const estado = useSelector((state) => state.auth.estado); // si ya lo estás pasando
+
+  
   const handleLogout = async () => {
     try {
-      await authService.logout(); // <--- ahora usando Axios
+      if (idSesion) await authService.logout(idSesion);
     } catch (err) {
       console.error("Error al cerrar sesión:", err);
     }
-
-    localStorage.clear();
+    dispatch(logoutAction()); // limpia Redux
     navigate("/login", { replace: true });
   };
 
@@ -31,6 +33,7 @@ const Dashboard = () => {
     document.documentElement.classList.toggle("dark");
   };
 
+  // Cierra dropdown al hacer click fuera
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
@@ -50,7 +53,7 @@ const Dashboard = () => {
       <aside className="w-64 bg-purple-700 text-white p-6 flex flex-col justify-between shadow-lg">
         <div>
           <div className="flex items-center space-x-6 mb-10">
-           <img src="/images/logo.png" alt="CAL-I Logo" className="w-20 h-20 rounded-full" />
+            <img src="/images/logo.png" alt="CAL-I Logo" className="w-20 h-20 rounded-full" />
             <h1 className="text-4xl font-bold tracking-wide">CAL-I</h1>
           </div>
         </div>
@@ -85,15 +88,20 @@ const Dashboard = () => {
                 onClick={() => setShowDropdown((prev) => !prev)}
               >
                 <User className="w-5 h-5" />
-                <span className="font-semibold">{persona}</span>
+                <span className="font-semibold">{persona || "Usuario"}</span>
               </button>
 
               {showDropdown && (
                 <div className="absolute right-0 mt-2 w-64 bg-white dark:bg-gray-800 border dark:border-gray-700 rounded-xl shadow-xl p-4 z-10">
                   <div className="flex flex-col items-center mb-4">
                     <div className="w-20 h-20 bg-gray-300 rounded-full mb-2"></div>
-                    <p className="font-semibold text-lg text-center">{persona}</p>
-                    <p className="text-sm text-gray-500 dark:text-gray-400 text-center">Administrador</p>
+                    <p className="font-semibold text-lg text-center">{persona || "Usuario"}</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400 text-center">
+                      Estado:{" "}
+                      <span className={estado === 1 ? "text-green-500 font-semibold" : "text-red-500 font-semibold"}>
+                        {estado === 1 ? "Activo" : "Inactivo"}
+                      </span>
+                    </p>
                   </div>
                   <button
                     onClick={handleLogout}
@@ -107,10 +115,10 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* Aquí va el contenido del dashboard */}
+        {/* Contenido */}
         <div className="flex-grow flex items-center justify-center">
           <h1 className="text-3xl font-bold text-center">
-            ¡Bienvenido a CAL-I, {persona}!
+            ¡Bienvenido a CAL-I, {persona || "Usuario"}!
           </h1>
         </div>
       </main>
