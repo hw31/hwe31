@@ -1,56 +1,39 @@
 import api from './api';
 
+
 const login = async (usuario, contrasena) => {
   try {
     const res = await api.post('Auth/login', {
-      Usuario: usuario,
-      contrasena: contrasena
+      usuario,
+      contrasena,
     });
-
-    if (res.data.success && res.data.token) {
-      localStorage.setItem('accessToken', res.data.token);
-    }
 
     return res.data;
   } catch (error) {
-    // Manejo de errores explícito
-    if (error.response && error.response.data && error.response.data.message) {
-      return { success: false, message: error.response.data.message };
-    }
-
-    return { success: false, message: "Error inesperado al iniciar sesión." };
+    return {
+      success: false,
+      message: error.response?.data?.error || "Error inesperado al iniciar sesión.",
+    };
   }
 };
 
-const refreshToken = async () => {
+const logout = async (idSesion) => {
   try {
-    const res = await api.post('Auth/refresh');
-
-    if (res.data.success && res.data.token) {
-      localStorage.setItem('accessToken', res.data.token);
-      return res.data.token;
-    }
-
-    throw new Error('No se pudo refrescar el token');
-  } catch (error) {
-    throw new Error(
-      error.response?.data?.message || 'Error inesperado al refrescar el token'
+    await api.post(
+      'Auth/logout',
+      { idSesion },
+      {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      }
     );
-  }
-};
-
-const logout = async () => {
-  try {
-    await api.post('Auth/logout');
   } catch (error) {
-    console.warn("Error al cerrar sesión:", error.response?.data?.message || error.message);
-  } finally {
-    localStorage.removeItem('accessToken');
+    console.warn("Error al cerrar sesión:", error.response?.data?.error || error.message);
   }
 };
 
 export default {
   login,
-  refreshToken,
-  logout
+  logout,
 };
