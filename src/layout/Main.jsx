@@ -1,27 +1,14 @@
 import React from 'react';
 import { Outlet } from 'react-router-dom';
 
+
 const Main = () => {
   return (
-    <div className="min-h-screen bg-[#eceef7] flex items-center justify-center relative px-6">
-
-      {/* Container visual para contenido (login, start, etc) */}
-      <div className="relative bg-white rounded-3xl shadow-2xl p-10 w-full max-w-md">
-
-        {/* Logo dentro del container, posición absoluta arriba derecha */}
-    <div
-  className="absolute top-[-30px] right-0 bg-[#715cff] rounded-full w-[130px] h-[130px] flex items-center justify-center shadow-2xl overflow-hidden"
-  style={{ transform: "translateX(25%)" }}
->
-  <div className="bg-[#eceef7] rounded-full w-[115px] h-[115px] flex items-center justify-center overflow-hidden">
-    <img
-      src="/images/logo.png"
-      alt="Logo"
-      className="w-full h-full object-cover scale-110"
-    />
-  </div>
-</div>
-
+    <div className="main-container">
+      <div className="main-content">
+        <div className="logo-wrapper">
+   
+        </div>
 
         <Outlet />
       </div>
