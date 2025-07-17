@@ -1,5 +1,4 @@
 import api from './api';
-import axios from 'axios';
 import config from '../config';
 import userMock from '../mocks/userMock';
 
@@ -37,8 +36,9 @@ const login = async (usuario, contrasena) => {
 };
 
 const logout = async (idSesion) => {
+  console.log("ID de sesión:", idSesion); 
   try {
-    const response = await axios.post("Auth/logout", { id_sesion: idSesion });
+    const response = await api.post("Auth/logout", { idSesion }); 
     return response.data;
   } catch (error) {
     return {
@@ -50,5 +50,5 @@ const logout = async (idSesion) => {
 
 export default {
   login,
-  logout,
+  logout
 };

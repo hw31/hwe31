@@ -19,6 +19,7 @@ const Dashboard = () => {
   
   const persona = useSelector((state) => state.auth.persona || "Usuario");
   const idSesion = useSelector((state) => state.auth.idSesion);
+  
 
   const handleLogout = async () => {
     try {
@@ -32,7 +33,7 @@ const Dashboard = () => {
     
     dispatch(logoutAction());
 
-    // Redirigimos
+    
     navigate("/login", { replace: true });
   };
 

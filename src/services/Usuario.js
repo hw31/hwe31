@@ -6,7 +6,7 @@ const insertarUsuario = async (datos) => {
     const res = await api.post('Usuarios/INSERTAR', datos);
 
     if (res.data.success) {
-      console.log('Uusario asignada al usuario correctamente');
+      console.log('Usario asignada al usuario correctamente');
     }
 
     return res.data;

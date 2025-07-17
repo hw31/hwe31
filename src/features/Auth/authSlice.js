@@ -1,11 +1,31 @@
-import { createSlice } from '@reduxjs/toolkit';
+import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 
+// Verifica si hay sesión persistida
+export const checkSession = createAsyncThunk(
+  "auth/checkSession",
+  async (_, { getState }) => {
+    const state = getState().auth;
+
+    if (state.token && state.idSesion) {
+      return {
+        isAuthenticated: true,
+        ...state,
+      };
+    }
+
+    return {
+      isAuthenticated: false,
+    };
+  }
+);
 const initialState = {
   usuario: null,
-  token: null,       // opcional, si tu backend no envía token
+  token: null,
   idSesion: null,
   persona: null,
-  idUsuario: null,   // para guardar el id_usuario del backend
+  idUsuario: null,
+  isAuthenticated: false,
+  loading: true,
 };
 
 const authSlice = createSlice({
@@ -18,6 +38,8 @@ const authSlice = createSlice({
       state.idSesion = action.payload.idSesion || null;
       state.persona = action.payload.persona || null;
       state.idUsuario = action.payload.idUsuario || null;
+      state.isAuthenticated = true;
+      state.loading = false;
     },
     logout: (state) => {
       state.usuario = null;
@@ -25,7 +47,23 @@ const authSlice = createSlice({
       state.idSesion = null;
       state.persona = null;
       state.idUsuario = null;
+      state.isAuthenticated = false;
+      state.loading = false;
     },
+  },
+  extraReducers: (builder) => {
+    builder.addCase(checkSession.fulfilled, (state, action) => {
+      state.isAuthenticated = action.payload.isAuthenticated;
+      state.loading = false;
+
+      if (action.payload.isAuthenticated) {
+        state.usuario = action.payload.usuario;
+        state.token = action.payload.token;
+        state.idSesion = action.payload.idSesion;
+        state.persona = action.payload.persona;
+        state.idUsuario = action.payload.idUsuario;
+      }
+    });
   },
 });
 

@@ -50,7 +50,8 @@ const Form = () => {
       const data = await loginService.login(form.usuario, form.contrasena);
 
       if (data.success) {
-        dispatch(loginSuccess(data)); // ✅ Guarda datos en Redux
+        dispatch(loginSuccess(data)); 
+        
         navigate("/dashboard");
       } else {
         alert(data.message || "Usuario o contraseña incorrectos.");
