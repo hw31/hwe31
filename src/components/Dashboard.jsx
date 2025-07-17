@@ -1,31 +1,38 @@
 import React, { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import { useSelector, useDispatch } from "react-redux";
 import "../styles/Dashboard.css";
 import { Moon, Sun, LogOut, User } from "lucide-react";
 import authService from "../services/authService";
 import styled from "styled-components";
+import { logout as logoutAction } from "../features/Auth/authSlice";
 
 const Dashboard = () => {
   const [darkMode, setDarkMode] = useState(false);
-  const [persona, setPersona] = useState("");
   const [showDropdown, setShowDropdown] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(window.innerWidth > 768);
 
   const dropdownRef = useRef(null);
   const navigate = useNavigate();
+  const dispatch = useDispatch();
 
-  useEffect(() => {
-    const nombre = localStorage.getItem("nombrePersona");
-    setPersona(nombre || "Usuario");
-  }, []);
+  
+  const persona = useSelector((state) => state.auth.persona || "Usuario");
+  const idSesion = useSelector((state) => state.auth.idSesion);
 
   const handleLogout = async () => {
     try {
-      await authService.logout();
+      if (idSesion) {
+        await authService.logout(idSesion);
+      }
     } catch (err) {
       console.error("Error al cerrar sesión:", err);
     }
-    localStorage.clear();
+
+    
+    dispatch(logoutAction());
+
+    // Redirigimos
     navigate("/login", { replace: true });
   };
 
@@ -57,7 +64,6 @@ const Dashboard = () => {
 
   return (
     <div className={`dashboard-container ${darkMode ? "dark" : ""}`}>
-      {/* Sidebar */}
       <aside className={`dashboard-sidebar ${sidebarOpen ? "open" : "closed"}`}>
         <div className="logo-container">
           <img src="/images/iconologo.png" alt="CAL-I Logo" className="logo-img" />
@@ -68,7 +74,6 @@ const Dashboard = () => {
         </div>
       </aside>
 
-      {/* Botón hamburguesa estilizado */}
       <StyledBurgerWrapper>
         <label className="menuButton">
           <input
@@ -82,7 +87,6 @@ const Dashboard = () => {
         </label>
       </StyledBurgerWrapper>
 
-      {/* Contenido principal */}
       <main className="dashboard-main">
         <div className="dashboard-header">
           <div>
@@ -95,11 +99,7 @@ const Dashboard = () => {
               className="dashboard-theme-toggle"
               aria-label="Toggle theme"
             >
-              {darkMode ? (
-                <Sun className="text-yellow-400" />
-              ) : (
-                <Moon className="text-purple-700" />
-              )}
+              {darkMode ? <Sun className="text-yellow-400" /> : <Moon className="text-purple-700" />}
             </button>
 
             <div>
@@ -135,7 +135,6 @@ const Dashboard = () => {
   );
 };
 
-// ⬇️ Estilo para botón hamburguesa
 const StyledBurgerWrapper = styled.div`
   position: fixed;
   top: 1rem;
@@ -154,8 +153,7 @@ const StyledBurgerWrapper = styled.div`
     background: #171717;
     border: 1px solid #171717;
     transition: all 0.3s;
-    box-shadow: inset 4px 4px 12px #3a3a3a,
-                inset -4px -4px 12px #000000;
+    box-shadow: inset 4px 4px 12px #3a3a3a, inset -4px -4px 12px #000000;
     cursor: pointer;
   }
 
@@ -164,8 +162,7 @@ const StyledBurgerWrapper = styled.div`
   }
 
   .menuButton:active {
-    box-shadow: 6px 6px 12px #3a3a3a,
-                -6px -6px 12px #000000;
+    box-shadow: 6px 6px 12px #3a3a3a, -6px -6px 12px #000000;
   }
 
   input[type="checkbox"] {

@@ -1,5 +1,5 @@
 const config = {
-  MODO_MOCK: true,
+  MODO_MOCK: false,
 };
 
 export default config;

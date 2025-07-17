@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 import loginService from "../services/authService";
 import styled from "styled-components";
 import { motion } from "framer-motion";
+import { useDispatch } from "react-redux";
+import { loginSuccess } from "../features/Auth/authSlice"; // Asegúrate de tener esto
 
 const containerVariants = {
   hidden: { opacity: 0, scale: 0.95 },
@@ -30,6 +32,7 @@ const Form = () => {
   const [form, setForm] = useState({ usuario: "", contrasena: "" });
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const dispatch = useDispatch();
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -45,10 +48,10 @@ const Form = () => {
     try {
       setLoading(true);
       const data = await loginService.login(form.usuario, form.contrasena);
+
       if (data.success) {
-        localStorage.setItem("nombrePersona", data.persona);
-        localStorage.setItem("idUsuario", data.id_usuario);
-        navigate("/dashboard"); // ✅ Redirección limpia
+        dispatch(loginSuccess(data)); // ✅ Guarda datos en Redux
+        navigate("/dashboard");
       } else {
         alert(data.message || "Usuario o contraseña incorrectos.");
       }
@@ -122,6 +125,7 @@ const Form = () => {
     </StyledWrapper>
   );
 };
+
 const StyledWrapper = styled.div`
   .main-container {
     min-height: 100vh;
@@ -309,31 +313,6 @@ const StyledWrapper = styled.div`
       inset -1px -1px 5px rgba(255, 255, 255, 0.6);
   }
 
-  /* Pantalla de éxito */
-  .login-success {
-    position: fixed;
-    inset: 0;
-    background: rgb(234, 244, 35);
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    z-index: 50;
-  }
-
-  .login-success-img {
-    width: 100%;
-    max-width: 140px;
-    height: auto;
-    display: block;
-    margin: 0 auto 1rem auto;
-  }
-
-  .login-success-text {
-    font-size: 3rem;
-    color: blue;
-    font-weight: 700;
-  }
 `;
 
 export default Form;

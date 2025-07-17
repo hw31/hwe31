@@ -1,7 +1,7 @@
 import api from './api';
+import axios from 'axios';
 import config from '../config';
 import userMock from '../mocks/userMock';
-
 
 const login = async (usuario, contrasena) => {
   if (config.MODO_MOCK) {
@@ -21,37 +21,30 @@ const login = async (usuario, contrasena) => {
   }
 
   // Modo real (API)
-    try {
-      const res = await api.post('Auth/login', {
-        usuario,
-        contrasena,
-      });
+  try {
+    const res = await api.post('Auth/login', {
+      usuario,
+      contrasena,
+    });
 
-      return res.data;
-    } catch (error) {
-      return {
-        success: false,
-        message: error.response?.data?.error || "Error inesperado al iniciar sesión.",
-      };
-    }
+    return res.data;
+  } catch (error) {
+    return {
+      success: false,
+      message: error.response?.data?.error || "Error inesperado al iniciar sesión.",
+    };
+  }
 };
 
 const logout = async (idSesion) => {
   try {
-     if (config.MODO_MOCK) {
-    return Promise.resolve();
-  }
-    await api.post(
-      'Auth/logout',
-      { idSesion },
-      {
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      }
-    );
+    const response = await axios.post("Auth/logout", { id_sesion: idSesion });
+    return response.data;
   } catch (error) {
-    console.warn("Error al cerrar sesión:", error.response?.data?.error || error.message);
+    return {
+      success: false,
+      message: error.response?.data?.error || "Error inesperado al cerrar sesión.",
+    };
   }
 };
 

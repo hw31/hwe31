@@ -22,7 +22,7 @@ function App() {
 
   return (
     <Routes>
-      {/* Si ya está autenticado y va a /login, lo redirige a /dashboard */}
+      {}
       <Route
         path="/login"
         element={
