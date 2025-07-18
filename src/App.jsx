@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
-import { checkSession } from "../redux/authSlice";
+import { checkSession } from "../features/Auth/authSlice";
 
 // Componentes
 import Login from "./Login";
