@@ -4,28 +4,21 @@ import loginService from "../services/authService";
 import styled from "styled-components";
 import { motion } from "framer-motion";
 import { useDispatch } from "react-redux";
-import { loginSuccess } from "../features/Auth/authSlice"; // Asegúrate de tener esto
+import { loginSuccess } from "../features/Auth/authSlice";
+import { setModoOscuro, fetchModoOscuro } from "../features/theme/themeSlice"; // <-- Importa fetchModoOscuro
 
 const containerVariants = {
   hidden: { opacity: 0, scale: 0.95 },
   visible: {
     opacity: 1,
     scale: 1,
-    transition: {
-      duration: 0.5,
-      when: "beforeChildren",
-      staggerChildren: 0.3,
-    },
+    transition: { duration: 0.5, when: "beforeChildren", staggerChildren: 0.3 },
   },
 };
 
 const itemVariants = {
   hidden: { opacity: 0, y: 20 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: { type: "spring", stiffness: 100, damping: 15 },
-  },
+  visible: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 100, damping: 15 } },
 };
 
 const Form = () => {
@@ -44,14 +37,23 @@ const Form = () => {
       alert("Por favor completa todos los campos.");
       return;
     }
-
     try {
       setLoading(true);
       const data = await loginService.login(form.usuario, form.contrasena);
 
       if (data.success) {
-        dispatch(loginSuccess(data)); 
-        
+        dispatch(loginSuccess(data)); // Guarda usuario, token, idSesion, etc.
+
+        // --- Aquí viene el cambio: obtener modo oscuro desde backend para sincronizar estado ---
+        const modoResponse = await dispatch(fetchModoOscuro());
+        if (fetchModoOscuro.fulfilled.match(modoResponse)) {
+          dispatch(setModoOscuro(modoResponse.payload));
+        } else {
+          // fallback si falla el fetch
+          dispatch(setModoOscuro(false));
+        }
+
+        setForm({ usuario: "", contrasena: "" });
         navigate("/dashboard");
       } else {
         alert(data.message || "Usuario o contraseña incorrectos.");
@@ -65,6 +67,7 @@ const Form = () => {
 
   return (
     <StyledWrapper>
+      {/* Aquí va todo tu JSX que ya tienes */}
       <div className="main-container">
         <div className="main-content">
           <div className="logo-wrapper">
@@ -126,6 +129,7 @@ const Form = () => {
     </StyledWrapper>
   );
 };
+
 
 const StyledWrapper = styled.div`
   .main-container {

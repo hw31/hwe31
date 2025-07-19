@@ -1,25 +1,34 @@
 import React, { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
-import "../styles/Dashboard.css";
 import { Moon, Sun, LogOut, User } from "lucide-react";
 import authService from "../services/authService";
 import styled from "styled-components";
 import { logout as logoutAction } from "../features/Auth/authSlice";
+import { toggleModoOscuro } from "../features/theme/themeSlice"; // import toggle async thunk
+import SidebarMenu from "../components/SidebarMenu";
 
 const Dashboard = () => {
-  const [darkMode, setDarkMode] = useState(false);
-  const [showDropdown, setShowDropdown] = useState(false);
-  const [sidebarOpen, setSidebarOpen] = useState(window.innerWidth > 768);
-
-  const dropdownRef = useRef(null);
-  const navigate = useNavigate();
   const dispatch = useDispatch();
+  const navigate = useNavigate();
 
-  
   const persona = useSelector((state) => state.auth.persona || "Usuario");
   const idSesion = useSelector((state) => state.auth.idSesion);
-  
+  const modoOscuro = useSelector((state) => state.theme.modoOscuro);
+
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(window.innerWidth > 768);
+  const dropdownRef = useRef(null);
+
+  // Aplicar clase "dark" globalmente en <html> cuando cambia modoOscuro
+  useEffect(() => {
+    const root = document.documentElement; // <html>
+    if (modoOscuro) {
+      root.classList.add("dark");
+    } else {
+      root.classList.remove("dark");
+    }
+  }, [modoOscuro]);
 
   const handleLogout = async () => {
     try {
@@ -29,19 +38,16 @@ const Dashboard = () => {
     } catch (err) {
       console.error("Error al cerrar sesión:", err);
     }
-
-    
     dispatch(logoutAction());
-
-    
     navigate("/login", { replace: true });
   };
 
-  const toggleTheme = () => {
-    setDarkMode(!darkMode);
-    document.documentElement.classList.toggle("dark");
+  // Cambia modo oscuro y actualiza backend / redux
+  const handleToggleTheme = () => {
+    dispatch(toggleModoOscuro(!modoOscuro));
   };
 
+  // Cierra dropdown al click fuera
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
@@ -49,11 +55,10 @@ const Dashboard = () => {
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  // Ajusta sidebar open/close según ancho pantalla
   useEffect(() => {
     const handleResize = () => {
       setSidebarOpen(window.innerWidth > 768);
@@ -64,13 +69,16 @@ const Dashboard = () => {
   }, []);
 
   return (
-    <div className={`dashboard-container ${darkMode ? "dark" : ""}`}>
+    <div className="dashboard-container">
       <aside className={`dashboard-sidebar ${sidebarOpen ? "open" : "closed"}`}>
         <div className="logo-container">
           <img src="/images/iconologo.png" alt="CAL-I Logo" className="logo-img" />
           <h1 className="logo-title">CAL-I</h1>
         </div>
-        <div className="system-name">
+
+
+        <SidebarMenu />
+                <div className="system-name">
           <p>Sistema de Gestión de Calificaciones</p>
         </div>
       </aside>
@@ -88,19 +96,24 @@ const Dashboard = () => {
         </label>
       </StyledBurgerWrapper>
 
-      <main className="dashboard-main">
+      <main className={`dashboard-main ${sidebarOpen ? "" : "sidebar-closed"}`}>
         <div className="dashboard-header">
-          <div>
+         <div style={{ flex: 1, display: "flex", justifyContent: "center" }}>
             <input type="text" placeholder="Buscar..." className="search-input" />
           </div>
 
+
           <div className="dashboard-user-controls" ref={dropdownRef}>
             <button
-              onClick={toggleTheme}
+              onClick={handleToggleTheme}
               className="dashboard-theme-toggle"
               aria-label="Toggle theme"
             >
-              {darkMode ? <Sun className="text-yellow-400" /> : <Moon className="text-purple-700" />}
+              {modoOscuro ? (
+                <Sun className="text-yellow-400" />
+              ) : (
+                <Moon className="text-purple-700" />
+              )}
             </button>
 
             <div>

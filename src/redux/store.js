@@ -1,24 +1,29 @@
 import { configureStore } from '@reduxjs/toolkit';
 import authReducer from '../features/Auth/authSlice';
-import storageSession from 'redux-persist/lib/storage/session'; // sessionStorage
+import themeReducer from '../features/theme/themeSlice';
+
+import storageSession from 'redux-persist/lib/storage/session';
 import { persistReducer, persistStore } from 'redux-persist';
 
+// Configuración de persistencia solo para auth
 const persistConfig = {
   key: 'auth',
   storage: storageSession,
- 
 };
 
 const persistedAuthReducer = persistReducer(persistConfig, authReducer);
 
 export const store = configureStore({
   reducer: {
-    auth: persistedAuthReducer,
+    auth: persistedAuthReducer,  // auth con persistencia en sessionStorage
+    theme: themeReducer,         // theme sin persistencia local
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
-      serializableCheck: false, // redux-persist usa acciones no serializables, se puede desactivar aquí
+      serializableCheck: false, // necesario para redux-persist y async thunk
     }),
 });
 
 export const persistor = persistStore(store);
+
+export default store;

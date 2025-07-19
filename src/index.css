@@ -1,3 +1,370 @@
 @import url("https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&display=swap");
 @import "tailwindcss";
 
+
+
+/* Variables de color para tema claro y oscuro */
+:root {
+  /* Tema claro */
+  --bg-light: #f3f4f6;
+  --text-light: #1f2937;
+
+  --sidebar-bg-light: linear-gradient(135deg, #0938a0, #0f93ec);
+  --sidebar-shadow-light: rgba(107, 70, 193, 0.4);
+
+  --input-bg-light: white;
+  --input-border-light: #d1d5db;
+
+  --dropdown-bg-light: white;
+  --dropdown-text-light: #1f2937;
+
+  --logout-btn-bg-light: linear-gradient(135deg, #181818, #c53030);
+
+  /* Tema oscuro */
+  --bg-dark: #1f2937;
+  --text-dark: #f9fafb;
+
+  --sidebar-bg-dark: #0a2540;
+  --sidebar-shadow-dark: rgba(255, 255, 255, 0.1);
+
+  --input-bg-dark: #374151;
+  --input-border-dark: #4b5563;
+
+  --dropdown-bg-dark: #374151;
+  --dropdown-text-dark: #f9fafb;
+
+  --logout-btn-bg-dark: linear-gradient(135deg, #0b0b0b, #c53030);
+}
+
+/* Estilos base para body */
+body {
+  margin: 0;
+  font-family: 'Segoe UI', sans-serif;
+  background-color: var(--bg-light);
+  color: var(--text-light);
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Cuando la clase dark se aplica al html o body */
+.dark body {
+  background-color: var(--bg-dark);
+  color: var(--text-dark);
+}
+
+/* Inputs, selects, textarea */
+input, textarea, select {
+  background-color: var(--input-bg-light);
+  color: var(--text-light);
+  border: 1px solid var(--input-border-light);
+  transition: all 0.3s ease;
+}
+
+.dark input, 
+.dark textarea, 
+.dark select {
+  background-color: var(--input-bg-dark);
+  color: var(--text-dark);
+  border: 1px solid var(--input-border-dark);
+}
+
+/* Dropdown (menús, user dropdown) */
+.dashboard-user-dropdown {
+  background-color: var(--dropdown-bg-light);
+  color: var(--dropdown-text-light);
+  border-radius: 1rem;
+  box-shadow: 0 10px 15px rgba(0,0,0,0.1);
+  padding: 1rem;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.dark .dashboard-user-dropdown {
+  background-color: var(--dropdown-bg-dark);
+  color: var(--dropdown-text-dark);
+  border: 1px solid var(--input-border-dark);
+}
+
+/* Botones (generales) */
+button {
+  cursor: pointer;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Contenedor principal del dashboard */
+.dashboard-container {
+  display: flex;
+  min-height: 100vh;
+  width: 100%;
+  background-color: var(--bg-light);/*body */
+  color: var(--text-light);
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.dark .dashboard-container {
+  background-color: var(--bg-dark);
+  color: var(--text-dark);
+}
+
+/* Sidebar */
+.dashboard-sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 100vh;
+  width: 16rem;
+  background: var(--sidebar-bg-light);/*panel dasboard*/
+  color: white;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  box-shadow: 0 4px 8px var(--sidebar-shadow-light);
+  transition: background 0.3s ease, box-shadow 0.3s ease, transform 0.3s ease;
+  z-index: 100;
+  overflow-y: auto;
+}
+
+.dark .dashboard-sidebar {
+  background: var(--sidebar-bg-dark);
+  box-shadow: 0 4px 8px var(--sidebar-shadow-dark);
+}
+
+.dashboard-sidebar.closed {
+  transform: translateX(-100%);
+}
+
+.dashboard-sidebar.open {
+  transform: translateX(0);
+}
+
+/* Main content area */
+.dashboard-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  padding: 2rem;
+  width: 100%;
+  margin-left: 16rem;
+  transition: margin-left 0.3s ease;
+}
+
+.dashboard-main.sidebar-closed {
+  margin-left: 0;
+}
+
+/* Logo area */
+.logo-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.1rem;
+  margin-bottom: 2.5rem;
+}
+
+.logo-img {
+  width: clamp(50px, 8vw, 80px);
+  height: clamp(50px, 8vw, 80px);
+  object-fit: contain;
+  border-radius: 50%;
+  box-shadow: 0 0 6px rgba(0, 0, 0, 0.1);
+}
+
+.logo-title {
+  font-size: 2rem;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  user-select: none;
+  text-align: center;
+}
+
+.system-name {
+  font-weight: 300;
+  font-size: 0.875rem;
+  text-align: center;
+}
+
+/* Header */
+.dashboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+/* Search input */
+.search-input {
+  width: 300px;
+  padding: 0.5rem 1rem;
+  border: 1px solid var(--input-border-light);
+  border-radius: 9999px;
+  outline: none;
+  background-color: var(--input-bg-light);
+  color: var(--text-light);
+  transition: border-color 0.3s ease, background-color 0.3s ease, color 0.3s ease;
+}
+
+.search-input:focus {
+  border-color: #0b54c4;
+  box-shadow: 0 0 6px #0f93ec;
+  background-color: white;
+}
+
+.dark .search-input {
+  background-color: var(--input-bg-dark);
+  border-color: var(--input-border-dark);
+  color: var(--text-dark);
+}
+
+/* User controls */
+.dashboard-user-controls {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  position: relative;
+}
+
+/* Theme toggle button */
+.dashboard-theme-toggle {
+  padding: 0.5rem;
+  border-radius: 9999px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.dashboard-theme-toggle:hover {
+  background-color: rgba(255 255 255 / 0.2);
+}
+
+/* User dropdown button */
+.dashboard-user-dropdown-button {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  border-radius: 9999px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.dashboard-user-dropdown-button:hover {
+  background-color: rgba(255 255 255 / 0.2);
+}
+
+/* Profile pic placeholder */
+.profile-pic-placeholder {
+  width: 5rem;
+  height: 5rem;
+  background-color: #d1d5db;
+  border-radius: 50%;
+  margin-bottom: 0.5rem;
+}
+
+/* Logout button */
+.logout-btn {
+  width: 100%;
+  background: var(--logout-btn-bg-light);
+  color: white;
+  padding: 0.5rem 0;
+  border-radius: 9999px;
+  font-weight: 600;
+  transition: background 0.3s ease;
+  cursor: pointer;
+}
+
+.logout-btn:hover {
+  background: linear-gradient(135deg, #c53030, #0b0b0b);
+}
+
+.dark .logout-btn {
+  background: var(--logout-btn-bg-dark);
+}
+
+.dark .logout-btn:hover {
+  background: linear-gradient(135deg, #c53030, #0b0b0b);
+}
+
+/* Welcome message */
+.dashboard-welcome {
+  flex-grow: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.875rem;
+  font-weight: 700;
+  text-align: center;
+  padding: 2rem;
+
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .dashboard-container {
+    flex-direction: column;
+  }
+
+  .dashboard-header {
+    padding: 0 1rem;
+  }
+
+  .search-input {
+    width: 80%;
+    margin-left: 3rem;
+    margin-right: 1rem;
+  }
+
+  .dashboard-sidebar {
+    width: 16rem;
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
+    z-index: 50;
+  }
+
+  .dashboard-sidebar.open {
+    transform: translateX(0);
+  }
+
+  .dashboard-main {
+    margin-left: 0 !important;
+    padding: 1rem;
+  }
+}
+
+/* Sidebar menu */
+.sidebar-menu ul {
+  list-style: none;
+  padding: 0;
+  margin: 1rem 0 0 0;
+}
+
+.sidebar-menu li {
+  margin-bottom: 0.5rem;
+}
+
+.menu-button {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background: none;
+  border: none;
+  color: inherit;
+  font-size: 1rem;
+  cursor: pointer;
+  width: 100%;
+  padding: 0.5rem 1rem;
+  text-align: left;
+  border-radius: 4px;
+  transition: background-color 0.2s ease;
+}
+
+.menu-button:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.menu-icon {
+  width: 20px;
+  height: 20px;
+}
