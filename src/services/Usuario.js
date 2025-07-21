@@ -1,71 +1,103 @@
 import api from './api';
 
-/* INSERTAR */
 const insertarUsuario = async (datos) => {
   try {
     const res = await api.post('Usuarios/INSERTAR', datos);
+    const mensaje = res.data.Mensaje ?? res.data.mensaje ?? 'Operación exitosa';
 
-    if (res.data.success) {
-      console.log('Usario asignada al usuario correctamente');
-    }
-
-    return res.data;
+    return {
+      success: res.data.numero > 0,
+      message: mensaje,
+      numero: res.data.numero,
+    };
   } catch (error) {
-    console.error('Error al insertar usuario:', error.message);
-    throw error;
+    const errData = error.response?.data;
+    const mensajeError =
+      errData?.Mensaje ||
+      errData?.mensaje ||
+      errData?.error ||
+      error.message ||
+      'Error inesperado al insertar usuario.';
+
+    return {
+      success: false,
+      message: mensajeError,
+    };
   }
 };
-
-/* ACTUALIZAR */
+/* ACTUALIZAR USUARIO */
 const actualizarUsuario = async (datos) => {
   try {
     const res = await api.put('Usuarios/actualizar', datos);
-
-    if (res.data.success) {
-      console.log('Usuario actualizada correctamente');
-    }
-
-    return res.data;
+    // Asumiendo que el backend responde algo tipo:
+    // { success: true, message: 'Usuario actualizado correctamente', data: {...} }
+    return {
+      success: res.data.success ?? true, // default true si backend no envía success
+      message: res.data.message || res.data.Mensaje || 'Usuario actualizado correctamente',
+      data: res.data.data ?? null,
+    };
   } catch (error) {
-    console.error('Error al actualizar usuario:', error.message);
-    throw error;
+    return {
+      success: false,
+      message: error.response?.data?.error || 'Error inesperado al actualizar usuario.',
+    };
   }
 };
 
-/* FILTRAR POR ID */
+/* FILTRAR USUARIO POR ID */
 const filtrarPorIdUsuario = async (idTransaccionUsuario) => {
   try {
     const res = await api.get('Usuarios/Filtrar_Por_ID', {
-      params: { idTransaccionUsuario }
+      params: { idTransaccionUsuario },
     });
-    return res.data;
+    return {
+      success: res.data.success ?? true,
+      message: res.data.message || '',
+      data: res.data.data ?? null,
+    };
   } catch (error) {
-    console.error('Error al filtrar por ID de usuario:', error.message);
-    throw error;
+    return {
+      success: false,
+      message: error.response?.data?.error || 'Error inesperado al filtrar usuario por ID.',
+    };
   }
 };
 
-const filtrarUsuario = async (nombreUsuario) => {
+const filtrarUsuario = async (usuario) => {
+  if (!usuario || !usuario.trim()) {
+    return { success: false, message: "El parámetro usuario es obligatorio." };
+  }
+
   try {
     const res = await api.get('Usuarios/Filtrar_Por_Usuario', {
-      params: { nombreUsuario }
+      params: { usuario: usuario.trim() },
     });
-    return res.data;
+    return {
+      success: res.data.success ?? true,
+      message: res.data.message || '',
+      data: res.data.data ?? null,
+    };
   } catch (error) {
-    console.error('Error al filtrar  usuario:', error.message);
-    throw error;
+    return {
+      success: false,
+      message: error.response?.data?.error || 'Error inesperado al filtrar usuario por nombre.',
+    };
   }
 };
 
-
-/* LISTAR TODAS LAS TRANSACCIONES POR USUARIO */
+/* LISTAR USUARIOS */
 const listarUsuario = async () => {
   try {
     const res = await api.get('Usuarios/Listar');
-    return res.data;
+    return {
+      success: true,
+      data: res.data.data,
+    };
   } catch (error) {
-    console.error('Error al listar usuario:', error.message);
-    throw error;
+    return {
+      success: false,
+      message: error.response?.data?.error || 'Error inesperado al listar usuarios.',
+    };
   }
 };
 
@@ -74,5 +106,5 @@ export default {
   actualizarUsuario,
   filtrarPorIdUsuario,
   filtrarUsuario,
-  listarUsuario
+  listarUsuario,
 };

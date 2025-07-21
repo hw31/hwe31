@@ -39,15 +39,16 @@ const authSlice = createSlice({
   initialState,
   reducers: {
     loginSuccess: (state, action) => {
-      state.usuario = action.payload.usuario || null;
-      state.token = action.payload.accessToken || null;
-      state.idSesion = action.payload.idSesion || null;
-      state.persona = action.payload.persona || null;
-      state.idUsuario = action.payload.idUsuario || null;
-      state.modo = action.payload.modo_oscuro === 1 ? "dark" : "light";
-      state.isAuthenticated = true;
-      state.loading = false;
-    },
+  state.usuario = action.payload.usuario || null;
+  state.token = action.payload.accessToken || null;
+  state.idSesion = action.payload.id_sesion || null;    // <-- CORREGIDO aquí
+  state.persona = action.payload.persona || null;
+  state.idUsuario = action.payload.id_usuario || null;  // también cambiar para idUsuario
+  state.modo = action.payload.modo_oscuro === 1 ? "dark" : "light";
+  state.isAuthenticated = true;
+  state.loading = false;
+},
+
     logout: (state) => {
       state.usuario = null;
       state.token = null;

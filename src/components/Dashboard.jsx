@@ -1,16 +1,17 @@
 import React, { useEffect, useState, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Outlet, useLocation } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
-import { Moon, Sun, LogOut, User } from "lucide-react";
+import { Moon, Sun, LogOut, User, Search } from "lucide-react";
 import authService from "../services/authService";
 import styled from "styled-components";
 import { logout as logoutAction } from "../features/Auth/authSlice";
-import { toggleModoOscuro } from "../features/theme/themeSlice"; // import toggle async thunk
+import { toggleModoOscuro, fetchModoOscuro, setModoOscuro } from "../features/theme/themeSlice";
 import SidebarMenu from "../components/SidebarMenu";
 
 const Dashboard = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const persona = useSelector((state) => state.auth.persona || "Usuario");
   const idSesion = useSelector((state) => state.auth.idSesion);
@@ -18,23 +19,31 @@ const Dashboard = () => {
 
   const [showDropdown, setShowDropdown] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(window.innerWidth > 768);
+  const [searchValue, setSearchValue] = useState("");
   const dropdownRef = useRef(null);
 
-  // Aplicar clase "dark" globalmente en <html> cuando cambia modoOscuro
+  const mostrarBienvenida = location.pathname === "/dashboard";
+
+  // --- Aquí: obtener modo oscuro sincronizado desde backend al montar ---
   useEffect(() => {
-    const root = document.documentElement; // <html>
-    if (modoOscuro) {
-      root.classList.add("dark");
-    } else {
-      root.classList.remove("dark");
-    }
+    (async () => {
+      const modoResponse = await dispatch(fetchModoOscuro());
+      if (fetchModoOscuro.fulfilled.match(modoResponse)) {
+        dispatch(setModoOscuro(modoResponse.payload));
+      } else {
+        dispatch(setModoOscuro(false)); // fallback
+      }
+    })();
+  }, [dispatch]);
+
+  useEffect(() => {
+    const root = document.documentElement;
+    modoOscuro ? root.classList.add("dark") : root.classList.remove("dark");
   }, [modoOscuro]);
 
   const handleLogout = async () => {
     try {
-      if (idSesion) {
-        await authService.logout(idSesion);
-      }
+      if (idSesion) await authService.logout(idSesion);
     } catch (err) {
       console.error("Error al cerrar sesión:", err);
     }
@@ -42,12 +51,10 @@ const Dashboard = () => {
     navigate("/login", { replace: true });
   };
 
-  // Cambia modo oscuro y actualiza backend / redux
   const handleToggleTheme = () => {
     dispatch(toggleModoOscuro(!modoOscuro));
   };
 
-  // Cierra dropdown al click fuera
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
@@ -58,15 +65,26 @@ const Dashboard = () => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Ajusta sidebar open/close según ancho pantalla
   useEffect(() => {
-    const handleResize = () => {
-      setSidebarOpen(window.innerWidth > 768);
-    };
+    const handleResize = () => setSidebarOpen(window.innerWidth > 768);
     window.addEventListener("resize", handleResize);
-    handleResize();
     return () => window.removeEventListener("resize", handleResize);
   }, []);
+
+  const handleSearch = (e) => {
+    e.preventDefault();
+    const term = searchValue.trim().toLowerCase();
+    if (!term) return;
+
+    // Ejemplo simple de búsqueda: redirige según palabra clave
+    if (term.includes("usuarios")) navigate("/usuarios");
+    else if (term.includes("perfil")) navigate("/perfil");
+    else if (term.includes("estadisticas")) navigate("/estadisticas");
+    else if (term.includes("reportes")) navigate("/reportes");
+    else alert("No se encontraron resultados para: " + term);
+
+    setSearchValue("");
+  };
 
   return (
     <div className="dashboard-container">
@@ -75,10 +93,8 @@ const Dashboard = () => {
           <img src="/images/iconologo.png" alt="CAL-I Logo" className="logo-img" />
           <h1 className="logo-title">CAL-I</h1>
         </div>
-
-
         <SidebarMenu />
-                <div className="system-name">
+        <div className="system-name">
           <p>Sistema de Gestión de Calificaciones</p>
         </div>
       </aside>
@@ -98,10 +114,21 @@ const Dashboard = () => {
 
       <main className={`dashboard-main ${sidebarOpen ? "" : "sidebar-closed"}`}>
         <div className="dashboard-header">
-         <div style={{ flex: 1, display: "flex", justifyContent: "center" }}>
-            <input type="text" placeholder="Buscar..." className="search-input" />
-          </div>
-
+          <form
+            onSubmit={handleSearch}
+            style={{ display: "flex", alignItems: "center", flex: 1, justifyContent: "center" }}
+          >
+            <input
+              type="text"
+              value={searchValue}
+              onChange={(e) => setSearchValue(e.target.value)}
+              placeholder="Buscar usuarios, perfiles, reportes..."
+              className="search-input"
+            />
+            <button type="submit" className="ml-2" aria-label="Buscar">
+              <Search />
+            </button>
+          </form>
 
           <div className="dashboard-user-controls" ref={dropdownRef}>
             <button
@@ -109,11 +136,7 @@ const Dashboard = () => {
               className="dashboard-theme-toggle"
               aria-label="Toggle theme"
             >
-              {modoOscuro ? (
-                <Sun className="text-yellow-400" />
-              ) : (
-                <Moon className="text-purple-700" />
-              )}
+              {modoOscuro ? <Sun className="text-yellow-400" /> : <Moon className="text-purple-700" />}
             </button>
 
             <div>
@@ -141,9 +164,13 @@ const Dashboard = () => {
           </div>
         </div>
 
-        <div className="dashboard-welcome">
-          <h1>¡Bienvenido a CAL-I, {persona}!</h1>
-        </div>
+        {mostrarBienvenida && (
+          <div className="dashboard-welcome">
+            <h1>¡Bienvenido a CAL-I, {persona}!</h1>
+          </div>
+        )}
+
+        <Outlet />
       </main>
     </div>
   );

@@ -95,7 +95,8 @@ const SidebarMenu = () => {
               <li key={id}>
                 <button
                   className="menu-button flex items-center gap-2 px-4 py-2 hover:bg-gray-200 rounded transition"
-                  onClick={() => navigate(`/${route}`)}
+                  onClick={() => navigate(`/dashboard/${route}`)}
+
                   aria-label={`Ir a ${nombre}`}
                 >
                   {IconComponent && <IconComponent className="menu-icon w-5 h-5" />}
