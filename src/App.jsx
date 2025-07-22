@@ -1,12 +1,10 @@
 import { useEffect } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
-<<<<<<< HEAD
 import { checkSession } from "./features/Auth/authSlice";
 import { setModoOscuro, fetchModoOscuro } from "./features/theme/themeSlice";
-=======
-import { checkSession } from "../features/Auth/authSlice";
->>>>>>> 3314f5d08a279baa298b7dca86bddb1cb33cda9a
+
+
 
 import Login from "./components/Login";
 import Dashboard from "./components/Dashboard";
