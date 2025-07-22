@@ -9,7 +9,7 @@ import Login from "./components/Login";
 import Dashboard from "./components/Dashboard";
 import PrivateRoute from './routes/PrivateRoute';
 import FrmUsuarios from './components/pages/FrmUsuarios';
-
+import FrmAsignacion from  './components/pages/FrmAsignacion';
 /* 
 // Importa tus páginas según las vayas necesitando
 import FrmEstados from "./pages/FrmEstados";
@@ -25,7 +25,7 @@ import FrmCalificaciones from "./pages/FrmCalificaciones";
 import FrmGrupos from "./pages/FrmGrupos";
 import FrmAulas from "./pages/FrmAulas";
 import FrmHorarios from "./pages/FrmHorarios";
-import FrmAsignacion from "./pages/FrmAsignacion";
+
 import FrmTipoCalificaciones from "./pages/FrmTipoCalificaciones";
 import FrmTransacciones from "./pages/FrmTransacciones";
 import FrmTipoTransacciones from "./pages/FrmTipoTransacciones";
@@ -89,7 +89,7 @@ function App() {
 
           {/* Ejemplo de ruta hija para usuarios, accesible en /dashboard/usuarios */}
           <Route path="usuarios" element={<FrmUsuarios />} />
-
+          <Route path="asignacion" element={<FrmAsignacion />} />
           {/* Aquí puedes agregar más rutas hijas para otros formularios */}
           {/*
           <Route path="estados" element={<FrmEstados />} />
@@ -105,7 +105,7 @@ function App() {
           <Route path="grupos" element={<FrmGrupos />} />
           <Route path="aulas" element={<FrmAulas />} />
           <Route path="horarios" element={<FrmHorarios />} />
-          <Route path="asignacion" element={<FrmAsignacion />} />
+         
           <Route path="tipocalificaciones" element={<FrmTipoCalificaciones />} />
           <Route path="transacciones" element={<FrmTransacciones />} />
           <Route path="tipotransacciones" element={<FrmTipoTransacciones />} />

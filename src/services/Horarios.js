@@ -9,7 +9,7 @@ const insertarHorarios= async (datosHorarios) => {
       console.log('Horario asignado correctamente');
     }
 
-    return res.data;
+    return res.data.data;
   } catch (error) {
     console.error('Error al insertar Horarios:', error.message);
     throw error;

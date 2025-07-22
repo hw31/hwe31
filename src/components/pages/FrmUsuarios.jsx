@@ -2,8 +2,7 @@ import React, { useEffect, useState } from "react";
 import UsuarioService from "../../services/Usuario";
 import PersonaService from "../../services/Persona";
 import EstadoService from "../../services/Estado";
-import { FaPlus, FaEdit } from "react-icons/fa";
-import getErrorMessage from "../../utils/getErrorMessage";
+import { FaPlus, FaEdit, FaUser, FaUserCheck, FaUserTimes } from "react-icons/fa";
 
 const FrmUsuarios = () => {
   const [usuarios, setUsuarios] = useState([]);
@@ -11,7 +10,7 @@ const FrmUsuarios = () => {
   const [estados, setEstados] = useState([]);
 
   const [form, setForm] = useState({
-    idUsuario: null,   // Nota: coincidir con JSON: idUsuario (camelCase)
+    idUsuario: null,
     id_Persona: "",
     usuario: "",
     contrasena: "",
@@ -52,7 +51,6 @@ const FrmUsuarios = () => {
     e.preventDefault();
     if (loading) return;
 
-    // Validaciones básicas
     if (!form.id_Persona && !modoEdicion) {
       setError("Por favor, seleccione una Persona.");
       return;
@@ -70,13 +68,12 @@ const FrmUsuarios = () => {
       return;
     }
 
-    // Prepara el objeto para enviar según modo
     let datos;
     if (modoEdicion) {
       datos = {
         idUsuario: form.idUsuario,
         usuario: form.usuario.trim(),
-        contrasena: form.contrasena || "", // vacío si no se cambia
+        contrasena: form.contrasena || "",
         id_Estado: Number(form.id_Estado),
       };
     } else {
@@ -98,12 +95,11 @@ const FrmUsuarios = () => {
       } else {
         res = await UsuarioService.insertarUsuario(datos);
       }
-       console.log("Respuesta API:", res);  // <-- Esto te mostrará toda la respuesta
+      console.log("Respuesta API:", res);
 
       if (res.success) {
         alert(
-          res.message ||
-            (modoEdicion ? "Usuario actualizado." : "Usuario registrado.")
+          res.message || (modoEdicion ? "Usuario actualizado." : "Usuario registrado.")
         );
         setModalOpen(false);
         setForm({
@@ -118,7 +114,7 @@ const FrmUsuarios = () => {
         setError(res.message || "Error desconocido en la operación.");
       }
     } catch (err) {
-      setError(getErrorMessage(err, "Error inesperado al guardar usuario."));
+      setError(err.message || "Error inesperado al guardar usuario.");
       console.error(err);
     } finally {
       setLoading(false);
@@ -127,13 +123,22 @@ const FrmUsuarios = () => {
 
   const usuariosFiltrados = usuarios.filter((u) => {
     const texto = busqueda.toLowerCase();
+
+    // Buscar nombre de estado con clave correcta: iD_Estado
     const estadoNombre =
       estados.find((e) => e.iD_Estado === u.id_Estado)?.nombre_Estado || "";
+
+    // Buscar nombre completo persona para mostrar y filtro
+    const personaObj = personas.find((p) => p.idPersona === u.id_Persona);
+    const nombrePersona = personaObj
+      ? `${personaObj.primerNombre} ${personaObj.primerApellido}`
+      : "";
+
     return (
       u.usuario.toLowerCase().includes(texto) ||
       String(u.id_Persona).includes(texto) ||
       String(u.idUsuario ?? u.id_Usuario).includes(texto) ||
-      (u.persona?.toLowerCase().includes(texto) ?? false) ||
+      nombrePersona.toLowerCase().includes(texto) ||
       estadoNombre.toLowerCase().includes(texto)
     );
   });
@@ -151,7 +156,7 @@ const FrmUsuarios = () => {
       idUsuario: usuario.idUsuario ?? usuario.id_Usuario,
       id_Persona: usuario.id_Persona?.toString() || "",
       usuario: usuario.usuario,
-      contrasena: "", // No mostrar contraseña por seguridad
+      contrasena: "",
       id_Estado: usuario.id_Estado?.toString() || "",
     });
     setModalOpen(true);
@@ -174,32 +179,182 @@ const FrmUsuarios = () => {
     window.matchMedia &&
     window.matchMedia("(prefers-color-scheme: dark)").matches;
 
+  // Contadores de usuarios por estado
+  const countActivos = usuarios.filter(
+    (u) =>
+      estados.find((e) => e.iD_Estado === u.id_Estado)?.nombre_Estado
+        ?.toLowerCase() === "activo"
+  ).length;
+
+  const countInactivos = usuarios.filter(
+    (u) =>
+      estados.find((e) => e.iD_Estado === u.id_Estado)?.nombre_Estado
+        ?.toLowerCase() === "inactivo"
+  ).length;
+
+  const countTotal = usuarios.length;
+
+  // Color de texto según modo
+  const textColor = isDark ? "#ddd" : "#111";
+
   return (
     <div
       style={{
         maxWidth: 900,
-        margin: "40px auto",
+        margin: "-75px auto",
         fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
-        color: isDark ? "#ddd" : "#222",
-        backgroundColor: isDark ? "#121212" : "white",
+        color: textColor,
+        backgroundColor: isDark ? "transparent" : "transparent",
         padding: 20,
         borderRadius: 10,
-        boxShadow: isDark
-          ? "0 0 10px rgba(255,255,255,0.1)"
-          : "0 5px 15px rgba(0,0,0,0.1)",
+        userSelect: "none",
       }}
     >
-      <h2
+      {/* Barra de búsqueda centrada, más delgada y larga */}
+      <div style={{ maxWidth: 600, margin: "20px auto 30px", width: "90%" }}>
+        <input
+          type="text"
+          placeholder="Buscar..."
+          value={busqueda}
+          onChange={(e) => setBusqueda(e.target.value)}
+          style={{
+            width: "50%",
+            padding: "8px 16px",
+            fontSize: 16,
+            borderRadius: "9999px",
+            border: `1.2px solid ${isDark ? "#444" : "#ccc"}`,
+            outline: "none",
+            boxShadow: isDark
+              ? "inset 0 1px 4px rgba(255,255,255,0.1)"
+              : "inset 0 1px 4px rgba(0,0,0,0.1)",
+            color: textColor,
+            backgroundColor: isDark ? "#222" : "white",
+            transition: "border-color 0.3s ease",
+            display: "block",
+            margin: "0 auto",
+          }}
+          onFocus={(e) =>
+            (e.target.style.borderColor = isDark ? "#90caf9" : "#1976d2")
+          }
+          onBlur={(e) =>
+            (e.target.style.borderColor = isDark ? "#444" : "#ccc")
+          }
+          aria-label="Buscar usuarios"
+        />
+      </div>
+
+      {/* Contadores */}
+      <div
         style={{
-          textAlign: "center",
-          color: "#1976d2",
-          marginBottom: 25,
-          userSelect: "none",
+          display: "flex",
+          justifyContent: "center",
+          gap: 15,
+          marginBottom: 20,
+          flexWrap: "wrap",
+          marginTop: 0,
         }}
       >
-        Gestión de Usuarios
-      </h2>
+        <div
+          style={{
+            background: "linear-gradient(135deg, #127f45ff, #0c0b0bff)",
+            color: "white",
+            padding: "14px 24px",
+            borderRadius: 10,
+            fontWeight: "700",
+            fontSize: 18,
+            minWidth: 140,
+            textAlign: "center",
+            boxShadow: "0 3px 8px rgba(2, 79, 33, 0.4)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 8,
+            userSelect: "none",
+            cursor: "pointer",
+            transition: "background 0.3s ease",
+          }}
+          aria-label={`Usuarios activos: ${countActivos}`}
+          onMouseEnter={(e) =>
+            (e.currentTarget.style.background =
+              "linear-gradient(135deg, #0c0b0bff,  #084b27 )")
+          }
+          onMouseLeave={(e) =>
+            (e.currentTarget.style.background =
+              "linear-gradient(135deg, #127f45ff, #0c0b0bff)")
+          }
+        >
+          <FaUserCheck /> Activos
+          <div style={{ fontSize: 26, marginLeft: 8 }}>{countActivos}</div>
+        </div>
 
+        <div
+          style={{
+            background: "linear-gradient(135deg, #ef5350, #0c0b0bff)",
+            color: "white",
+            padding: "14px 24px",
+            borderRadius: 10,
+            fontWeight: "700",
+            fontSize: 18,
+            minWidth: 140,
+            textAlign: "center",
+            boxShadow: "0 3px 8px rgba(244,67,54,0.4)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 8,
+            userSelect: "none",
+            cursor: "pointer",
+            transition: "background 0.3s ease",
+          }}
+          aria-label={`Usuarios inactivos: ${countInactivos}`}
+          onMouseEnter={(e) =>
+            (e.currentTarget.style.background =
+              "linear-gradient(135deg, #101010ff, #de1717ff)")
+          }
+          onMouseLeave={(e) =>
+            (e.currentTarget.style.background =
+              "linear-gradient(135deg, #ef5350, #0c0b0bff)")
+          }
+        >
+          <FaUserTimes /> Inactivos
+          <div style={{ fontSize: 26, marginLeft: 8 }}>{countInactivos}</div>
+        </div>
+
+        <div
+          style={{
+            background: "linear-gradient(135deg, #0960a8ff, #20262dff)",
+            color: "white",
+            padding: "14px 24px",
+            borderRadius: 10,
+            fontWeight: "700",
+            fontSize: 18,
+            minWidth: 140,
+            textAlign: "center",
+            boxShadow: "0 3px 8px rgba(25,118,210,0.4)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 8,
+            userSelect: "none",
+            cursor: "pointer",
+            transition: "background 0.3s ease",
+          }}
+          aria-label={`Total de usuarios: ${countTotal}`}
+          onMouseEnter={(e) =>
+            (e.currentTarget.style.background =
+              "linear-gradient(135deg, #20262dff, #0d47a1)")
+          }
+          onMouseLeave={(e) =>
+            (e.currentTarget.style.background =
+              "linear-gradient(135deg, #0960a8ff, #20262dff)")
+          }
+        >
+          <FaUser /> Total
+          <div style={{ fontSize: 26, marginLeft: 8 }}>{countTotal}</div>
+        </div>
+      </div>
+
+      {/* Botón agregar */}
       <div
         style={{
           display: "flex",
@@ -209,33 +364,6 @@ const FrmUsuarios = () => {
           flexWrap: "wrap",
         }}
       >
-        <input
-          type="text"
-          placeholder="Buscar por usuario, ID, persona o estado..."
-          value={busqueda}
-          onChange={(e) => setBusqueda(e.target.value)}
-          style={{
-            flexGrow: 1,
-            minWidth: 250,
-            padding: "12px 16px",
-            fontSize: 16,
-            borderRadius: 8,
-            border: `1.5px solid ${isDark ? "#444" : "#ccc"}`,
-            outline: "none",
-            boxShadow: isDark
-              ? "inset 0 1px 4px rgba(255,255,255,0.1)"
-              : "inset 0 1px 4px rgba(0,0,0,0.1)",
-            color: isDark ? "#eee" : "#222",
-            backgroundColor: isDark ? "#222" : "white",
-            transition: "border-color 0.3s ease",
-          }}
-          onFocus={(e) =>
-            (e.target.style.borderColor = isDark ? "#90caf9" : "#1976d2")
-          }
-          onBlur={(e) =>
-            (e.target.style.borderColor = isDark ? "#444" : "#ccc")
-          }
-        />
         <button
           onClick={abrirAgregar}
           style={{
@@ -246,7 +374,7 @@ const FrmUsuarios = () => {
             borderRadius: 8,
             cursor: "pointer",
             fontWeight: "600",
-            fontSize: 16,
+            fontSize: 20,
             display: "flex",
             alignItems: "center",
             gap: 10,
@@ -258,33 +386,30 @@ const FrmUsuarios = () => {
           type="button"
           aria-label="Agregar nuevo usuario"
         >
-          <FaPlus /> Agregar Usuario
+          <FaPlus /> Agregar
         </button>
       </div>
 
+      {/* Tabla */}
       <table
         style={{
           width: "100%",
           borderCollapse: "collapse",
-          boxShadow: isDark
-            ? "0 0 10px rgba(255,255,255,0.1)"
-            : "0 5px 15px rgba(0,0,0,0.1)",
           borderRadius: 10,
           overflow: "hidden",
           fontSize: 15,
-          backgroundColor: isDark ? "#1e1e1e" : "white",
-          color: isDark ? "#ddd" : "#222",
+          color: textColor,
+          userSelect: "none",
         }}
+        aria-label="Listado de usuarios"
       >
         <thead
           style={{
-            backgroundColor: "#1976d2",
-            color: "#fff",
-            userSelect: "none",
+            color: textColor,
           }}
         >
           <tr>
-            <th style={{ padding: "14px 20px", textAlign: "left" }}>ID</th>
+            {/* <th style={{ padding: "14px 20px", textAlign: "left" }}>ID</th> */}
             <th style={{ padding: "14px 20px", textAlign: "left" }}>Usuario</th>
             <th style={{ padding: "14px 20px", textAlign: "left" }}>Persona</th>
             <th style={{ padding: "14px 20px", textAlign: "left" }}>Estado</th>
@@ -301,9 +426,8 @@ const FrmUsuarios = () => {
                 style={{
                   padding: 20,
                   textAlign: "center",
-                  color: isDark ? "#999" : "#999",
+                  color: isDark ? "#999" : "#555",
                   fontStyle: "italic",
-                  userSelect: "none",
                 }}
               >
                 No se encontraron usuarios.
@@ -313,21 +437,31 @@ const FrmUsuarios = () => {
             usuariosFiltrados.map((u) => (
               <tr
                 key={u.idUsuario ?? u.id_Usuario}
-                style={{ cursor: "default" }}
-                onMouseEnter={(e) =>
-                  (e.currentTarget.style.backgroundColor = isDark ? "#264b7d" : "#e3f2fd")
-                }
-                onMouseLeave={(e) =>
-                  (e.currentTarget.style.backgroundColor = "transparent")
-                }
+                style={{
+                  cursor: "default",
+                  transition: "background-color 0.3s, color 0.3s",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = isDark
+                    ? "#264b7d"
+                    : "#e3f2fd";
+                  e.currentTarget.style.color = isDark ? "#eee" : "#000";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = "transparent";
+                  e.currentTarget.style.color = textColor;
+                }}
               >
-                <td style={{ padding: "14px 20px" }}>{u.idUsuario ?? u.id_Usuario}</td>
+                 {/* <td style={{ padding: "14px 20px" }}>
+            {u.idUsuario ?? u.id_Usuario}
+          </td> */}
                 <td style={{ padding: "14px 20px" }}>{u.usuario}</td>
                 <td style={{ padding: "14px 20px" }}>
                   {getNombrePersonaPorId(u.id_Persona)}
                 </td>
                 <td style={{ padding: "14px 20px" }}>
-                  {estados.find((e) => e.iD_Estado === u.id_Estado)?.nombre_Estado || "-"}
+                  {estados.find((e) => e.iD_Estado === u.id_Estado)?.nombre_Estado ||
+                    "-"}
                 </td>
                 <td style={{ padding: "14px 20px" }}>
                   {getNombrePersonaPorId(u.id_Creador)}
@@ -351,7 +485,7 @@ const FrmUsuarios = () => {
                       alignItems: "center",
                       gap: 6,
                       userSelect: "none",
-                      transition: "background-color 0.3s ease",
+                      transition: "background-color 0.3s",
                     }}
                     onMouseEnter={(e) =>
                       (e.currentTarget.style.backgroundColor = "#015f8c")
@@ -362,7 +496,7 @@ const FrmUsuarios = () => {
                     type="button"
                     aria-label={`Editar usuario ${u.usuario}`}
                   >
-                    <FaEdit /> Editar
+                    <FaEdit /> 
                   </button>
                 </td>
               </tr>
@@ -371,6 +505,8 @@ const FrmUsuarios = () => {
         </tbody>
       </table>
 
+
+      {/* Modal */}
       {modalOpen && (
         <div
           style={{
@@ -389,7 +525,7 @@ const FrmUsuarios = () => {
         >
           <div
             style={{
-              backgroundColor: isDark ? "#222" : "white",
+              backgroundColor: isDark ? "#222" : "#fff",
               borderRadius: 15,
               maxWidth: 500,
               width: "100%",
@@ -397,13 +533,13 @@ const FrmUsuarios = () => {
               boxShadow: isDark
                 ? "0 8px 20px rgba(255,255,255,0.2)"
                 : "0 8px 20px rgba(0,0,0,0.2)",
-              color: isDark ? "#ddd" : "#222",
+              color: textColor,
               animation: "fadeInScale 0.3s ease forwards",
             }}
           >
             <h3
               id="tituloModal"
-              style={{ marginBottom: 20, color: "#1976d2", userSelect: "none" }}
+              style={{ marginBottom: 20, color: "#1976d2" }}
             >
               {modoEdicion ? "Actualizar Usuario" : "Registrar Usuario"}
             </h3>
@@ -446,8 +582,8 @@ const FrmUsuarios = () => {
                       borderRadius: 8,
                       border: `1.5px solid ${isDark ? "#444" : "#ccc"}`,
                       outline: "none",
-                      backgroundColor: isDark ? "#333" : "white",
-                      color: isDark ? "#ddd" : "#222",
+                      backgroundColor: isDark ? "#333" : "#fff",
+                      color: textColor,
                       transition: "border-color 0.3s ease",
                     }}
                     onFocus={(e) =>
@@ -477,10 +613,11 @@ const FrmUsuarios = () => {
                 <input
                   id="usuario"
                   name="usuario"
+                  type="text"
                   value={form.usuario}
                   onChange={handleChange}
                   required
-                  autoComplete="off"
+                  autoComplete="username"
                   style={{
                     width: "100%",
                     padding: 10,
@@ -488,8 +625,8 @@ const FrmUsuarios = () => {
                     borderRadius: 8,
                     border: `1.5px solid ${isDark ? "#444" : "#ccc"}`,
                     outline: "none",
-                    backgroundColor: isDark ? "#333" : "white",
-                    color: isDark ? "#ddd" : "#222",
+                    backgroundColor: isDark ? "#333" : "#fff",
+                    color: textColor,
                     transition: "border-color 0.3s ease",
                   }}
                   onFocus={(e) =>
@@ -506,12 +643,7 @@ const FrmUsuarios = () => {
                   htmlFor="contrasena"
                   style={{ display: "block", fontWeight: "600", marginBottom: 6 }}
                 >
-                  Contraseña{" "}
-                  {modoEdicion ? (
-                    "(dejar vacío para no cambiar)"
-                  ) : (
-                    <span style={{ color: "red" }}>*</span>
-                  )}
+                  Contraseña {modoEdicion ? "(dejar vacía para no cambiar)" : <span style={{color:"red"}}>*</span>}
                 </label>
                 <input
                   id="contrasena"
@@ -519,10 +651,7 @@ const FrmUsuarios = () => {
                   type="password"
                   value={form.contrasena}
                   onChange={handleChange}
-                  autoComplete={modoEdicion ? "new-password" : "off"}
-                  placeholder={
-                    modoEdicion ? "Ingrese nueva contraseña (opcional)" : ""
-                  }
+                  autoComplete={modoEdicion ? "new-password" : "current-password"}
                   style={{
                     width: "100%",
                     padding: 10,
@@ -530,8 +659,8 @@ const FrmUsuarios = () => {
                     borderRadius: 8,
                     border: `1.5px solid ${isDark ? "#444" : "#ccc"}`,
                     outline: "none",
-                    backgroundColor: isDark ? "#333" : "white",
-                    color: isDark ? "#ddd" : "#222",
+                    backgroundColor: isDark ? "#333" : "#fff",
+                    color: textColor,
                     transition: "border-color 0.3s ease",
                   }}
                   onFocus={(e) =>
@@ -563,8 +692,8 @@ const FrmUsuarios = () => {
                     borderRadius: 8,
                     border: `1.5px solid ${isDark ? "#444" : "#ccc"}`,
                     outline: "none",
-                    backgroundColor: isDark ? "#333" : "white",
-                    color: isDark ? "#ddd" : "#222",
+                    backgroundColor: isDark ? "#333" : "#fff",
+                    color: textColor,
                     transition: "border-color 0.3s ease",
                   }}
                   onFocus={(e) =>
@@ -583,24 +712,20 @@ const FrmUsuarios = () => {
                 </select>
               </div>
 
-              <div style={{ display: "flex", justifyContent: "flex-end", gap: 10 }}>
+              <div style={{ textAlign: "right" }}>
                 <button
                   type="button"
                   onClick={() => setModalOpen(false)}
                   style={{
                     padding: "10px 18px",
                     borderRadius: 8,
-                    border: `1.5px solid ${isDark ? "#777" : "#999"}`,
-                    backgroundColor: isDark ? "#333" : "#eee",
-                    color: isDark ? "#ccc" : "#333",
+                    border: "1.5px solid #ccc",
+                    marginRight: 12,
                     cursor: "pointer",
+                    backgroundColor: isDark ? "#333" : "#f5f5f5",
+                    color: textColor,
                     fontWeight: "600",
-                    fontSize: 15,
-                    userSelect: "none",
-                    transition: "background-color 0.3s ease",
                   }}
-                  onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = isDark ? "#444" : "#ddd")}
-                  onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = isDark ? "#333" : "#eee")}
                 >
                   Cancelar
                 </button>
@@ -608,22 +733,16 @@ const FrmUsuarios = () => {
                   type="submit"
                   disabled={loading}
                   style={{
-                    padding: "10px 18px",
+                    padding: "10px 22px",
                     borderRadius: 8,
                     border: "none",
                     backgroundColor: "#1976d2",
-                    color: "#fff",
-                    fontWeight: "600",
-                    fontSize: 15,
+                    color: "white",
                     cursor: loading ? "not-allowed" : "pointer",
-                    userSelect: "none",
-                    opacity: loading ? 0.7 : 1,
-                    transition: "background-color 0.3s ease",
+                    fontWeight: "700",
                   }}
-                  onMouseEnter={(e) => !loading && (e.currentTarget.style.backgroundColor = "#115293")}
-                  onMouseLeave={(e) => !loading && (e.currentTarget.style.backgroundColor = "#1976d2")}
                 >
-                  {modoEdicion ? (loading ? "Actualizando..." : "Actualizar") : loading ? "Registrando..." : "Registrar"}
+                  {loading ? "Guardando..." : modoEdicion ? "Actualizar" : "Registrar"}
                 </button>
               </div>
             </form>

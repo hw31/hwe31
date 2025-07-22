@@ -16,6 +16,7 @@ import Dashboard from './components/Dashboard'; // Layout privado para rutas den
 
 import PrivateRoute from './routes/PrivateRoute'; // Componente para proteger rutas privadas
 import FrmUsuarios from './components/pages/FrmUsuarios';   // Ejemplo formulario privado
+import FrmAsignacion from "./components/pages/FrmAsignacion";
 
 /* COMENTAR LOS IMPORTS QUE NO SE USAN PARA EVITAR ERRORES SI LOS ARCHIVOS NO EXISTEN
 import FrmEstados from './pages/FrmEstados';
@@ -31,7 +32,7 @@ import FrmCalificaciones from './pages/FrmCalificaciones';
 import FrmGrupos from './pages/FrmGrupos';
 import FrmAulas from './pages/FrmAulas';
 import FrmHorarios from './pages/FrmHorarios';
-import FrmAsignacion from './pages/FrmAsignacion';
+
 import FrmTipoCalificaciones from './pages/FrmTipoCalificaciones';
 import FrmTransacciones from './pages/FrmTransacciones';
 import FrmTipoTransacciones from './pages/FrmTipoTransacciones';
@@ -60,6 +61,10 @@ const router = createBrowserRouter([
           {
             path: 'usuarios',
             element: <FrmUsuarios />, // Ruta privada /dashboard/usuarios
+          },
+           {
+            path: 'asignacion',
+            element: <FrmAsignacion />,
           },
           /*
           {
@@ -114,10 +119,7 @@ const router = createBrowserRouter([
             path: 'horarios',
             element: <FrmHorarios />,
           },
-          {
-            path: 'asignacion',
-            element: <FrmAsignacion />,
-          },
+         
           {
             path: 'tipocalificaciones',
             element: <FrmTipoCalificaciones />,
