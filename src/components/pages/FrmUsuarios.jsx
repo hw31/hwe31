@@ -3,7 +3,7 @@ import { useSelector } from "react-redux";
 import UsuarioService from "../../services/Usuario";
 import PersonaService from "../../services/Persona";
 import EstadoService from "../../services/Estado";
-import { FaPlus, FaEdit, FaUser, FaUserCheck, FaUserTimes } from "react-icons/fa";
+import { FaPlus, FaEdit, FaUser, FaUserCheck, FaUserTimes,FaLock, FaCheck} from "react-icons/fa";
 
 const FrmUsuarios = () => {
   const modoOscuro = useSelector((state) => state.theme.modoOscuro);
@@ -178,6 +178,36 @@ const FrmUsuarios = () => {
     });
     setModalOpen(true);
   };
+const toggleEstadoUsuario = async (usuario) => {
+  const estadoActual = estados.find((e) => e.iD_Estado === usuario.id_Estado);
+  if (!estadoActual) return;
+
+  const nuevoEstadoNombre = estadoActual.nombre_Estado.toLowerCase() === "activo" ? "Inactivo" : "Activo";
+  const nuevoEstado = estados.find((e) => e.nombre_Estado.toLowerCase() === nuevoEstadoNombre);
+
+  if (!nuevoEstado) {
+    alert("Estado no encontrado.");
+    return;
+  }
+
+  try {
+    const res = await UsuarioService.actualizarUsuario({
+      idUsuario: usuario.idUsuario ?? usuario.id_Usuario,
+      usuario: usuario.usuario,
+      contrasena: "", // No cambiamos contraseña aquí
+      id_Estado: nuevoEstado.iD_Estado,
+    });
+
+    if (res.success) {
+      await fetchData();
+    } else {
+      alert("Error al cambiar estado.");
+    }
+  } catch (err) {
+    console.error(err);
+    alert("Error de conexión.");
+  }
+};
 
   
   // Contadores de usuarios por estado
@@ -295,7 +325,7 @@ const formatearFecha = (fecha) => {
               "linear-gradient(135deg, #127f45ff, #0c0b0bff)")
           }
         >
-          <FaUserCheck /> Activos
+          <FaUserCheck />Activos
           <div style={{ fontSize: 26, marginLeft: 8 }}>{countActivos}</div>
         </div>
 
@@ -328,7 +358,7 @@ const formatearFecha = (fecha) => {
               "linear-gradient(135deg, #ef5350, #0c0b0bff)")
           }
         >
-          <FaUserTimes /> Inactivos
+          <FaUserTimes />Inactivos
           <div style={{ fontSize: 26, marginLeft: 8 }}>{countInactivos}</div>
         </div>
 
@@ -423,12 +453,13 @@ const formatearFecha = (fecha) => {
           <tr>
             {/*<th style={{ padding: "14px 20px", textAlign: "left" }}>ID</th>*/}
             <th style={{ padding: "10px 15px", textAlign: "left" }}>Usuario</th>
-            <th style={{ padding: "10px 15px", textAlign: "left" }}>Persona</th>
-            <th style={{ padding: "10px 15px", textAlign: "left" }}>Estado</th>
+            <th style={{ padding: "10px 15px", textAlign: "left" }}>Persona</th>  
+                    
             <th style={{ padding: "10px 15px", textAlign: "left" }}>Creador</th>
             <th style={{ padding: "10px 15px", textAlign: "left" }}>Modificador</th>
             <th style={{ padding: "10px 15px", textAlign: "left" }}>Fecha_Creacion</th>
             <th style={{ padding: "10px 15px", textAlign: "left" }}>Fecha_Modificacion</th>
+          <th style={{ padding: "10px 15px", textAlign: "left" }}>Estado</th>  
             <th style={{ padding: "10px 15px", textAlign: "left" }}>Acciones</th>
           </tr>
         </thead>
@@ -473,10 +504,9 @@ const formatearFecha = (fecha) => {
                 <td style={{ padding: "14px 20px" }}>
                   {getNombrePersonaPorId(u.id_Persona)}
                 </td>
-                <td style={{ padding: "14px 20px" }}>
-                  {estados.find((e) => e.iD_Estado === u.id_Estado)?.nombre_Estado ||
-                    "-"}
-                </td>
+
+
+
                 <td style={{ padding: "14px 20px" }}>
                   {getNombrePersonaPorId(u.id_Creador)}
                 </td>
@@ -485,7 +515,24 @@ const formatearFecha = (fecha) => {
                 </td>
                 <td style={{ padding: "14px 20px" }}>{formatearFecha(u.fecha_Creacion)}</td>
                 <td style={{ padding: "14px 20px" }}>{formatearFecha(u.fecha_Modificacion)}</td>
-
+               <td
+  style={{
+    padding: "14px 20px",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    cursor: "pointer",
+    userSelect: "none",
+  }}
+  
+>
+  {estados.find((e) => e.iD_Estado === u.id_Estado)?.nombre_Estado.toLowerCase() ===
+  "activo" ? (
+    <FaCheck color="#43a047" size={20} aria-label="Activo" />
+  ) : (
+    <FaLock color="#e53935" size={20} aria-label="Inactivo" />
+  )}
+</td>
                 <td style={{ padding: "14px 20px" }}>
                   <button
                     onClick={() => abrirEditar(u)}
@@ -516,6 +563,11 @@ const formatearFecha = (fecha) => {
                     <FaEdit /> 
                   </button>
                 </td>
+
+
+
+
+
               </tr>
             ))
           )}
