@@ -472,6 +472,7 @@ const formatearFecha = (fecha) => {
                   padding: 20,
                   textAlign: "center",
                   color: modoOscuro ? "#999" : "#555",
+                    color: textColor,
                   fontStyle: "italic",
                 }}
               >
@@ -490,7 +491,8 @@ const formatearFecha = (fecha) => {
                   e.currentTarget.style.backgroundColor = modoOscuro
                     ? "#264b7d"
                     : "#e3f2fd";
-                  e.currentTarget.style.color = modoOscuro ? "#eee" : "#000";
+                  
+                  e.currentTarget.style.color = textColor;
                 }}
                 onMouseLeave={(e) => {
                   e.currentTarget.style.backgroundColor = "transparent";
@@ -516,23 +518,23 @@ const formatearFecha = (fecha) => {
                 <td style={{ padding: "14px 20px" }}>{formatearFecha(u.fecha_Creacion)}</td>
                 <td style={{ padding: "14px 20px" }}>{formatearFecha(u.fecha_Modificacion)}</td>
                <td
-  style={{
-    padding: "14px 20px",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    cursor: "pointer",
-    userSelect: "none",
-  }}
-  
->
-  {estados.find((e) => e.iD_Estado === u.id_Estado)?.nombre_Estado.toLowerCase() ===
-  "activo" ? (
-    <FaCheck color="#43a047" size={20} aria-label="Activo" />
-  ) : (
-    <FaLock color="#e53935" size={20} aria-label="Inactivo" />
-  )}
-</td>
+                style={{
+                  padding: "14px 20px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  cursor: "pointer",
+                  userSelect: "none",
+                }}
+                
+              >
+                {estados.find((e) => e.iD_Estado === u.id_Estado)?.nombre_Estado.toLowerCase() ===
+                "activo" ? (
+                  <FaCheck color="#43a047" size={20} aria-label="Activo" />
+                ) : (
+                  <FaLock color="#e53935" size={20} aria-label="Inactivo" />
+                )}
+              </td>
                 <td style={{ padding: "14px 20px" }}>
                   <button
                     onClick={() => abrirEditar(u)}
@@ -553,6 +555,7 @@ const formatearFecha = (fecha) => {
                     }}
                     onMouseEnter={(e) =>
                       (e.currentTarget.style.backgroundColor = "#015f8c")
+                      
                     }
                     onMouseLeave={(e) =>
                       (e.currentTarget.style.backgroundColor = "#0288d1")
