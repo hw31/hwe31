@@ -245,7 +245,7 @@ const formatearFecha = (fecha) => {
         maxWidth: 900,
         margin: "-75px auto",
         fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
-        color: textColor,
+  
         backgroundColor: modoOscuro ? "transparent" : "transparent",
         padding: 20,
         borderRadius: 10,
@@ -472,7 +472,7 @@ const formatearFecha = (fecha) => {
                   padding: 20,
                   textAlign: "center",
                   color: modoOscuro ? "#999" : "#555",
-                    color: textColor,
+          
                   fontStyle: "italic",
                 }}
               >
@@ -492,11 +492,14 @@ const formatearFecha = (fecha) => {
                     ? "#264b7d"
                     : "#e3f2fd";
                   
-                  e.currentTarget.style.color = textColor;
+                 
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = "transparent";
-                  e.currentTarget.style.color = textColor;
+                   e.currentTarget.style.backgroundColor = modoOscuro
+                    ? "transparent"
+                    : "transparent";
+                  
+                  
                 }}
               >
                 {/*<td style={{ padding: "14px 20px" }}>

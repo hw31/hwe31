@@ -46,11 +46,11 @@ const filtrarPorIdUsuarioRol = async (idUsuarioRol) => {
 };
 
 
-/* LISTAR RELACIONES USUARIO - ROL */
 const listarUsuariosRoles = async () => {
   try {
     const res = await api.get('UsuariosRoles/LISTAR');
-    return res.data;
+    
+    return res.data.resultado;
   } catch (error) {
     console.error('Error al listar usuarios con rol:', error.message);
     throw error;

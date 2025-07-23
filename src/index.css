@@ -563,3 +563,28 @@ input, textarea, select {
     text-align: center;
   }
 }
+/* Scrollbar moderno para el contenedor con scroll horizontal */
+.scroll-modern {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch; /* para scroll táctil suave */
+
+  /* Scrollbar para Chrome, Edge, Safari */
+}
+.scroll-modern::-webkit-scrollbar {
+  height: 8px; /* altura barra horizontal */
+}
+.scroll-modern::-webkit-scrollbar-track {
+  background: #e0e7ff; /* azul claro, tailwind 'blue-100' */
+  border-radius: 9999px;
+}
+.scroll-modern::-webkit-scrollbar-thumb {
+  background-color: #3b82f6; /* azul tailwind 'blue-500' */
+  border-radius: 9999px;
+  border: 2px solid #e0e7ff; /* crea espacio entre track y thumb */
+}
+
+/* Scrollbar para Firefox */
+.scroll-modern {
+  scrollbar-width: thin;
+  scrollbar-color: #3b82f6 #e0e7ff;
+}

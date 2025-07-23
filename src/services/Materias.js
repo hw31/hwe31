@@ -46,11 +46,11 @@ const filtrarPorIdMateria = async (idMateria) => {
 };
 
 
-/* LISTAR MATERIAS */
 const listarMaterias = async () => {
   try {
-    const res = await api.get('Materias/FILTRAR_POR_ID');
-    return res.data;
+    const res = await api.get('Materias/listar'); 
+
+    return res.data.resultado;
   } catch (error) {
     console.error('Error al listar materias:', error.message);
     throw error;

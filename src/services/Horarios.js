@@ -45,13 +45,12 @@ const filtrarPorIdHorario = async (idHorario) => {
   }
 };
 
-/*LISTAR */
-const listarHorario = async () => {
+const listarHorarios = async () => {
   try {
     const res = await api.get('Horarios/LISTAR');
-    return res.data;
+    return res.data.resultado || res.data.Resultado || res.data.data || res.data;
   } catch (error) {
-    console.error('Error al listar Horario:', error.message);
+    console.error('Error al listar horarios:', error.message);
     throw error;
   }
 };
@@ -60,5 +59,5 @@ export default {
   insertarHorarios,
   actualizarHoraios,
   filtrarPorIdHorario,
-  listarHorario
+  listarHorarios
 };

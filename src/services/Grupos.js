@@ -57,14 +57,12 @@ const filtrarPorNombreGrupo = async (nombre) => {
     throw error;
   }
 };
-
-/*LISTAR */
 const listarGrupos = async () => {
   try {
     const res = await api.get('Grupos/LISTAR');
-   return res.data.data;
+    return res.data.resultado;
   } catch (error) {
-    console.error('Error al listar grupo:', error.message);
+    console.error('Error al listar grupos:', error.message);
     throw error;
   }
 };
