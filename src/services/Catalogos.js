@@ -58,10 +58,10 @@ const filtrarPorNombreCatalogo = async (nombre) => {
   }
 };
 
-const filtrarPorTipoCatalogo = async (tipo) => {
+const filtrarPorTipoCatalogo = async (idTipoCatalogo) => {
   try {
     const res = await api.get('Catalogo/FiltrarPorTipo', {
-      params: { tipo }
+      params: { idTipoCatalogo }  // Aquí cambiar tipo por idTipoCatalogo
     });
     return res.data;
   } catch (error) {
