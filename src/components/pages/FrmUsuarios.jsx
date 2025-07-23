@@ -1,10 +1,13 @@
 import React, { useEffect, useState } from "react";
+import { useSelector } from "react-redux";
 import UsuarioService from "../../services/Usuario";
 import PersonaService from "../../services/Persona";
 import EstadoService from "../../services/Estado";
 import { FaPlus, FaEdit, FaUser, FaUserCheck, FaUserTimes } from "react-icons/fa";
 
 const FrmUsuarios = () => {
+  const modoOscuro = useSelector((state) => state.theme.modoOscuro);
+
   const [usuarios, setUsuarios] = useState([]);
   const [personas, setPersonas] = useState([]);
   const [estados, setEstados] = useState([]);
@@ -134,6 +137,7 @@ const FrmUsuarios = () => {
       ? `${personaObj.primerNombre} ${personaObj.primerApellido}`
       : "";
 
+
     return (
       u.usuario.toLowerCase().includes(texto) ||
       String(u.id_Persona).includes(texto) ||
@@ -175,10 +179,7 @@ const FrmUsuarios = () => {
     setModalOpen(true);
   };
 
-  const isDark =
-    window.matchMedia &&
-    window.matchMedia("(prefers-color-scheme: dark)").matches;
-
+  
   // Contadores de usuarios por estado
   const countActivos = usuarios.filter(
     (u) =>
@@ -195,16 +196,27 @@ const FrmUsuarios = () => {
   const countTotal = usuarios.length;
 
   // Color de texto según modo
-  const textColor = isDark ? "#ddd" : "#111";
-
+ const textColor = modoOscuro ? "#ddd" : "#111";
+const formatearFecha = (fecha) => {
+  if (!fecha) return "-";
+  const d = new Date(fecha);
+  return d.toLocaleDateString("es-NI", {
+    year: "numeric",
+    month: "short",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+};
   return (
     <div
       style={{
+
         maxWidth: 900,
         margin: "-75px auto",
         fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
         color: textColor,
-        backgroundColor: isDark ? "transparent" : "transparent",
+        backgroundColor: modoOscuro ? "transparent" : "transparent",
         padding: 20,
         borderRadius: 10,
         userSelect: "none",
@@ -222,22 +234,22 @@ const FrmUsuarios = () => {
             padding: "8px 16px",
             fontSize: 16,
             borderRadius: "9999px",
-            border: `1.2px solid ${isDark ? "#444" : "#ccc"}`,
+            border: `1.2px solid ${modoOscuro ? "#444" : "#ccc"}`,
             outline: "none",
-            boxShadow: isDark
+            boxShadow: modoOscuro
               ? "inset 0 1px 4px rgba(255,255,255,0.1)"
               : "inset 0 1px 4px rgba(0,0,0,0.1)",
             color: textColor,
-            backgroundColor: isDark ? "#222" : "white",
+            backgroundColor: modoOscuro ? "#222" : "white",
             transition: "border-color 0.3s ease",
             display: "block",
             margin: "0 auto",
           }}
           onFocus={(e) =>
-            (e.target.style.borderColor = isDark ? "#90caf9" : "#1976d2")
+            (e.target.style.borderColor = modoOscuro ? "#90caf9" : "#1976d2")
           }
           onBlur={(e) =>
-            (e.target.style.borderColor = isDark ? "#444" : "#ccc")
+            (e.target.style.borderColor = modoOscuro ? "#444" : "#ccc")
           }
           aria-label="Buscar usuarios"
         />
@@ -409,13 +421,15 @@ const FrmUsuarios = () => {
           }}
         >
           <tr>
-            {/* <th style={{ padding: "14px 20px", textAlign: "left" }}>ID</th> */}
-            <th style={{ padding: "14px 20px", textAlign: "left" }}>Usuario</th>
-            <th style={{ padding: "14px 20px", textAlign: "left" }}>Persona</th>
-            <th style={{ padding: "14px 20px", textAlign: "left" }}>Estado</th>
-            <th style={{ padding: "14px 20px", textAlign: "left" }}>Creador</th>
-            <th style={{ padding: "14px 20px", textAlign: "left" }}>Modificador</th>
-            <th style={{ padding: "14px 20px", textAlign: "left" }}>Acciones</th>
+            {/*<th style={{ padding: "14px 20px", textAlign: "left" }}>ID</th>*/}
+            <th style={{ padding: "10px 15px", textAlign: "left" }}>Usuario</th>
+            <th style={{ padding: "10px 15px", textAlign: "left" }}>Persona</th>
+            <th style={{ padding: "10px 15px", textAlign: "left" }}>Estado</th>
+            <th style={{ padding: "10px 15px", textAlign: "left" }}>Creador</th>
+            <th style={{ padding: "10px 15px", textAlign: "left" }}>Modificador</th>
+            <th style={{ padding: "10px 15px", textAlign: "left" }}>Fecha_Creacion</th>
+            <th style={{ padding: "10px 15px", textAlign: "left" }}>Fecha_Modificacion</th>
+            <th style={{ padding: "10px 15px", textAlign: "left" }}>Acciones</th>
           </tr>
         </thead>
         <tbody>
@@ -426,7 +440,7 @@ const FrmUsuarios = () => {
                 style={{
                   padding: 20,
                   textAlign: "center",
-                  color: isDark ? "#999" : "#555",
+                  color: modoOscuro ? "#999" : "#555",
                   fontStyle: "italic",
                 }}
               >
@@ -442,19 +456,19 @@ const FrmUsuarios = () => {
                   transition: "background-color 0.3s, color 0.3s",
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = isDark
+                  e.currentTarget.style.backgroundColor = modoOscuro
                     ? "#264b7d"
                     : "#e3f2fd";
-                  e.currentTarget.style.color = isDark ? "#eee" : "#000";
+                  e.currentTarget.style.color = modoOscuro ? "#eee" : "#000";
                 }}
                 onMouseLeave={(e) => {
                   e.currentTarget.style.backgroundColor = "transparent";
                   e.currentTarget.style.color = textColor;
                 }}
               >
-                 {/* <td style={{ padding: "14px 20px" }}>
-            {u.idUsuario ?? u.id_Usuario}
-          </td> */}
+                {/*<td style={{ padding: "14px 20px" }}>
+                  {u.idUsuario ?? u.id_Usuario}
+                </td>*/}
                 <td style={{ padding: "14px 20px" }}>{u.usuario}</td>
                 <td style={{ padding: "14px 20px" }}>
                   {getNombrePersonaPorId(u.id_Persona)}
@@ -469,6 +483,9 @@ const FrmUsuarios = () => {
                 <td style={{ padding: "14px 20px" }}>
                   {getNombrePersonaPorId(u.id_Modificador)}
                 </td>
+                <td style={{ padding: "14px 20px" }}>{formatearFecha(u.fecha_Creacion)}</td>
+                <td style={{ padding: "14px 20px" }}>{formatearFecha(u.fecha_Modificacion)}</td>
+
                 <td style={{ padding: "14px 20px" }}>
                   <button
                     onClick={() => abrirEditar(u)}
@@ -525,12 +542,12 @@ const FrmUsuarios = () => {
         >
           <div
             style={{
-              backgroundColor: isDark ? "#222" : "#fff",
+              backgroundColor: modoOscuro ? "#222" : "#fff",
               borderRadius: 15,
               maxWidth: 500,
               width: "100%",
               padding: 25,
-              boxShadow: isDark
+              boxShadow: modoOscuro
                 ? "0 8px 20px rgba(255,255,255,0.2)"
                 : "0 8px 20px rgba(0,0,0,0.2)",
               color: textColor,
@@ -580,17 +597,17 @@ const FrmUsuarios = () => {
                       padding: 10,
                       fontSize: 16,
                       borderRadius: 8,
-                      border: `1.5px solid ${isDark ? "#444" : "#ccc"}`,
+                      border: `1.5px solid ${modoOscuro ? "#444" : "#ccc"}`,
                       outline: "none",
-                      backgroundColor: isDark ? "#333" : "#fff",
+                      backgroundColor: modoOscuro? "#333" : "#fff",
                       color: textColor,
                       transition: "border-color 0.3s ease",
                     }}
                     onFocus={(e) =>
-                      (e.target.style.borderColor = isDark ? "#90caf9" : "#1976d2")
+                      (e.target.style.borderColor = modoOscuro ? "#90caf9" : "#1976d2")
                     }
                     onBlur={(e) =>
-                      (e.target.style.borderColor = isDark ? "#444" : "#ccc")
+                      (e.target.style.borderColor = modoOscuro ? "#444" : "#ccc")
                     }
                   >
                     <option value="">-- Seleccione --</option>
@@ -623,17 +640,17 @@ const FrmUsuarios = () => {
                     padding: 10,
                     fontSize: 16,
                     borderRadius: 8,
-                    border: `1.5px solid ${isDark ? "#444" : "#ccc"}`,
+                    border: `1.5px solid ${modoOscuro ? "#444" : "#ccc"}`,
                     outline: "none",
-                    backgroundColor: isDark ? "#333" : "#fff",
+                    backgroundColor: modoOscuro? "#333" : "#fff",
                     color: textColor,
                     transition: "border-color 0.3s ease",
                   }}
                   onFocus={(e) =>
-                    (e.target.style.borderColor = isDark ? "#90caf9" : "#1976d2")
+                    (e.target.style.borderColor = modoOscuro ? "#90caf9" : "#1976d2")
                   }
                   onBlur={(e) =>
-                    (e.target.style.borderColor = isDark ? "#444" : "#ccc")
+                    (e.target.style.borderColor = modoOscuro ? "#444" : "#ccc")
                   }
                 />
               </div>
@@ -657,17 +674,17 @@ const FrmUsuarios = () => {
                     padding: 10,
                     fontSize: 16,
                     borderRadius: 8,
-                    border: `1.5px solid ${isDark ? "#444" : "#ccc"}`,
+                    border: `1.5px solid ${modoOscuro ? "#444" : "#ccc"}`,
                     outline: "none",
-                    backgroundColor: isDark ? "#333" : "#fff",
+                    backgroundColor: modoOscuro ? "#333" : "#fff",
                     color: textColor,
                     transition: "border-color 0.3s ease",
                   }}
                   onFocus={(e) =>
-                    (e.target.style.borderColor = isDark ? "#90caf9" : "#1976d2")
+                    (e.target.style.borderColor = modoOscuro ? "#90caf9" : "#1976d2")
                   }
                   onBlur={(e) =>
-                    (e.target.style.borderColor = isDark ? "#444" : "#ccc")
+                    (e.target.style.borderColor = modoOscuro ? "#444" : "#ccc")
                   }
                 />
               </div>
@@ -690,17 +707,17 @@ const FrmUsuarios = () => {
                     padding: 10,
                     fontSize: 16,
                     borderRadius: 8,
-                    border: `1.5px solid ${isDark ? "#444" : "#ccc"}`,
+                    border: `1.5px solid ${modoOscuro ? "#444" : "#ccc"}`,
                     outline: "none",
-                    backgroundColor: isDark ? "#333" : "#fff",
+                    backgroundColor: modoOscuro ? "#333" : "#fff",
                     color: textColor,
                     transition: "border-color 0.3s ease",
                   }}
                   onFocus={(e) =>
-                    (e.target.style.borderColor = isDark ? "#90caf9" : "#1976d2")
+                    (e.target.style.borderColor = modoOscuro ? "#90caf9" : "#1976d2")
                   }
                   onBlur={(e) =>
-                    (e.target.style.borderColor = isDark ? "#444" : "#ccc")
+                    (e.target.style.borderColor = modoOscuro ? "#444" : "#ccc")
                   }
                 >
                   <option value="">-- Seleccione --</option>
@@ -722,7 +739,7 @@ const FrmUsuarios = () => {
                     border: "1.5px solid #ccc",
                     marginRight: 12,
                     cursor: "pointer",
-                    backgroundColor: isDark ? "#333" : "#f5f5f5",
+                    backgroundColor: modoOscuro ? "#333" : "#f5f5f5",
                     color: textColor,
                     fontWeight: "600",
                   }}
