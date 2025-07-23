@@ -5,11 +5,17 @@ import { useDispatch, useSelector } from "react-redux";
 import { checkSession } from "./features/Auth/authSlice";
 import { setModoOscuro, fetchModoOscuro } from "./features/theme/themeSlice";
 
+
+
+import { checkSession } from "./features/Auth/authSlice";
+import { setModoOscuro, fetchModoOscuro } from "./features/theme/themeSlice";
+
 import Login from "./components/Login";
 import Dashboard from "./components/Dashboard";
 import PrivateRoute from './routes/PrivateRoute';
 import FrmUsuarios from './components/pages/FrmUsuarios';
 import FrmAsignacion from  './components/pages/FrmAsignacion';
+import FrmAulas from "./pages/FrmAulas";
 /* 
 // Importa tus páginas según las vayas necesitando
 import FrmEstados from "./pages/FrmEstados";
@@ -23,7 +29,7 @@ import FrmMaterias from "./pages/FrmMaterias";
 import FrmInscripciones from "./pages/FrmInscripciones";
 import FrmCalificaciones from "./pages/FrmCalificaciones";
 import FrmGrupos from "./pages/FrmGrupos";
-import FrmAulas from "./pages/FrmAulas";
+
 import FrmHorarios from "./pages/FrmHorarios";
 
 import FrmTipoCalificaciones from "./pages/FrmTipoCalificaciones";
@@ -90,6 +96,7 @@ function App() {
           {/* Ejemplo de ruta hija para usuarios, accesible en /dashboard/usuarios */}
           <Route path="usuarios" element={<FrmUsuarios />} />
           <Route path="asignacion" element={<FrmAsignacion />} />
+          <Route path="aulas" element={<FrmAulas />} />
           {/* Aquí puedes agregar más rutas hijas para otros formularios */}
           {/*
           <Route path="estados" element={<FrmEstados />} />
@@ -103,7 +110,7 @@ function App() {
           <Route path="inscripciones" element={<FrmInscripciones />} />
           <Route path="calificaciones" element={<FrmCalificaciones />} />
           <Route path="grupos" element={<FrmGrupos />} />
-          <Route path="aulas" element={<FrmAulas />} />
+          
           <Route path="horarios" element={<FrmHorarios />} />
          
           <Route path="tipocalificaciones" element={<FrmTipoCalificaciones />} />
