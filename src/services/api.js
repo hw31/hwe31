@@ -3,9 +3,11 @@ import store from '../redux/store';
 import { logout as logoutAction } from '../features/Auth/authSlice';
 
 const api = axios.create({
-  baseURL: 'http://192.168.171.128:85/api/',
+
+  baseURL: 'http://localhost:5292/api/',/*'http://192.168.171.128:85/api/',*/
   withCredentials: false, // cambia a true solo si usas cookies httpOnly
 });
+
 
 api.interceptors.request.use(
   (config) => {

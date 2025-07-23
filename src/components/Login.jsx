@@ -43,16 +43,6 @@ const Form = () => {
 
       if (data.success) {
         dispatch(loginSuccess(data)); // Guarda usuario, token, idSesion, etc.
-
-        // --- Aquí viene el cambio: obtener modo oscuro desde backend para sincronizar estado ---
-        const modoResponse = await dispatch(fetchModoOscuro());
-        if (fetchModoOscuro.fulfilled.match(modoResponse)) {
-          dispatch(setModoOscuro(modoResponse.payload));
-        } else {
-          // fallback si falla el fetch
-          dispatch(setModoOscuro(false));
-        }
-
         setForm({ usuario: "", contrasena: "" });
         navigate("/dashboard");
       } else {

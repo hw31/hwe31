@@ -1,16 +1,17 @@
 import React, { useEffect, useState, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Outlet, useLocation } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
 import { Moon, Sun, LogOut, User } from "lucide-react";
 import authService from "../services/authService";
 import styled from "styled-components";
 import { logout as logoutAction } from "../features/Auth/authSlice";
-import { toggleModoOscuro } from "../features/theme/themeSlice"; // import toggle async thunk
+import { toggleModoOscuro, fetchModoOscuro, setModoOscuro } from "../features/theme/themeSlice";
 import SidebarMenu from "../components/SidebarMenu";
 
 const Dashboard = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const persona = useSelector((state) => state.auth.persona || "Usuario");
   const idSesion = useSelector((state) => state.auth.idSesion);
@@ -19,22 +20,30 @@ const Dashboard = () => {
   const [showDropdown, setShowDropdown] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(window.innerWidth > 768);
   const dropdownRef = useRef(null);
+  const sidebarRef = useRef(null);
 
-  // Aplicar clase "dark" globalmente en <html> cuando cambia modoOscuro
+  const mostrarBienvenida = location.pathname === "/dashboard";
+
   useEffect(() => {
-    const root = document.documentElement; // <html>
-    if (modoOscuro) {
-      root.classList.add("dark");
-    } else {
-      root.classList.remove("dark");
-    }
+    (async () => {
+      const modoResponse = await dispatch(fetchModoOscuro());
+      if (fetchModoOscuro.fulfilled.match(modoResponse)) {
+        dispatch(setModoOscuro(modoResponse.payload));
+      } else {
+        dispatch(setModoOscuro(false));
+      }
+    })();
+  }, [dispatch]);
+
+  useEffect(() => {
+    const root = document.documentElement;
+    if (modoOscuro) root.classList.add("dark");
+    else root.classList.remove("dark");
   }, [modoOscuro]);
 
   const handleLogout = async () => {
     try {
-      if (idSesion) {
-        await authService.logout(idSesion);
-      }
+      if (idSesion) await authService.logout(idSesion);
     } catch (err) {
       console.error("Error al cerrar sesión:", err);
     }
@@ -42,49 +51,60 @@ const Dashboard = () => {
     navigate("/login", { replace: true });
   };
 
-  // Cambia modo oscuro y actualiza backend / redux
   const handleToggleTheme = () => {
     dispatch(toggleModoOscuro(!modoOscuro));
   };
 
-  // Cierra dropdown al click fuera
+  // Cerrar dropdown si clic fuera
   useEffect(() => {
-    const handleClickOutside = (event) => {
+    const handleClickOutsideDropdown = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
         setShowDropdown(false);
       }
     };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutsideDropdown);
+    return () => document.removeEventListener("mousedown", handleClickOutsideDropdown);
   }, []);
 
-  // Ajusta sidebar open/close según ancho pantalla
+  // Cerrar sidebar si clic fuera (solo en pantallas pequeñas)
   useEffect(() => {
-    const handleResize = () => {
-      setSidebarOpen(window.innerWidth > 768);
+    const handleClickOutsideSidebar = (event) => {
+      if (
+        sidebarOpen &&
+        sidebarRef.current &&
+        !sidebarRef.current.contains(event.target)
+      ) {
+        setSidebarOpen(false);
+      }
     };
+    document.addEventListener("mousedown", handleClickOutsideSidebar);
+    return () => document.removeEventListener("mousedown", handleClickOutsideSidebar);
+  }, [sidebarOpen]);
+
+  useEffect(() => {
+    const handleResize = () => setSidebarOpen(window.innerWidth > 768);
     window.addEventListener("resize", handleResize);
-    handleResize();
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
   return (
     <div className="dashboard-container">
-      <aside className={`dashboard-sidebar ${sidebarOpen ? "open" : "closed"}`}>
+      <aside
+        ref={sidebarRef}
+        className={`dashboard-sidebar ${sidebarOpen ? "open" : "closed"}`}
+      >
         <div className="logo-container">
           <img src="/images/iconologo.png" alt="CAL-I Logo" className="logo-img" />
-          <h1 className="logo-title">CAL-I</h1>
+          {sidebarOpen && <h1 className="logo-title">CAL-I</h1>}
         </div>
-
-
-        <SidebarMenu />
-                <div className="system-name">
+        <SidebarMenu isSidebarOpen={sidebarOpen} />
+        <div className="system-name">
           <p>Sistema de Gestión de Calificaciones</p>
         </div>
       </aside>
 
-      <StyledBurgerWrapper>
-        <label className="menuButton">
+      <StyledBurgerWrapper $sidebarOpen={sidebarOpen}>
+        <label className="menuButton" aria-label="Toggle sidebar menu">
           <input
             type="checkbox"
             checked={sidebarOpen}
@@ -97,17 +117,13 @@ const Dashboard = () => {
       </StyledBurgerWrapper>
 
       <main className={`dashboard-main ${sidebarOpen ? "" : "sidebar-closed"}`}>
-        <div className="dashboard-header">
-         <div style={{ flex: 1, display: "flex", justifyContent: "center" }}>
-            <input type="text" placeholder="Buscar..." className="search-input" />
-          </div>
-
-
+        <div className="dashboard-header" style={{ justifyContent: "flex-end" }}>
           <div className="dashboard-user-controls" ref={dropdownRef}>
             <button
               onClick={handleToggleTheme}
               className="dashboard-theme-toggle"
               aria-label="Toggle theme"
+              title={modoOscuro ? "Cambiar a modo claro" : "Cambiar a modo oscuro"}
             >
               {modoOscuro ? (
                 <Sun className="text-yellow-400" />
@@ -120,19 +136,21 @@ const Dashboard = () => {
               <button
                 className="dashboard-user-dropdown-button"
                 onClick={() => setShowDropdown((prev) => !prev)}
+                aria-haspopup="true"
+                aria-expanded={showDropdown}
               >
                 <User className="w-5 h-5" />
                 <span>{persona}</span>
               </button>
 
               {showDropdown && (
-                <div className="dashboard-user-dropdown">
+                <div className="dashboard-user-dropdown" role="menu" aria-label="User menu">
                   <div className="flex flex-col items-center mb-4">
-                    <div className="profile-pic-placeholder"></div>
+                    <div className="profile-pic-placeholder" aria-hidden="true" />
                     <p className="font-semibold text-lg text-center">{persona}</p>
                     <p>Administrador</p>
                   </div>
-                  <button onClick={handleLogout} className="logout-btn">
+                  <button onClick={handleLogout} className="logout-btn" role="menuitem">
                     <LogOut className="inline mr-2" /> Cerrar sesión
                   </button>
                 </div>
@@ -141,9 +159,13 @@ const Dashboard = () => {
           </div>
         </div>
 
-        <div className="dashboard-welcome">
-          <h1>¡Bienvenido a CAL-I, {persona}!</h1>
-        </div>
+        {mostrarBienvenida && (
+          <div className="dashboard-welcome" role="region" aria-live="polite">
+            <h1>¡Bienvenido a CAL-I, {persona}!</h1>
+          </div>
+        )}
+
+        <Outlet />
       </main>
     </div>
   );
@@ -157,12 +179,13 @@ const StyledBurgerWrapper = styled.div`
 
   .menuButton {
     display: flex;
+    margin-left: ${(props) => (props.$sidebarOpen ? "16rem" : "4.5rem")};
     justify-content: center;
     align-items: center;
     flex-direction: column;
     gap: 13%;
-    width: 3.5em;
-    height: 3.5em;
+    width: 3em;
+    height: 3em;
     border-radius: 0.5em;
     background: #171717;
     border: 1px solid #171717;

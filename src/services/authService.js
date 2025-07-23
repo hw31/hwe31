@@ -1,23 +1,8 @@
 import api from './api';
-import config from '../config';
-import userMock from '../mocks/userMock';
+
 
 const login = async (usuario, contrasena) => {
-  if (config.MODO_MOCK) {
-    if (usuario === userMock.usuario && contrasena === userMock.contrasena) {
-      return {
-        success: true,
-        usuario,
-        contrasena,
-        modoOscuro: true, // ← booleano
-      };
-    } else {
-      return {
-        success: false,
-        message: 'Usuario o contraseña incorrectos (modo demo)',
-      };
-    }
-  }
+ 
 
   try {
     const res = await api.post('Auth/login', { usuario, contrasena });
@@ -43,9 +28,6 @@ const logout = async (idSesion) => {
 };
 
 const actualizarModoOscuro = async (modoOscuro) => {
-  if (config.MODO_MOCK) {
-    return { success: true };
-  }
 
   try {
     const res = await api.put('Usuarios/modo-oscuro', {
@@ -61,9 +43,7 @@ const actualizarModoOscuro = async (modoOscuro) => {
 };
 
 const obtenerModoOscuro = async () => {
-  if (config.MODO_MOCK) {
-    return config.MODO_OSCURO_MOCK;
-  }
+ 
   try {
     const res = await api.get('Usuarios/modo-oscuro');
     return res.data.modoOscuro;

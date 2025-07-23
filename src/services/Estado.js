@@ -61,14 +61,21 @@ const filtrarPorNombreEstados = async (nombre) => {
 };
 
 
-/*LISTAR */
-const listarEstado = async () => {
+const listarEstados = async () => {
   try {
-    const res = await api.get('Estados/listar');
-    return res.data;
+    const res = await api.get('/Estados/listar');
+
+    console.log(" EstadoService respuesta completa:", res.data);
+
+    return {
+      success: true,
+      data: res.data.datos,  
+    };
   } catch (error) {
-    console.error('Error al listar Estado:', error.message);
-    throw error;
+    return {
+      success: false,
+      message: error.response?.data?.error || 'Error inesperado al listar estados.',
+    };
   }
 };
 
@@ -77,5 +84,5 @@ export default {
   actualizarEstado,
   filtrarPorIdEstado,
   filtrarPorNombreEstados,
-  listarEstado
+  listarEstados
 };

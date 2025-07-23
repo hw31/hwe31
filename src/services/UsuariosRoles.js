@@ -61,7 +61,5 @@ export default {
   insertarUsuarioRol,
   actualizarUsuarioRol,
   filtrarPorIdUsuarioRol,
-  filtrarPorIdUsuario,
-  filtrarPorNombreUsuario,
   listarUsuariosRoles
 };
