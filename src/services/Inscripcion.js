@@ -45,16 +45,16 @@ const filtrarPorIdInscripcion = async (idInscripcion) => {
   }
 };
 
-/*LISTAR */
 const listarInscripcion = async () => {
   try {
     const res = await api.get('Inscripcion/LISTAR');
-    return res.data;
+    return res.data.resultado;
   } catch (error) {
     console.error('Error al listar Inscripcion:', error.message);
     throw error;
   }
 };
+
 
 export default {
   insertarInscripcion,

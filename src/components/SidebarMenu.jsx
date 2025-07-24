@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate, matchPath } from "react-router-dom";
 import {
   Home, Users, Flag, List, User, Phone, Shield, Key,
   Calendar, Book, Edit, Award, MapPin, Clock, Clipboard,
@@ -30,8 +30,8 @@ const iconMap = {
 };
 
 const SidebarMenu = ({ isSidebarOpen }) => {
-  const [menuItems, setMenuItems] = useState([]); // siempre vacío al iniciar
-  const [loading, setLoading] = useState(true); // empieza cargando
+  const [menuItems, setMenuItems] = useState([]);
+  const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -39,17 +39,16 @@ const SidebarMenu = ({ isSidebarOpen }) => {
     const fetchMenu = async () => {
       try {
         const menus = await getMenu();
-        // Filtrar elementos visibles y disponibles
-        
         const visibles = menus.filter(item => item.visible === true && item.disponible === true);
-         // Aquí ordenas para que Dashboard quede primero
-      const ordenados = visibles.sort((a, b) => {
-        if (a.nombre === "Dashboard") return -1;
-        if (b.nombre === "Dashboard") return 1;
-        return 0;
-      });
+
+        // Ordenar para que Dashboard quede primero
+        const ordenados = visibles.sort((a, b) => {
+          if (a.nombre === "Dashboard") return -1;
+          if (b.nombre === "Dashboard") return 1;
+          return 0;
+        });
+
         setMenuItems(ordenados);
-        setMenuItems(visibles);
       } catch (error) {
         console.error("Error al obtener el menú:", error);
         setMenuItems([]);
@@ -72,7 +71,9 @@ const SidebarMenu = ({ isSidebarOpen }) => {
             const IconComponent = iconMap[icono?.toLowerCase()] || null;
             const route = formulario?.replace("Frm", "").toLowerCase();
             if (!route || !nombre) return null;
-            const isActive = location.pathname.includes(route);
+
+            const routePath = `/dashboard/${route}`;
+            const isActive = !!matchPath({ path: routePath, end: false }, location.pathname);
 
             return (
               <li
@@ -83,7 +84,7 @@ const SidebarMenu = ({ isSidebarOpen }) => {
               >
                 <button
                   className="menu-button flex items-center gap-2 px-4 py-2 transition rounded relative"
-                  onClick={() => navigate(`/dashboard/${route}`)}
+                  onClick={() => navigate(routePath)}
                   aria-label={`Ir a ${nombre}`}
                 >
                   {IconComponent && <IconComponent className="menu-icon w-5 h-5" />}

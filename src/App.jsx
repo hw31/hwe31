@@ -16,7 +16,9 @@ import PrivateRoute from './routes/PrivateRoute';
 import FrmUsuarios from './components/pages/FrmUsuarios';
 import FrmAsignacion from  './components/pages/FrmAsignacion';
 import FrmAulas from "./pages/FrmAulas";
-import FrmInscripcionesmaterias from './components/pages/FrmInscripcionesmaterias';
+import FrmInscripcionesMaterias from './components/pages/FrmInscripcionesMaterias';
+
+
 /* 
 // Importa tus páginas según las vayas necesitando
 import FrmEstados from "./pages/FrmEstados";
@@ -98,7 +100,11 @@ function App() {
           <Route path="usuarios" element={<FrmUsuarios />} />
           <Route path="asignacion" element={<FrmAsignacion />} />
           <Route path="aulas" element={<FrmAulas />} />
-          <Route path="inscripcionesmaterias" element={<FrmInscripcionesmaterias />} />
+          <Route path="inscripcionesmaterias" element={<FrmInscripcionesMaterias />} />
+
+
+
+
           {/* Aquí puedes agregar más rutas hijas para otros formularios */}
           {/*
           <Route path="estados" element={<FrmEstados />} />

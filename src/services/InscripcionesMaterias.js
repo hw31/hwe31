@@ -1,78 +1,74 @@
 import api from './api';
 
 /* INSERTAR */
-const insertarInscripcion = async (datosInscripcion) => {
+const insertarInscripcionMateria = async (datosInscripcion) => {
   try {
     const res = await api.post('InscripcionesMaterias/insertar', datosInscripcion);
-
-    if (res.data.success) {
-      console.log('Inscripción registrada correctamente');
-    }
-
+    // Devuelve todo el objeto para saber success y mensaje
     return res.data;
   } catch (error) {
-    console.error('Error al insertar inscripción:', error.message);
+    console.error('Error al insertar InscripcionMateria:', error.message);
     throw error;
   }
 };
 
 /* ACTUALIZAR */
-const actualizarInscripcion = async (datosInscripcion) => {
+const actualizarInscripcionMateria = async (datosInscripcion) => {
   try {
     const res = await api.put('InscripcionesMaterias/actualizar', datosInscripcion);
-
-    if (res.data.success) {
-      console.log('Inscripción actualizada correctamente');
-    }
-
     return res.data;
   } catch (error) {
-    console.error('Error al actualizar inscripción:', error.message);
+    console.error('Error al actualizar InscripcionMateria:', error.message);
     throw error;
   }
 };
 
-/* FILTRAR POR ID InscripcionMateria */
+/* FILTRAR POR ID (idInscripcionMateria) */
 const filtrarPorIdInscripcionMateria = async (idInscripcionMateria) => {
   try {
     const res = await api.get('InscripcionesMaterias/filtrarPorId', {
       params: { idInscripcionMateria }
     });
-    return res.data; 
+    return res.data;
   } catch (error) {
-    console.error('Error al filtrar inscripción por ID:', error.message);
+    console.error('Error al filtrar por IdInscripcionMateria:', error.message);
     throw error;
   }
 };
 
-/* FILTRAR POR ID Inscripcion */
+/* FILTRAR POR ID_INSCRIPCION (idInscripcion) */
 const filtrarPorIdInscripcion = async (idInscripcion) => {
   try {
     const res = await api.get('InscripcionesMaterias/filtrarPorInscripcion', {
       params: { idInscripcion }
     });
-    return res.data;  
+    return res.data;
   } catch (error) {
-    console.error('Error al filtrar por inscripción:', error.message);
+    console.error('Error al filtrar por IdInscripcion:', error.message);
     throw error;
   }
 };
 
-/* LISTAR INSCRIPCIONES */
-const listarInscripciones = async () => {
+/* LISTAR TODOS */
+const listarInscripcionesMaterias = async () => {
   try {
     const res = await api.get('InscripcionesMaterias/listar');
-    return res.data; 
+    if(res.data.success) {
+      return res.data.data; // array de inscripciones
+    } else {
+      // Opcional: lanzar error con mensaje backend
+      throw new Error(res.data.mensaje || 'Error al listar inscripciones');
+    }
   } catch (error) {
-    console.error('Error al listar inscripciones:', error.message);
+    console.error('Error al listar InscripcionesMaterias:', error.message);
     throw error;
   }
 };
 
 export default {
-  insertarInscripcion,
-  actualizarInscripcion,
+  insertarInscripcionMateria,
+  actualizarInscripcionMateria,
   filtrarPorIdInscripcionMateria,
   filtrarPorIdInscripcion,
-  listarInscripciones
+  listarInscripcionesMaterias
 };

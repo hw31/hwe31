@@ -18,7 +18,9 @@ import PrivateRoute from './routes/PrivateRoute'; // Componente para proteger ru
 import FrmUsuarios from './components/pages/FrmUsuarios';   // Ejemplo formulario privado
 import FrmAsignacion from "./components/pages/FrmAsignacion";
 import FrmAulas from './components/pages/FrmAulas';
-import FrmInscripcionesmaterias from './components/pages/FrmInscripcionesmaterias';
+import FrmInscripcionesMaterias from './components/pages/FrmInscripcionesMaterias';
+
+
 /* COMENTAR LOS IMPORTS QUE NO SE USAN PARA EVITAR ERRORES SI LOS ARCHIVOS NO EXISTEN
 import FrmEstados from './pages/FrmEstados';
 import FrmCatalogos from './pages/FrmCatalogos';
@@ -71,10 +73,8 @@ const router = createBrowserRouter([
             path: 'aulas',
             element: <FrmAulas />,
           },
-           {
-            path: 'inscripciones',
-            element: <FrmInscripcionesmaterias />,
-          },
+          { path: 'inscripcionesmaterias', element: <FrmInscripcionesMaterias /> },
+
           /*
           {
             path: 'estados',
