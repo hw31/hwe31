@@ -11,6 +11,8 @@ import {
   FaChalkboard,
   FaCheck,
   FaLock,
+  FaTimesCircle,
+  FaCheckCircle
 } from "react-icons/fa";
 
 const FrmAulas = () => {
@@ -252,280 +254,277 @@ try {
         minHeight: "80vh",
       }}
     >
-      {/* Contadores */}
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "center",
-          gap: 15,
-          marginBottom: 20,
-          flexWrap: "wrap",
-          marginTop: 0,
-        }}
-      >
+        {/* Buscador */}
+     <div style={{ maxWidth: 600, margin: "20px auto 30px", width: "90%" }}>
+  <input
+    type="search"
+    placeholder="Buscar..."
+    value={busqueda}
+    onChange={(e) => setBusqueda(e.target.value)}
+    style={{
+      width: "50%",
+      padding: "8px 16px",
+      fontSize: 16,
+      borderRadius: "9999px", // forma pill
+      border: `1.5px solid ${modoOscuro ? "#444" : "#ccc"}`,
+      color: modoOscuro ? "#eee" : "#222",
+      backgroundColor: modoOscuro ? "#1e1e1e" : "#fff",
+      outline: "none",
+      boxShadow: modoOscuro
+        ? "inset 0 1px 4px rgba(234, 227, 227, 0.1)"
+        : "inset 0 1px 4px rgba(0,0,0,0.06)",
+      transition: "border-color 0.3s ease, box-shadow 0.3s ease",
+      display: "block",
+      margin: "0 auto",
+    }}
+    onFocus={(e) => {
+      e.target.style.borderColor = modoOscuro ? "#90caf9" : "#1976d2";
+      e.target.style.boxShadow = "0 0 0 3px rgba(25, 118, 210, 0.2)";
+    }}
+    onBlur={(e) => {
+      e.target.style.borderColor = modoOscuro ? "#444" : "#ccc";
+      e.target.style.boxShadow = modoOscuro
+        ? "inset 0 1px 4px rgba(234, 227, 227, 0.1)"
+        : "inset 0 1px 4px rgba(0,0,0,0.06)";
+    }}
+    aria-label="Buscar aulas"
+  />
+</div>
+ {/* Contenedores + Botón Agregar alineados */}
 <div
   style={{
-    background: "linear-gradient(135deg, #127f45ff, #0c0b0bff)",
-    color: "white",
-    padding: "14px 24px",
-    borderRadius: 10,
-    fontWeight: "700",
-    fontSize: 18,
-    minWidth: 140,
-    textAlign: "center",
-    boxShadow: "0 3px 8px rgba(2, 79, 33, 0.4)",
     display: "flex",
+    flexWrap: "wrap",
+    justifyContent: "space-between",
     alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    userSelect: "none",
-    cursor: "pointer",
-    transition: "background 0.3s ease",
+    gap: 15,
+    marginBottom: 20,
+    maxWidth: 900,
+    marginLeft: "auto",
+    marginRight: "auto",
+    padding: "0 10px",
+    marginTop: 20, // Espacio debajo de la barra de navegación
   }}
-  aria-label={`Aulas activas: ${countActivas}`}
-  onMouseEnter={(e) =>
-    (e.currentTarget.style.background =
-      "linear-gradient(135deg, #0c0b0bff,  #084b27ff)")
-  }
-  onMouseLeave={(e) =>
-    (e.currentTarget.style.background =
-      "linear-gradient(135deg, #127f45ff, #0c0b0bff)")
-  }
 >
-  <FaCheck /> Activas
-  <div style={{ fontSize: 26, marginLeft: 8 }}>{countActivas}</div>
+  {/* Contenedores de contadores centrados */}
+  <div
+    style={{
+      display: "flex",
+      flexWrap: "wrap",
+      justifyContent: "center",
+      gap: 15,
+      flexGrow: 1,
+      minWidth: 250,
+    }}
+  >
+    {/* Activas */}
+    <div
+      style={{
+        background: "linear-gradient(135deg, #127f45ff, #0c0b0bff)",
+        color: "white",
+        padding: "14px 24px",
+        borderRadius: 10,
+        fontWeight: "700",
+        fontSize: 18,
+        minWidth: 140,
+        textAlign: "center",
+        boxShadow: "0 3px 8px rgba(2, 79, 33, 0.4)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 8,
+        userSelect: "none",
+        cursor: "pointer",
+        transition: "background 0.3s ease",
+      }}
+      aria-label={`Aulas activas: ${countActivas}`}
+      onMouseEnter={(e) =>
+        (e.currentTarget.style.background =
+          "linear-gradient(135deg, #0c0b0bff,  #084b27ff)")
+      }
+      onMouseLeave={(e) =>
+        (e.currentTarget.style.background =
+          "linear-gradient(135deg, #127f45ff, #0c0b0bff)")
+      }
+    >
+      <FaCheck /> Activas
+      <div style={{ fontSize: 26, marginLeft: 8 }}>{countActivas}</div>
+    </div>
+
+    {/* Inactivas */}
+    <div
+      style={{
+        background: "linear-gradient(135deg, #ef5350, #0c0b0bff)",
+        color: "white",
+        padding: "14px 24px",
+        borderRadius: 10,
+        fontWeight: "700",
+        fontSize: 18,
+        minWidth: 140,
+        textAlign: "center",
+        boxShadow: "0 3px 8px rgba(244,67,54,0.4)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 8,
+        userSelect: "none",
+        cursor: "pointer",
+        transition: "background 0.3s ease",
+      }}
+      aria-label={`Aulas inactivas: ${countInactivas}`}
+      onMouseEnter={(e) =>
+        (e.currentTarget.style.background =
+          "linear-gradient(135deg, #101010ff, #de1717ff)")
+      }
+      onMouseLeave={(e) =>
+        (e.currentTarget.style.background =
+          "linear-gradient(135deg, #ef5350, #0c0b0bff)")
+      }
+    >
+      <FaLock /> Inactivas
+      <div style={{ fontSize: 26, marginLeft: 8 }}>{countInactivas}</div>
+    </div>
+
+    {/* Total */}
+    <div
+      style={{
+        background: "linear-gradient(135deg, #0960a8ff, #20262dff)",
+        color: "white",
+        padding: "14px 24px",
+        borderRadius: 10,
+        fontWeight: "700",
+        fontSize: 18,
+        minWidth: 140,
+        textAlign: "center",
+        boxShadow: "0 3px 8px rgba(25,118,210,0.4)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 8,
+        userSelect: "none",
+        cursor: "pointer",
+        transition: "background 0.3s ease",
+      }}
+      aria-label={`Total de aulas: ${countTotal}`}
+      onMouseEnter={(e) =>
+        (e.currentTarget.style.background =
+          "linear-gradient(135deg, #20262dff, #0d47a1)")
+      }
+      onMouseLeave={(e) =>
+        (e.currentTarget.style.background =
+          "linear-gradient(135deg, #0960a8ff, #20262dff)")
+      }
+    >
+      <FaChalkboard /> Total
+      <div style={{ fontSize: 26, marginLeft: 8 }}>{countTotal}</div>
+    </div>
+  </div>
+
+  {/* Botón "Agregar" alineado a la derecha */}
+   {/* Botón "Agregar" en su propia columna */}
+  <div
+    style={{
+      marginLeft: "auto", // Lo empuja a la derecha
+      marginTop: 10,
+    }}
+  >
+    <button
+      onClick={abrirAgregar}
+      style={{
+        backgroundColor: "#1976d2",
+        border: "none",
+        color: "#fff",
+        padding: "12px 22px",
+        borderRadius: 8,
+        cursor: "pointer",
+        fontWeight: "600",
+        fontSize: 20,
+        display: "flex",
+        alignItems: "center",
+        gap: 10,
+        userSelect: "none",
+        transition: "background-color 0.3s ease",
+        whiteSpace: "nowrap",
+      }}
+      onMouseEnter={(e) =>
+        (e.currentTarget.style.backgroundColor = "#115293")
+      }
+      onMouseLeave={(e) =>
+        (e.currentTarget.style.backgroundColor = "#1976d2")
+      }
+      type="button"
+      aria-label="Agregar nueva aula"
+    >
+      <FaPlus /> Agregar
+    </button>
+  </div>
 </div>
 
-<div
-  style={{
-    background: "linear-gradient(135deg, #ef5350, #0c0b0bff)",
-    color: "white",
-    padding: "14px 24px",
-    borderRadius: 10,
-    fontWeight: "700",
-    fontSize: 18,
-    minWidth: 140,
-    textAlign: "center",
-    boxShadow: "0 3px 8px rgba(244,67,54,0.4)",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    userSelect: "none",
-    cursor: "pointer",
-    transition: "background 0.3s ease",
-  }}
-  aria-label={`Aulas inactivas: ${countInactivas}`}
-  onMouseEnter={(e) =>
-    (e.currentTarget.style.background =
-      "linear-gradient(135deg, #101010ff, #de1717ff)")
-  }
-  onMouseLeave={(e) =>
-    (e.currentTarget.style.background =
-      "linear-gradient(135deg, #ef5350, #0c0b0bff)")
-  }
->
-  <FaLock /> Inactivas
-  <div style={{ fontSize: 26, marginLeft: 8 }}>{countInactivas}</div>
-</div>
 
-<div
-  style={{
-    background: "linear-gradient(135deg, #0960a8ff, #20262dff)",
-    color: "white",
-    padding: "14px 24px",
-    borderRadius: 10,
-    fontWeight: "700",
-    fontSize: 18,
-    minWidth: 140,
-    textAlign: "center",
-    boxShadow: "0 3px 8px rgba(25,118,210,0.4)",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    userSelect: "none",
-    cursor: "pointer",
-    transition: "background 0.3s ease",
-  }}
-  aria-label={`Total de aulas: ${countTotal}`}
-  onMouseEnter={(e) =>
-    (e.currentTarget.style.background =
-      "linear-gradient(135deg, #20262dff, #0d47a1)")
-  }
-  onMouseLeave={(e) =>
-    (e.currentTarget.style.background =
-      "linear-gradient(135deg, #0960a8ff, #20262dff)")
-  }
->
-  <FaChalkboard /> Total
-  <div style={{ fontSize: 26, marginLeft: 8 }}>{countTotal}</div>
-</div>
-      </div>
-
-      {/* Botón agregar */}
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          marginBottom: 20,
-          gap: 15,
-          flexWrap: "wrap",
-        }}
-      >
-        <button
-          onClick={abrirAgregar}
-          style={{
-            backgroundColor: "#1976d2",
-            border: "none",
-            color: "#fff",
-            padding: "12px 22px",
-            borderRadius: 8,
-            cursor: "pointer",
-            fontWeight: "600",
-            fontSize: 20,
-            display: "flex",
-            alignItems: "center",
-            gap: 10,
-            userSelect: "none",
-            transition: "background-color 0.3s ease",
-          }}
-          onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#115293")}
-          onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#1976d2")}
-          type="button"
-          aria-label="Agregar nueva aula"
-        >
-          <FaPlus /> Agregar
-        </button>
-      </div>
-
-      {/* Buscador */}
-      <input
-        type="search"
-        placeholder="Buscar aulas por nombre, tipo, estado o capacidad..."
-        value={busqueda}
-        onChange={(e) => setBusqueda(e.target.value)}
-        style={{
-          width: "100%",
-          padding: 12,
-          marginBottom: 25,
-          fontSize: 18,
-          borderRadius: 12,
-          border: `1.5px solid ${modoOscuro ? "#333" : "#ccc"}`,
-          color: fg,
-          backgroundColor: bg,
-          outline: "none",
-        }}
-        aria-label="Buscar aulas"
-      />
-
-      {/* Tabla */}
-      <table
-        style={{
-          width: "100%",
-          borderCollapse: "collapse",
-          borderRadius: 10,
-          overflow: "hidden",
-          fontSize: 15,
-          color: fg,
-          userSelect: "none",
-          boxShadow: modoOscuro
-            ? "0 4px 15px rgba(0,0,0,0.8)"
-            : "0 4px 15px rgba(0,0,0,0.1)",
-        }}
-        aria-label="Listado de aulas"
-      >
-    <thead style={{ backgroundColor: modoOscuro ? "#272727" : "#e0e0e0", color: modoOscuro ? "#eee" : "#222", fontWeight: "700" }}>
+    {/* Tabla Aulas */}
+{!loading && aulasFiltradas.length > 0 && (
+  <div className="scroll-modern overflow-x-auto rounded-md shadow-md">
+    <table className="min-w-full">
+      <thead className={modoOscuro ? "bg-gray-800 text-gray-100" : "bg-gray-100 text-gray-900"}>
         <tr>
-            <th style={{ padding: "14px 20px", textAlign: "left" }}>Nombre Aula</th>
-            <th style={{ padding: "14px 20px", textAlign: "left" }}>Tipo</th>
-            <th style={{ padding: "14px 20px", textAlign: "left" }}>Capacidad</th>
-            <th style={{ padding: "14px 20px", textAlign: "center", minWidth: 80 }}>Estado</th>
-            <th style={{ padding: "14px 20px", textAlign: "left" }}>Creador</th>        
-            <th style={{ padding: "14px 20px", textAlign: "left" }}>Creado</th>
-            <th style={{ padding: "14px 20px", textAlign: "left" }}>Modificador</th> 
-            <th style={{ padding: "14px 20px", textAlign: "left" }}>Modificado</th> 
-            <th style={{ padding: "14px 20px", textAlign: "center", minWidth: 100 }}>Acciones</th>
+          <th className="px-4 py-2 text-left text-sm font-semibold">Nombre Aula</th>
+          <th className="px-4 py-2 text-left text-sm font-semibold">Tipo</th>
+          <th className="px-4 py-2 text-left text-sm font-semibold">Capacidad</th>
+          <th className="px-4 py-2 text-center text-sm font-semibold">Estado</th>
+          <th className="px-4 py-2 text-left text-sm font-semibold">Creador</th>
+          <th className="px-4 py-2 text-left text-sm font-semibold">Fecha de Creacion</th>
+          <th className="px-4 py-2 text-left text-sm font-semibold">Modificador</th>
+          <th className="px-4 py-2 text-left text-sm font-semibold">Fecha de Modificacion</th>
+          <th className="px-4 py-2 text-center text-sm font-semibold">Acciones</th>
         </tr>
-    </thead>
-       <tbody>
-  {aulasFiltradas.length === 0 ? (
-    <tr>
-      <td colSpan={9} style={{ padding: 20, textAlign: "center", color: modoOscuro ? "#999" : "#555", fontStyle: "italic" }}>
-        No se encontraron aulas.
-      </td>
-    </tr>
-  ) : (
-    aulasFiltradas.map((aula) => {
-      const estadoNombre = getNombreEstado(aula.idEstado).toLowerCase();
-      return (
-        <tr
-          key={aula.idAula}
-          style={{
-            cursor: "default",
-            transition: "background-color 0.3s, color 0.3s",
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.backgroundColor = modoOscuro ? "#264b7d" : "#e3f2fd";
-            e.currentTarget.style.color = modoOscuro ? "#eee" : "#000";
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.backgroundColor = "transparent";
-            e.currentTarget.style.color = fg;
-          }}
-        >
-          <td style={{ padding: "14px 20px" }}>{aula.nombreAula}</td>
-          <td style={{ padding: "14px 20px" }}>{getNombreTipo(aula.id_TipoAula)}</td>
-          <td style={{ padding: "14px 20px" }}>{aula.capacidad}</td>
-          <td
-            style={{
-              padding: "14px 20px",
-              textAlign: "center",
-              userSelect: "none",
-              color: estadoNombre === "activo" ? "#43a047" : "#e53935",
-            }}
-            aria-label={`Estado del aula: ${estadoNombre}`}
-          >
-            {estadoNombre === "activo" ? <FaCheck size={20} aria-hidden="true" /> : <FaLock size={20} aria-hidden="true" />}
-          </td>
-           <td style={{ padding: "14px 20px" }}>{aula.creador || "-"}</td>  
-          <td style={{ padding: "14px 20px" }}>{formatearFecha(aula.fechaCreacion)}</td>
-          <td style={{ padding: "14px 20px" }}>{aula.modificador || "-"}</td>
-          <td style={{ padding: "14px 20px" }}>{formatearFecha(aula.fechaModificacion)}</td>
-         
-          
-          <td style={{ padding: "14px 20px", textAlign: "center" }}>
-            <button
-              onClick={() => abrirEditar(aula)}
-              style={{
-                backgroundColor: "#0288d1",
-                border: "none",
-                padding: "8px 14px",
-                borderRadius: 8,
-                color: "white",
-                cursor: "pointer",
-                fontWeight: "600",
-                fontSize: 14,
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 6,
-                userSelect: "none",
-                transition: "background-color 0.3s",
-              }}
-              onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#015f8c")}
-              onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#0288d1")}
-              type="button"
-              aria-label={`Editar aula ${aula.nombreAula}`}
+      </thead>
+
+      <tbody className="divide-y divide-gray-100">
+        {aulasFiltradas.map((aula) => {
+          const estadoNombre = getNombreEstado(aula.idEstado).toLowerCase();
+          const texto = modoOscuro ? "text-gray-200" : "text-gray-800";
+
+          return (
+            <tr
+              key={aula.idAula}
+              className={`transition-colors ${
+                modoOscuro ? "hover:bg-gray-700" : "hover:bg-blue-50"
+              }`}
             >
-              <FaEdit />
-            </button>
-          </td>
-        </tr>
-      );
-    })
-  )}
-</tbody>
-      </table>
+              <td className={`px-4 py-2 text-sm ${texto}`}>{aula.nombreAula || "N/D"}</td>
+              <td className={`px-4 py-2 text-sm ${texto}`}>{getNombreTipo(aula.id_TipoAula) || "N/D"}</td>
+              <td className={`px-4 py-2 text-sm ${texto}`}>{aula.capacidad || "N/D"}</td>
+
+              <td className="px-4 py-2 text-center">
+                {estadoNombre === "activo" ? (
+                  <FaCheckCircle className="text-green-500 text-xl mx-auto" aria-label="Activo" title="Activo" />
+                ) : (
+                  <FaTimesCircle className="text-red-500 text-xl mx-auto" aria-label="Inactivo" title="Inactivo" />
+                )}
+              </td>
+
+              <td className={`px-4 py-2 text-sm ${texto}`}>{aula.creador || "-"}</td>
+              <td className={`px-4 py-2 text-sm ${texto}`}>{formatearFecha(aula.fechaCreacion)}</td>
+              <td className={`px-4 py-2 text-sm ${texto}`}>{aula.modificador || "-"}</td>
+              <td className={`px-4 py-2 text-sm ${texto}`}>{formatearFecha(aula.fechaModificacion)}</td>
+
+              <td className="px-4 py-2 text-sm text-center">
+                <button
+                  onClick={() => abrirEditar(aula)}
+                  className="text-blue-600 hover:text-blue-800 text-xl flex justify-center items-center w-full"
+                  aria-label={`Editar aula ${aula.nombreAula}`}
+                >
+                  <FaEdit />
+                </button>
+              </td>
+            </tr>
+          );
+        })}
+      </tbody>
+    </table>
+  </div>
+)}
+
 
       {/* Modal */}
  {modalOpen && (
@@ -671,11 +670,13 @@ try {
         required
       >
         <option value="">-- Seleccione estado --</option>
-        {estados.map((e) => (
+          {estados
+         .filter((e) => [1, 2].includes(Number(e.iD_Estado)))
+         .map((e) => (
           <option key={e.iD_Estado} value={e.iD_Estado}>
-            {e.nombre_Estado}
-          </option>
-        ))}
+          {e.nombre_Estado}
+        </option>
+          ))}
       </select>
 
       {error && (
