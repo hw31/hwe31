@@ -19,7 +19,7 @@ const insertarCalificaciones = async (datosCalificaciones) => {
 /* ACTUALIZAR Calificaciones */
 const actualizarCalificaciones = async (datosCalificaciones) => {
   try {
-    // Cambia a api.put si tu backend espera PUT para actualizar
+   
     const res = await api.put('Calificaciones/actualizar', datosCalificaciones);
 
     if (res.data.success) {

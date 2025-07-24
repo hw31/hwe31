@@ -13,33 +13,26 @@ import Start from './components/Start';      // Página pública principal
 import Login from './components/Login';      // Login público
 import Loading from './components/Loading';  // Pantalla de carga
 import Dashboard from './components/Dashboard'; // Layout privado para rutas dentro del dashboard
-
 import PrivateRoute from './routes/PrivateRoute'; // Componente para proteger rutas privadas
 import FrmUsuarios from './components/pages/FrmUsuarios';   // Ejemplo formulario privado
 import FrmAsignacion from "./components/pages/FrmAsignacion";
 import FrmAulas from './components/pages/FrmAulas';
 import FrmInscripcionesMaterias from './components/pages/FrmInscripcionesMaterias';
-
-
-/* COMENTAR LOS IMPORTS QUE NO SE USAN PARA EVITAR ERRORES SI LOS ARCHIVOS NO EXISTEN
-import FrmEstados from './pages/FrmEstados';
-import FrmCatalogos from './pages/FrmCatalogos';
-import FrmPersonas from './pages/FrmPersonas';
-import FrmContactos from './pages/FrmContactos';
-import FrmRoles from './pages/FrmRoles';
-import FrmPermisos from './pages/FrmPermisos';
-import FrmPeriodos from './pages/FrmPeriodos';
-import FrmMaterias from './pages/FrmMaterias';
-import FrmInscripciones from './pages/FrmInscripciones';
-import FrmCalificaciones from './pages/FrmCalificaciones';
-import FrmGrupos from './pages/FrmGrupos';
-
-import FrmHorarios from './pages/FrmHorarios';
-
-import FrmTipoCalificaciones from './pages/FrmTipoCalificaciones';
-import FrmTransacciones from './pages/FrmTransacciones';
-import FrmTipoTransacciones from './pages/FrmTipoTransacciones';
-*/
+import FrmEstados from './components/pages/FrmEstados';
+import FrmCatalogos from './components/pages/FrmCatalogos';
+import FrmPersonas from './components/pages/FrmPersonas';
+import FrmContactos from './components/pages/FrmContacto';
+import FrmRoles from './components/pages/FrmRoles';
+import FrmPermisos from './components/pages/FrmPermisos';
+import FrmPeriodos from './components/pages/FrmPeriodoAcademico';
+import FrmMaterias from './components/pages/FrmMaterias';
+import FrmInscripciones from './components/pages/FrmInscripcion';
+import FrmCalificaciones from './components/pages/FrmCalificaciones';
+import FrmGrupos from './components/pages/FrmGrupos';
+import FrmHorarios from './components/pages/FrmHorarios';
+import FrmTipoCalificaciones from './components/pages/FrmTipoCalificacion';
+import FrmTransacciones from './components/pages/FrmTransacciones';
+import FrmTipoTransacciones from './components/pages/FrmTiposTransaccion';
 
 const router = createBrowserRouter([
   {
@@ -73,9 +66,9 @@ const router = createBrowserRouter([
             path: 'aulas',
             element: <FrmAulas />,
           },
-          { path: 'inscripcionesmaterias', element: <FrmInscripcionesMaterias /> },
-
-          /*
+          { path: 'inscripcionesmaterias',
+             element: <FrmInscripcionesMaterias />,
+          },
           {
             path: 'estados',
             element: <FrmEstados />,
@@ -138,7 +131,6 @@ const router = createBrowserRouter([
             path: 'tipotransacciones',
             element: <FrmTipoTransacciones />,
           },
-          */
           {
             path: '*',
             element: <Navigate to="/dashboard" replace />,
