@@ -17,10 +17,6 @@ import FrmUsuarios from './components/pages/FrmUsuarios';
 import FrmAsignacion from  './components/pages/FrmAsignacion';
 import FrmAulas from "./pages/FrmAulas";
 import FrmInscripcionesMaterias from './components/pages/FrmInscripcionesMaterias';
-
-
-/* 
-// Importa tus páginas según las vayas necesitando
 import FrmEstados from "./pages/FrmEstados";
 import FrmCatalogos from "./pages/FrmCatalogos";
 import FrmPersonas from "./pages/FrmPersonas";
@@ -32,13 +28,11 @@ import FrmMaterias from "./pages/FrmMaterias";
 import FrmInscripciones from "./pages/FrmInscripciones";
 import FrmCalificaciones from "./pages/FrmCalificaciones";
 import FrmGrupos from "./pages/FrmGrupos";
-
 import FrmHorarios from "./pages/FrmHorarios";
-
 import FrmTipoCalificaciones from "./pages/FrmTipoCalificaciones";
 import FrmTransacciones from "./pages/FrmTransacciones";
 import FrmTipoTransacciones from "./pages/FrmTipoTransacciones";
-*/
+
 
 function App() {
   const dispatch = useDispatch();
@@ -101,12 +95,7 @@ function App() {
           <Route path="asignacion" element={<FrmAsignacion />} />
           <Route path="aulas" element={<FrmAulas />} />
           <Route path="inscripcionesmaterias" element={<FrmInscripcionesMaterias />} />
-
-
-
-
-          {/* Aquí puedes agregar más rutas hijas para otros formularios */}
-          {/*
+          <Route path="estados" element={<FrmEstados />} />
           <Route path="estados" element={<FrmEstados />} />
           <Route path="catalogos" element={<FrmCatalogos />} />
           <Route path="personas" element={<FrmPersonas />} />
@@ -118,13 +107,11 @@ function App() {
           <Route path="inscripciones" element={<FrmInscripciones />} />
           <Route path="calificaciones" element={<FrmCalificaciones />} />
           <Route path="grupos" element={<FrmGrupos />} />
-          
           <Route path="horarios" element={<FrmHorarios />} />
-         
           <Route path="tipocalificaciones" element={<FrmTipoCalificaciones />} />
           <Route path="transacciones" element={<FrmTransacciones />} />
           <Route path="tipotransacciones" element={<FrmTipoTransacciones />} />
-          */}
+          
 
           { <Route path="aulas" element={<FrmAulas />} />/* Ruta catch-all para cualquier subruta inválida dentro de /dashboard
               Redirige a /dashboard para evitar páginas 404 */}
