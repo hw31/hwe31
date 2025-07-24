@@ -32,13 +32,13 @@ const actualizarInscripcion = async (datosInscripcion) => {
   }
 };
 
-/* FILTRAR POR ID InscripcionesMateria*/
-const filtrarPorIdInscripcion = async (idInscripcion) => {
+/* FILTRAR POR ID InscripcionMateria */
+const filtrarPorIdInscripcionMateria = async (idInscripcionMateria) => {
   try {
     const res = await api.get('InscripcionesMaterias/filtrarPorId', {
-      params: { idInscripcion }
+      params: { idInscripcionMateria }
     });
-    return res.data;
+    return res.data; 
   } catch (error) {
     console.error('Error al filtrar inscripción por ID:', error.message);
     throw error;
@@ -46,25 +46,23 @@ const filtrarPorIdInscripcion = async (idInscripcion) => {
 };
 
 /* FILTRAR POR ID Inscripcion */
-const filtrarPorIdEstudiante = async (idEstudiante) => {
+const filtrarPorIdInscripcion = async (idInscripcion) => {
   try {
     const res = await api.get('InscripcionesMaterias/filtrarPorInscripcion', {
-      params: { idEstudiante }
+      params: { idInscripcion }
     });
-    return res.data;
+    return res.data;  
   } catch (error) {
-    console.error('Error al filtrar por estudiante:', error.message);
+    console.error('Error al filtrar por inscripción:', error.message);
     throw error;
   }
 };
-
-
 
 /* LISTAR INSCRIPCIONES */
 const listarInscripciones = async () => {
   try {
     const res = await api.get('InscripcionesMaterias/listar');
-    return res.data;
+    return res.data; 
   } catch (error) {
     console.error('Error al listar inscripciones:', error.message);
     throw error;
@@ -74,7 +72,7 @@ const listarInscripciones = async () => {
 export default {
   insertarInscripcion,
   actualizarInscripcion,
+  filtrarPorIdInscripcionMateria,
   filtrarPorIdInscripcion,
-  filtrarPorIdEstudiante,
   listarInscripciones
 };

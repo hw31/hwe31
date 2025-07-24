@@ -3,7 +3,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import {
   Home, Users, Flag, List, User, Phone, Shield, Key,
   Calendar, Book, Edit, Award, MapPin, Clock, Clipboard,
-  Percent, Activity, Settings,
+  Percent, Activity, Settings, FileText,
 } from "lucide-react";
 import { getMenu } from "../services/menuService";
 
@@ -26,6 +26,7 @@ const iconMap = {
   percent: Percent,
   activity: Activity,
   settings: Settings,
+  filetext: FileText,
 };
 
 const SidebarMenu = ({ isSidebarOpen }) => {
@@ -39,7 +40,15 @@ const SidebarMenu = ({ isSidebarOpen }) => {
       try {
         const menus = await getMenu();
         // Filtrar elementos visibles y disponibles
+        
         const visibles = menus.filter(item => item.visible === true && item.disponible === true);
+         // Aquí ordenas para que Dashboard quede primero
+      const ordenados = visibles.sort((a, b) => {
+        if (a.nombre === "Dashboard") return -1;
+        if (b.nombre === "Dashboard") return 1;
+        return 0;
+      });
+        setMenuItems(ordenados);
         setMenuItems(visibles);
       } catch (error) {
         console.error("Error al obtener el menú:", error);

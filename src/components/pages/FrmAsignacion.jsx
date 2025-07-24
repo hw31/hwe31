@@ -206,13 +206,10 @@ const asignacionesFiltradas = asignaciones.filter((asig) => {
     (asig.nombreEstado?.toLowerCase().includes(textoBusqueda))
   );
 });
-
   // Guardar (insertar o actualizar)
  const handleGuardar = async () => {
   if (!validarFormulario()) return;
-
   setFormLoading(true);
-
   const datosEnviar = {
     UsuarioDocente: formData.UsuarioDocente,
     IdMateria: formData.IdMateria,
@@ -263,8 +260,6 @@ cerrarModal();
     setFormLoading(false);
   }
 };
-
-
   // Contadores
   const total = asignaciones.length;
   const activos = asignaciones.filter(
@@ -320,140 +315,140 @@ cerrarModal();
           }
           />
         </div>
-<div className="flex flex-wrap justify-between items-center mb-6 gap-4">
-  {/* Contenedores de contadores centrados */}
-  <div className="flex flex-wrap justify-center gap-6 flex-grow min-w-[250px]">
-    {/* Activos */}
-    <div
-      style={{
-        background: "linear-gradient(135deg, #127f45ff, #0c0b0bff)",
-        color: "white",
-        padding: "14px 24px",
-        borderRadius: 10,
-        fontWeight: "700",
-        fontSize: 18,
-        minWidth: 140,
-        textAlign: "center",
-        boxShadow: "0 3px 8px rgba(2, 79, 33, 0.4)",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        gap: 8,
-        userSelect: "none",
-        cursor: "pointer",
-        transition: "background 0.3s ease",
-      }}
-      aria-label={`Usuarios activos: ${activos}`}
-      onMouseEnter={(e) =>
-        (e.currentTarget.style.background =
-          "linear-gradient(135deg, #0c0b0bff,  #084b27 )")
-      }
-      onMouseLeave={(e) =>
-        (e.currentTarget.style.background =
-          "linear-gradient(135deg, #127f45ff, #0c0b0bff)")
-      }
-    >
-      <FaUserCheck /> Activos
-      <div style={{ fontSize: 26, marginLeft: 8 }}>{activos}</div>
-    </div>
+        <div className="flex flex-wrap justify-between items-center mb-6 gap-4">
+          {/* Contenedores de contadores centrados */}
+          <div className="flex flex-wrap justify-center gap-6 flex-grow min-w-[250px]">
+            {/* Activos */}
+            <div
+              style={{
+                background: "linear-gradient(135deg, #127f45ff, #0c0b0bff)",
+                color: "white",
+                padding: "14px 24px",
+                borderRadius: 10,
+                fontWeight: "700",
+                fontSize: 18,
+                minWidth: 140,
+                textAlign: "center",
+                boxShadow: "0 3px 8px rgba(2, 79, 33, 0.4)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 8,
+                userSelect: "none",
+                cursor: "pointer",
+                transition: "background 0.3s ease",
+              }}
+              aria-label={`Usuarios activos: ${activos}`}
+              onMouseEnter={(e) =>
+                (e.currentTarget.style.background =
+                  "linear-gradient(135deg, #0c0b0bff,  #084b27 )")
+              }
+              onMouseLeave={(e) =>
+                (e.currentTarget.style.background =
+                  "linear-gradient(135deg, #127f45ff, #0c0b0bff)")
+              }
+            >
+              <FaUserCheck /> Activos
+              <div style={{ fontSize: 26, marginLeft: 8 }}>{activos}</div>
+            </div>
 
-    {/* Inactivos */}
-    <div
-      style={{
-        background: "linear-gradient(135deg, #ef5350, #0c0b0bff)",
-        color: "white",
-        padding: "14px 24px",
-        borderRadius: 10,
-        fontWeight: "700",
-        fontSize: 18,
-        minWidth: 140,
-        textAlign: "center",
-        boxShadow: "0 3px 8px rgba(244,67,54,0.4)",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        gap: 8,
-        userSelect: "none",
-        cursor: "pointer",
-        transition: "background 0.3s ease",
-      }}
-      aria-label={`Usuarios inactivos: ${inactivos}`}
-      onMouseEnter={(e) =>
-        (e.currentTarget.style.background =
-          "linear-gradient(135deg, #101010ff, #de1717ff)")
-      }
-      onMouseLeave={(e) =>
-        (e.currentTarget.style.background =
-          "linear-gradient(135deg, #ef5350, #0c0b0bff)")
-      }
-    >
-      <FaUserTimes /> Inactivos
-      <div style={{ fontSize: 26, marginLeft: 8 }}>{inactivos}</div>
-    </div>
+            {/* Inactivos */}
+            <div
+              style={{
+                background: "linear-gradient(135deg, #ef5350, #0c0b0bff)",
+                color: "white",
+                padding: "14px 24px",
+                borderRadius: 10,
+                fontWeight: "700",
+                fontSize: 18,
+                minWidth: 140,
+                textAlign: "center",
+                boxShadow: "0 3px 8px rgba(244,67,54,0.4)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 8,
+                userSelect: "none",
+                cursor: "pointer",
+                transition: "background 0.3s ease",
+              }}
+              aria-label={`Usuarios inactivos: ${inactivos}`}
+              onMouseEnter={(e) =>
+                (e.currentTarget.style.background =
+                  "linear-gradient(135deg, #101010ff, #de1717ff)")
+              }
+              onMouseLeave={(e) =>
+                (e.currentTarget.style.background =
+                  "linear-gradient(135deg, #ef5350, #0c0b0bff)")
+              }
+            >
+              <FaUserTimes /> Inactivos
+              <div style={{ fontSize: 26, marginLeft: 8 }}>{inactivos}</div>
+            </div>
 
-    {/* Total */}
-    <div
-      style={{
-        background: "linear-gradient(135deg, #0960a8ff, #20262dff)",
-        color: "white",
-        padding: "14px 24px",
-        borderRadius: 10,
-        fontWeight: "700",
-        fontSize: 18,
-        minWidth: 140,
-        textAlign: "center",
-        boxShadow: "0 3px 8px rgba(25,118,210,0.4)",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        gap: 8,
-        userSelect: "none",
-        cursor: "pointer",
-        transition: "background 0.3s ease",
-      }}
-      aria-label={`Total de usuarios: ${total}`}
-      onMouseEnter={(e) =>
-        (e.currentTarget.style.background =
-          "linear-gradient(135deg, #20262dff, #0d47a1)")
-      }
-      onMouseLeave={(e) =>
-        (e.currentTarget.style.background =
-          "linear-gradient(135deg, #0960a8ff, #20262dff)")
-      }
-    >
-      <FaUser /> Total
-      <div style={{ fontSize: 26, marginLeft: 8 }}>{total}</div>
-    </div>
-  </div>
+            {/* Total */}
+            <div
+              style={{
+                background: "linear-gradient(135deg, #0960a8ff, #20262dff)",
+                color: "white",
+                padding: "14px 24px",
+                borderRadius: 10,
+                fontWeight: "700",
+                fontSize: 18,
+                minWidth: 140,
+                textAlign: "center",
+                boxShadow: "0 3px 8px rgba(25,118,210,0.4)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 8,
+                userSelect: "none",
+                cursor: "pointer",
+                transition: "background 0.3s ease",
+              }}
+              aria-label={`Total de usuarios: ${total}`}
+              onMouseEnter={(e) =>
+                (e.currentTarget.style.background =
+                  "linear-gradient(135deg, #20262dff, #0d47a1)")
+              }
+              onMouseLeave={(e) =>
+                (e.currentTarget.style.background =
+                  "linear-gradient(135deg, #0960a8ff, #20262dff)")
+              }
+            >
+              <FaUser /> Total
+              <div style={{ fontSize: 26, marginLeft: 8 }}>{total}</div>
+            </div>
+          </div>
 
-  {/* Botón "Nuevo" alineado a la derecha */}
-  <button
-    onClick={abrirModalNuevo}
-    style={{
-      backgroundColor: "#1976d2",
-      border: "none",
-      color: "#fff",
-      padding: "12px 22px",
-      borderRadius: 8,
-      cursor: "pointer",
-      fontWeight: "600",
-      fontSize: 20,
-      display: "flex",
-      alignItems: "center",
-      gap: 10,
-      userSelect: "none",
-      transition: "background-color 0.3s ease",
-      whiteSpace: "nowrap",
-      marginTop: "8px",
-    }}
-    onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#115293")}
-    onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#1976d2")}
-    type="button"
-    aria-label="Agregar nueva asignación docente"
-  >
-    <FaPlus /> Nuevo
-  </button>
-</div>
+            {/* Botón "Nuevo" alineado a la derecha */}
+            <button
+              onClick={abrirModalNuevo}
+              style={{
+                backgroundColor: "#1976d2",
+                border: "none",
+                color: "#fff",
+                padding: "12px 22px",
+                borderRadius: 8,
+                cursor: "pointer",
+                fontWeight: "600",
+                fontSize: 20,
+                display: "flex",
+                alignItems: "center",
+                gap: 10,
+                userSelect: "none",
+                transition: "background-color 0.3s ease",
+                whiteSpace: "nowrap",
+                marginTop: "8px",
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#115293")}
+              onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#1976d2")}
+              type="button"
+              aria-label="Agregar nueva asignación docente"
+            >
+              <FaPlus /> Nuevo
+            </button>
+          </div>
 
         {/* Mensajes */}
         {loading && <p className="text-gray-400 italic">Cargando asignaciones...</p>}
@@ -465,8 +460,8 @@ cerrarModal();
         {/* Tabla */}
         {!loading && asignaciones.length > 0 && (
            <div className="scroll-modern">
-    <table className="min-w-full">
-      <thead className={encabezado}>
+            <table className="min-w-full">
+              <thead className={encabezado}>
                 <tr>
                   {/*<th className="px-4 py-2 text-left text-sm font-semibold">ID</th>*/}
                   <th className="px-4 py-2 text-left text-sm font-semibold">Docente</th>

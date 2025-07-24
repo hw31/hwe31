@@ -16,6 +16,7 @@ import PrivateRoute from './routes/PrivateRoute';
 import FrmUsuarios from './components/pages/FrmUsuarios';
 import FrmAsignacion from  './components/pages/FrmAsignacion';
 import FrmAulas from "./pages/FrmAulas";
+import FrmInscripcionesmaterias from './components/pages/FrmInscripcionesmaterias';
 /* 
 // Importa tus páginas según las vayas necesitando
 import FrmEstados from "./pages/FrmEstados";
@@ -97,6 +98,7 @@ function App() {
           <Route path="usuarios" element={<FrmUsuarios />} />
           <Route path="asignacion" element={<FrmAsignacion />} />
           <Route path="aulas" element={<FrmAulas />} />
+          <Route path="inscripcionesmaterias" element={<FrmInscripcionesmaterias />} />
           {/* Aquí puedes agregar más rutas hijas para otros formularios */}
           {/*
           <Route path="estados" element={<FrmEstados />} />
@@ -118,7 +120,7 @@ function App() {
           <Route path="tipotransacciones" element={<FrmTipoTransacciones />} />
           */}
 
-          {/* Ruta catch-all para cualquier subruta inválida dentro de /dashboard
+          { <Route path="aulas" element={<FrmAulas />} />/* Ruta catch-all para cualquier subruta inválida dentro de /dashboard
               Redirige a /dashboard para evitar páginas 404 */}
           <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Route>

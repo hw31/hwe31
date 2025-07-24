@@ -119,6 +119,7 @@ input, textarea, select {
   color: white;
   padding: 1.5rem;
   display: flex;
+  
   flex-direction: column;
   justify-content: space-between;
   box-shadow: 0 4px 8px var(--sidebar-shadow-light);
@@ -362,8 +363,8 @@ input, textarea, select {
 /* Sidebar Menu */
 .sidebar-menu ul {
   list-style: none;
+ margin: 0;
   padding: 0;
-  margin: 1rem 0 0;
 }
 
 .sidebar-menu li {
