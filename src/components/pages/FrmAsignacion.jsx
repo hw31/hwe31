@@ -8,22 +8,21 @@ import aulaService from "../../services/Aulas"; // listarAula
 import horarioService from "../../services/Horarios"; // listarHorarios
 import estadoService from "../../services/Estado"; // listarEstados
 
-import { FaPlus, FaEdit, FaUser, FaUserCheck, FaUserTimes,FaCheckCircle, FaTimesCircle } from "react-icons/fa";
+import { FaPlus, FaEdit, FaUser, FaUserCheck, FaUserTimes, FaCheckCircle, FaTimesCircle } from "react-icons/fa";
 import Swal from "sweetalert2";
 
 const AsignacionDocenteList = () => {
   const modoOscuro = useSelector((state) => state.theme.modoOscuro);
   const [busqueda, setBusqueda] = useState("");
-
   const [asignaciones, setAsignaciones] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-
   const [modalOpen, setModalOpen] = useState(false);
   const [modoEdicion, setModoEdicion] = useState(false);
   const [asignacionSeleccionada, setAsignacionSeleccionada] = useState(null);
+  const [formError, setFormError] = useState("");
+  const [formLoading, setFormLoading] = useState(false);
 
-  
   const [formData, setFormData] = useState({
     UsuarioDocente: "",
     IdMateria: "",
@@ -42,15 +41,10 @@ const AsignacionDocenteList = () => {
     estados: [],
   });
 
-  const [formError, setFormError] = useState("");
-  const [formLoading, setFormLoading] = useState(false);
-
-  // Cargar asignaciones
   const cargarAsignaciones = async () => {
     try {
       setLoading(true);
       const data = await asignacionDocenteService.listarAsignaciones();
-      console.log("Asignaciones cargadas:", data);
       setAsignaciones(data);
       setError("");
     } catch (err) {
@@ -63,7 +57,7 @@ const AsignacionDocenteList = () => {
   const cargarListas = async () => {
     try {
       const [
-        usuariosRoles,
+        usuariosRolesTodos,
         materias,
         grupos,
         aulasResult,
@@ -78,7 +72,10 @@ const AsignacionDocenteList = () => {
         estadoService.listarEstados(),
       ]);
 
-      // Normalizar estados
+      const usuariosRoles = (usuariosRolesTodos ?? []).filter(
+        (u) => u.iD_Rol === 2 // ✅ Solo docentes
+      );
+
       const estadosRaw = estadosResult?.data ?? [];
       const estados = estadosRaw.map((e) => ({
         idEstado: e.iD_Estado ?? e.idEstado,
@@ -89,18 +86,14 @@ const AsignacionDocenteList = () => {
         ? horariosResult
         : horariosResult?.resultado ?? [];
 
-      const horarios = horariosRaw.map((h) => {
-        return {
-          idHorario: h.iD_Horario ?? h.idHorario,
-          nombreHorario: h.nombreDiaSemana ?? "",
-          descripcionHorario: `${h.nombreDiaSemana ?? "Día"} ${h.horaInicio ?? ""} - ${
-            h.horaFin ?? ""
-          }`,
-        };
-      });
+      const horarios = horariosRaw.map((h) => ({
+        idHorario: h.iD_Horario ?? h.idHorario,
+        nombreHorario: h.nombreDiaSemana ?? "",
+        descripcionHorario: `${h.nombreDiaSemana ?? "Día"} ${h.horaInicio ?? ""} - ${h.horaFin ?? ""}`,
+      }));
 
       setListas({
-        usuariosRoles: usuariosRoles ?? [],
+        usuariosRoles,
         materias: materias ?? [],
         grupos: grupos ?? [],
         aulas: aulasResult?.data ?? [],
@@ -111,16 +104,14 @@ const AsignacionDocenteList = () => {
       console.error("Error al cargar listas:", err);
     }
   };
-const handleBusquedaChange = (e) => {
-  setBusqueda(e.target.value);
-};
+
+  const handleBusquedaChange = (e) => setBusqueda(e.target.value);
 
   useEffect(() => {
     cargarAsignaciones();
     cargarListas();
   }, []);
 
-  // Función para cerrar y limpiar modal
   const cerrarModal = () => {
     setModalOpen(false);
     setFormError("");
@@ -137,7 +128,6 @@ const handleBusquedaChange = (e) => {
     });
   };
 
-  // Abrir modal para nuevo registro
   const abrirModalNuevo = () => {
     setModoEdicion(false);
     setAsignacionSeleccionada(null);
@@ -153,7 +143,6 @@ const handleBusquedaChange = (e) => {
     setModalOpen(true);
   };
 
-  // Abrir modal para editar
   const abrirModalEditar = (asignacion) => {
     setModoEdicion(true);
     setAsignacionSeleccionada(asignacion);
@@ -169,110 +158,89 @@ const handleBusquedaChange = (e) => {
     setModalOpen(true);
   };
 
-  // Manejar cambios en formulario
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  // Validar formulario simple
   const validarFormulario = () => {
-    if (
-      !formData.UsuarioDocente ||
-      !formData.IdMateria ||
-      !formData.IdGrupo ||
-      !formData.IdAula ||
-      !formData.IdHorario ||
-      !formData.IdEstado
-    ) {
+    const { UsuarioDocente, IdMateria, IdGrupo, IdAula, IdHorario, IdEstado } = formData;
+    if (!UsuarioDocente || !IdMateria || !IdGrupo || !IdAula || !IdHorario || !IdEstado) {
       setFormError("Por favor, complete todos los campos.");
       return false;
     }
     setFormError("");
     return true;
   };
-const asignacionesFiltradas = asignaciones.filter((asig) => {
-  const textoBusqueda = busqueda.toLowerCase();
 
-  return (
-    (asig.nombreDocente?.toLowerCase().includes(textoBusqueda)) ||
-    (asig.nombreMateria?.toLowerCase().includes(textoBusqueda)) ||
-    (asig.nombreGrupo?.toLowerCase().includes(textoBusqueda)) ||
-    (asig.nombreAula?.toLowerCase().includes(textoBusqueda)) ||
-    (listas.horarios.find(h => h.idHorario === asig.idHorario)?.descripcionHorario.toLowerCase().includes(textoBusqueda)) ||
-    (asig.nombreEstado?.toLowerCase().includes(textoBusqueda))
-  );
-});
+  const handleGuardar = async () => {
+    if (!validarFormulario()) return;
+    setFormLoading(true);
 
-  // Guardar (insertar o actualizar)
- const handleGuardar = async () => {
-  if (!validarFormulario()) return;
+    const datosEnviar = { ...formData };
 
-  setFormLoading(true);
+    try {
+      let respuesta;
+      if (modoEdicion && asignacionSeleccionada) {
+        respuesta = await asignacionDocenteService.actualizarDocente({
+          ...datosEnviar,
+          IdAsignacion: asignacionSeleccionada.idAsignacion,
+        });
+      } else {
+        respuesta = await asignacionDocenteService.insertarDocente(datosEnviar);
+      }
 
-  const datosEnviar = {
-    UsuarioDocente: formData.UsuarioDocente,
-    IdMateria: formData.IdMateria,
-    IdGrupo: formData.IdGrupo,
-    IdAula: formData.IdAula,
-    IdHorario: formData.IdHorario,
-    IdEstado: formData.IdEstado,
+      cerrarModal();
+
+      if (respuesta?.error || respuesta?.success === false) {
+        throw new Error(respuesta.message || "Error desconocido al guardar.");
+      }
+
+      await cargarAsignaciones();
+      await cargarListas(); // ✅ Refrescar también listas
+
+      await Swal.fire({
+        icon: "success",
+        title: modoEdicion ? "Actualizado" : "Guardado",
+        text: modoEdicion
+          ? "La asignación se actualizó correctamente."
+          : "La asignación se guardó correctamente.",
+        timer: 2000,
+        showConfirmButton: false,
+      });
+    } catch (err) {
+      console.error("Error al guardar:", err);
+      await Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: err.message || "Error al guardar la asignación",
+      });
+    } finally {
+      setFormLoading(false);
+    }
   };
 
-  try {
-    let respuesta;
-    if (modoEdicion && asignacionSeleccionada) {
-      respuesta = await asignacionDocenteService.actualizarDocente({
-        ...datosEnviar,
-        IdAsignacion: asignacionSeleccionada.idAsignacion,
-      });
-    } else {
-      respuesta = await asignacionDocenteService.insertarDocente(datosEnviar);
-    }
-cerrarModal();
+  const asignacionesFiltradas = asignaciones.filter((asig) => {
+    const textoBusqueda = busqueda.toLowerCase();
+    return (
+      (asig.nombreDocente?.toLowerCase().includes(textoBusqueda)) ||
+      (listas.usuariosRoles.find((u) => u.iD_Usuario === asig.usuarioDocenteId)?.nombre_Usuario
+        ?.toLowerCase()
+        .includes(textoBusqueda)) ||
+      (asig.nombreMateria?.toLowerCase().includes(textoBusqueda)) ||
+      (asig.nombreGrupo?.toLowerCase().includes(textoBusqueda)) ||
+      (asig.nombreAula?.toLowerCase().includes(textoBusqueda)) ||
+      (listas.horarios.find((h) => h.idHorario === asig.idHorario)?.descripcionHorario
+        ?.toLowerCase()
+        .includes(textoBusqueda)) ||
+      (asig.nombreEstado?.toLowerCase().includes(textoBusqueda))
+    );
+  });
 
-    // Validación de respuesta
-    if (respuesta?.error || respuesta?.success === false) {
-      throw new Error(respuesta.message || "Error desconocido al guardar.");
-    }
-
-    await cargarAsignaciones();
-
-    await Swal.fire({
-      icon: "success",
-      title: modoEdicion ? "Actualizado" : "Guardado",
-      text: modoEdicion
-        ? "La asignación se actualizó correctamente."
-        : "La asignación se guardó correctamente.",
-      timer: 2000,
-      showConfirmButton: false,
-    });
-
-    
-  } catch (err) {
-    console.error("Error al guardar:", err);
-    await Swal.fire({
-      icon: "error",
-      title: "Error",
-      text: err.message || "Error al guardar la asignación",
-    });
-  } finally {
-    setFormLoading(false);
-  }
-};
-
-
-  // Contadores
   const total = asignaciones.length;
-  const activos = asignaciones.filter(
-    (a) => a.nombreEstado?.toLowerCase() === "activo"
-  ).length;
+  const activos = asignaciones.filter((a) => a.nombreEstado?.toLowerCase() === "activo").length;
   const inactivos = total - activos;
 
-  // Clases según tema
   const fondo = modoOscuro ? "bg-gray-900" : "bg-white";
   const texto = modoOscuro ? "text-gray-200" : "text-gray-800";
   const encabezado = modoOscuro
@@ -487,10 +455,14 @@ cerrarModal();
                       modoOscuro ? "hover:bg-gray-700" : "hover:bg-blue-50"
                     }`}
                   >
-                   {/* <td className={`px-4 py-2 text-sm ${texto}`}>{asig.idAsignacion}</td>*/}
-                    <td className={`px-4 py-2 text-sm ${texto}`}>
-                      {asig.nombreDocente || "N/D"}
+                  <td className={`px-4 py-2 text-sm ${texto}`}>
+                      {
+                        listas.usuariosRoles.find(
+                          (u) => u.iD_Usuario === asig.usuarioDocenteId
+                        )?.nombre_Usuario || "N/D"
+                      }
                     </td>
+
                     <td className={`px-4 py-2 text-sm ${texto}`}>
                       {asig.nombreMateria || "N/D"}
                     </td>
