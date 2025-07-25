@@ -41,7 +41,10 @@ body {
   background-color: var(--bg-light);
   color: var(--text-light);
   transition: background-color 0.3s ease, color 0.3s ease;
+
+  overflow-x: hidden;
 }
+
 
 .dark body {
   background-color: var(--bg-dark);
@@ -578,14 +581,14 @@ input, textarea, select {
   background: #e0e7ff; /* azul claro, tailwind 'blue-100' */
   border-radius: 9999px;
 }
-.scroll-modern::-webkit-scrollbar-thumb {
+.overflow-x-auto::-webkit-scrollbar-thumb {
   background-color: #3b82f6; /* azul tailwind 'blue-500' */
   border-radius: 9999px;
   border: 2px solid #e0e7ff; /* crea espacio entre track y thumb */
 }
 
 /* Scrollbar para Firefox */
-.scroll-modern {
+.overflow-x-auto {
   scrollbar-width: thin;
   scrollbar-color: #3b82f6 #e0e7ff;
 }

@@ -220,7 +220,8 @@ const adaptarDatosRoles = (datos) =>
   ];
 
   return (
-    <div className={`p-4 ${modoOscuro ? "bg-gray-800 min-h-screen" : "bg-gray-50"}`}>
+    <div className={`p-4 ${modoOscuro ? "bg-gray-800 min-h-screen" : "bg-gray-50"}`}
+      style={{ paddingTop: 1 }}  >
       <div className={`shadow-md rounded-xl p-6 ${fondo}`}>
         <div className="flex justify-between items-center mb-4">
           <h2
@@ -240,12 +241,13 @@ const adaptarDatosRoles = (datos) =>
         />
 
         <ContadoresBase
-          activos={roles.filter((r) => r.descripcion === "Activo").length}
-          inactivos={roles.filter((r) => r.descripcion === "Inactivo").length}
+          activos={roles.filter((r) => r.activo === true).length}
+          inactivos={roles.filter((r) => r.activo === false).length}
           total={roles.length}
           onNuevo={abrirModalNuevo}
           modoOscuro={modoOscuro}
         />
+
 
         <TablaBase
           datos={datosFiltrados}
