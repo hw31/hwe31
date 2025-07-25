@@ -14,6 +14,7 @@ const Dashboard = () => {
   const location = useLocation();
 
   const persona = useSelector((state) => state.auth.persona || "Usuario");
+  const rol = useSelector((state) => state.auth.rol || "Sin rol");
   const idSesion = useSelector((state) => state.auth.idSesion);
   const modoOscuro = useSelector((state) => state.theme.modoOscuro);
 
@@ -148,7 +149,7 @@ const Dashboard = () => {
                   <div className="flex flex-col items-center mb-4">
                     <div className="profile-pic-placeholder" aria-hidden="true" />
                     <p className="font-semibold text-lg text-center">{persona}</p>
-                    <p>Administrador</p>
+                    <p>{rol}</p>
                   </div>
                   <button onClick={handleLogout} className="logout-btn" role="menuitem">
                     <LogOut className="inline mr-2" /> Cerrar sesión
