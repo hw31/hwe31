@@ -1,12 +1,57 @@
 import React, { useState, useEffect } from "react";
-import rolService from "../../services/Roles"; 
+import { useSelector } from "react-redux";
 import Swal from "sweetalert2";
+import rolService from "../../services/Roles";
+import TablaBase from "../Shared/TablaBase";
+import BuscadorBase from "../Shared/BuscadorBase";
+import ContadoresBase from "../Shared/Contadores";
+import ModalBase from "../Shared/ModalBase";
+import FormularioBase from "../Shared/FormularioBase";
 
 const FrmRoles = () => {
+  const modoOscuro = useSelector((state) => state.theme.modoOscuro);
+
+  const fondo = modoOscuro ? "bg-gray-900" : "bg-white";
+  const texto = modoOscuro ? "text-gray-200" : "text-gray-800";
+  const encabezado = modoOscuro ? "bg-gray-700 text-gray-200" : "bg-gray-100 text-gray-700";
+
   const [roles, setRoles] = useState([]);
-  const [form, setForm] = useState({ idRol: "", nombre: "", descripcion: "" });
+  const [busqueda, setBusqueda] = useState("");
+  const [modalOpen, setModalOpen] = useState(false);
   const [modoEdicion, setModoEdicion] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [formLoading, setFormLoading] = useState(false);
+  const [formError, setFormError] = useState("");
+  const [form, setForm] = useState({
+    idRol: 0,
+    nombre: "",
+    descripcion: "",
+  });
+
+  // Formatear fecha para mostrar en tabla
+  const formatearFecha = (fecha) => {
+  if (!fecha) return "-";
+  const d = new Date(fecha);
+  return d.toLocaleDateString("es-NI", {
+    year: "numeric",
+    month: "short",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+};
+
+  // Adaptar datos para tabla con creador, modificador, fechas visibles
+const adaptarDatosRoles = (datos) =>
+  datos.map((r) => ({
+    idRol: r.iD_Rol,
+    nombre: r.nombre_Rol,
+    activo: r.activo,
+    fechaCreacion: formatearFecha(r.fecha_Creacion),
+    fechaModificacion: formatearFecha(r.fecha_Modificacion),
+    nombreCreador: r.nombre_Creador,
+    nombreModificador: r.nombre_Modificador,
+  }));
 
   useEffect(() => {
     cargarRoles();
@@ -15,146 +60,242 @@ const FrmRoles = () => {
   const cargarRoles = async () => {
     try {
       setLoading(true);
-      const data = await rolService.listarRoles();
-      setRoles(data);
+      const res = await rolService.listarRoles();
+      if (res && Array.isArray(res.resultado)) {
+        setRoles(adaptarDatosRoles(res.resultado));
+      } else {
+        setRoles([]);
+      }
     } catch (error) {
-      console.error("Error cargando roles", error);
       Swal.fire("Error", "No se pudieron cargar los roles", "error");
     } finally {
       setLoading(false);
     }
   };
 
-  const handleChange = (e) => {
+  const handleInputChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!form.nombre.trim()) {
-      return Swal.fire("Atención", "El nombre es obligatorio", "warning");
-    }
-    try {
-      if (modoEdicion) {
-        const res = await rolService.actualizarRol(form);
-        if (res.success) {
-          Swal.fire("Actualizado", "Rol actualizado correctamente", "success");
-          setModoEdicion(false);
-          setForm({ idRol: "", nombre: "", descripcion: "" });
-          cargarRoles();
-        }
-      } else {
-        const res = await rolService.insertarRol(form);
-        if (res.success) {
-          Swal.fire("Agregado", "Rol insertado correctamente", "success");
-          setForm({ idRol: "", nombre: "", descripcion: "" });
-          cargarRoles();
-        }
-      }
-    } catch (error) {
-      Swal.fire("Error", "Hubo un problema al guardar el rol", "error");
-    }
+  const abrirModalNuevo = () => {
+    setForm({ idRol: 0, nombre: "", descripcion: "" });
+    setFormError("");
+    setModoEdicion(false);
+    setModalOpen(true);
   };
 
-  const editar = async (id) => {
-    try {
-      const rol = await rolService.filtrarPorIdRol(id);
-      setForm(rol);
-      setModoEdicion(true);
-    } catch (error) {
-      Swal.fire("Error", "No se pudo cargar el rol para editar", "error");
-    }
+  const cerrarModal = () => {
+    setModalOpen(false);
+    setFormLoading(false);
+    setFormError("");
   };
+
+ const handleEditar = (rol) => {
+  setForm({
+    idRol: rol.idRol,
+    nombre: rol.nombre,
+    descripcion: rol.descripcion, // Ya viene como "Activo" o "Inactivo"
+  });
+  setModoEdicion(true);
+  setModalOpen(true);
+};
+
+ const handleGuardar = async () => {
+  setFormError("");
+
+  if (!form.nombre.trim()) {
+    return setFormError("El nombre es obligatorio");
+  }
+  if (!form.descripcion) {
+    return setFormError("Seleccione un estado");
+  }
+
+  try {
+    setFormLoading(true);
+
+    let res;
+    if (modoEdicion) {
+      // Actualizar
+      const datos = {
+        id_Rol: form.idRol,
+        nombre_Rol: form.nombre.trim(),
+        activo: form.descripcion === "Activo",
+      };
+      res = await rolService.actualizarRol(datos);
+    } else {
+      // Insertar
+      const datos = {
+        nombreRol: form.nombre.trim(),
+        activo: form.descripcion === "Activo",
+      };
+      res = await rolService.insertarRol(datos);
+    }
+
+    // Validar respuesta exitosa según campo 'numero' o 'success'
+    if (res.numero === undefined) {
+      if (res.success) {
+        cerrarModal();
+        await Swal.fire(
+          modoEdicion ? "Actualizado" : "Agregado",
+          modoEdicion ? "Rol actualizado correctamente" : "Rol insertado correctamente",
+          "success"
+        );
+        cargarRoles();
+      } else {
+        cerrarModal();
+        await Swal.fire("Error", res.mensaje || "Error desconocido", "error");
+        setFormLoading(false);
+      }
+    } else {
+      // Validar 'numero' que viene en la respuesta
+      if (res.numero > 0) {
+        cerrarModal();
+        await Swal.fire(
+          modoEdicion ? "Actualizado" : "Agregado",
+          modoEdicion ? "Rol actualizado correctamente" : "Rol insertado correctamente",
+          "success"
+        );
+        cargarRoles();
+      } else {
+        cerrarModal();
+        await Swal.fire("Error", res.mensaje || "Error desconocido", "error");
+        setFormLoading(false);
+      }
+    }
+  } catch (error) {
+    cerrarModal();
+    console.error(error);
+
+    // Obtener mensaje desde error.response.data (axios) 
+    const mensajeError =
+      error.response?.data?.mensaje ||
+      error.message ||
+      "Hubo un problema al guardar el rol";
+
+    await Swal.fire("Error", mensajeError, "error");
+    setFormLoading(false);
+  }
+};
+  const datosFiltrados = roles.filter((rol) =>
+    rol.nombre.toLowerCase().includes(busqueda.toLowerCase())
+  );
+
+  const columnas = [
+    //{ key: "idRol", label: "ID" },
+    { key: "nombre", label: "Nombre" },
+    {
+  key: "activo",
+  label: "Estado",
+  render: (item) =>
+    item.activo ? (
+      <span className="text-green-500 font-semibold flex items-center gap-1">
+        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+          <path
+            fillRule="evenodd"
+            d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+            clipRule="evenodd"
+          />
+        </svg>
+        Activo
+      </span>
+    ) : (
+      <span className="text-red-500 font-semibold flex items-center gap-1">
+        <svg
+          className="w-5 h-5"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          viewBox="0 0 24 24"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+        Inactivo
+      </span>
+    ),
+},
+    { key: "nombreCreador", label: "Creador" },
+    { key: "nombreModificador", label: "Modificador" },
+    { key: "fechaCreacion", label: "Fecha Creación" },
+    { key: "fechaModificacion", label: "Fecha Modificación" },
+  ];
 
   return (
-    <div className="container mx-auto p-4 max-w-xl">
-      <h2 className="text-2xl font-bold mb-4 text-gray-900 dark:text-gray-100">
-        {modoEdicion ? "Editar Rol" : "Nuevo Rol"}
-      </h2>
-
-      <form onSubmit={handleSubmit} className="mb-6 space-y-4">
-        <input
-          type="text"
-          name="nombre"
-          placeholder="Nombre"
-          value={form.nombre}
-          onChange={handleChange}
-          className="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white"
-        />
-        <textarea
-          name="descripcion"
-          placeholder="Descripción"
-          value={form.descripcion || ""}
-          onChange={handleChange}
-          rows={3}
-          className="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white"
-        />
-        <button
-          type="submit"
-          className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-        >
-          {modoEdicion ? "Actualizar" : "Agregar"}
-        </button>
-        {modoEdicion && (
-          <button
-            type="button"
-            onClick={() => {
-              setModoEdicion(false);
-              setForm({ idRol: "", nombre: "", descripcion: "" });
-            }}
-            className="ml-2 px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700"
+    <div className={`p-4 ${modoOscuro ? "bg-gray-800 min-h-screen" : "bg-gray-50"}`}>
+      <div className={`shadow-md rounded-xl p-6 ${fondo}`}>
+        <div className="flex justify-between items-center mb-4">
+          <h2
+            className={`text-2xl md:text-3xl font-extrabold tracking-wide ${
+              modoOscuro ? "text-white" : "text-gray-800"
+            }`}
           >
-            Cancelar
-          </button>
-        )}
-      </form>
+            Gestión de Roles
+          </h2>
+        </div>
 
-      <h3 className="text-xl font-semibold mb-2 text-gray-900 dark:text-gray-100">
-        Lista de Roles
-      </h3>
+        <BuscadorBase
+          placeholder="Buscar..."
+          valor={busqueda}
+          onChange={(e) => setBusqueda(e.target.value)}
+          modoOscuro={modoOscuro}
+        />
 
-      {loading ? (
-        <p className="text-gray-700 dark:text-gray-300">Cargando...</p>
-      ) : roles.length === 0 ? (
-        <p className="text-gray-700 dark:text-gray-300">No hay roles registrados.</p>
-      ) : (
-        <table className="w-full table-auto border-collapse border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100">
-          <thead>
-            <tr>
-              <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-left">
-                ID
-              </th>
-              <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-left">
-                Nombre
-              </th>
-              <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-left">
-                Descripción
-              </th>
-              <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-center">
-                Acciones
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {roles.map((rol) => (
-              <tr key={rol.idRol} className="hover:bg-gray-100 dark:hover:bg-gray-700">
-                <td className="border border-gray-300 dark:border-gray-600 px-3 py-2">{rol.idRol}</td>
-                <td className="border border-gray-300 dark:border-gray-600 px-3 py-2">{rol.nombre}</td>
-                <td className="border border-gray-300 dark:border-gray-600 px-3 py-2">{rol.descripcion}</td>
-                <td className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-center">
-                  <button
-                    onClick={() => editar(rol.idRol)}
-                    className="px-2 py-1 bg-yellow-500 text-white rounded hover:bg-yellow-600"
-                    title="Editar"
-                  >
-                    Editar
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
+        <ContadoresBase
+          activos={roles.filter((r) => r.descripcion === "Activo").length}
+          inactivos={roles.filter((r) => r.descripcion === "Inactivo").length}
+          total={roles.length}
+          onNuevo={abrirModalNuevo}
+          modoOscuro={modoOscuro}
+        />
+
+        <TablaBase
+          datos={datosFiltrados}
+          columnas={columnas}
+          modoOscuro={modoOscuro}
+          onEditar={handleEditar}
+          loading={loading}
+          texto={texto}
+          encabezadoClase={encabezado}
+        />
+
+        <ModalBase
+          isOpen={modalOpen}
+          onClose={cerrarModal}
+          titulo={modoEdicion ? "Editar Rol" : "Nuevo Rol"}
+          modoOscuro={modoOscuro}
+        >
+          <FormularioBase
+            onSubmit={handleGuardar}
+            onCancel={cerrarModal}
+            modoOscuro={modoOscuro}
+            formError={formError}
+            formLoading={formLoading}
+            modoEdicion={modoEdicion}
+            titulo="Rol"
+          >
+            <div className="space-y-4">
+              <input
+                type="text"
+                name="nombre"
+                placeholder="Nombre del rol"
+                value={form.nombre}
+                onChange={handleInputChange}
+                className="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white dark:border-gray-600"
+                autoFocus
+              />
+              <select
+                name="descripcion"
+                value={form.descripcion}
+                onChange={handleInputChange}
+                className="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white dark:border-gray-600"
+              >
+                <option value="">Seleccione estado</option>
+                <option value="Activo">Activo</option>
+                <option value="Inactivo">Inactivo</option>
+              </select>
+            </div>
+          </FormularioBase>
+        </ModalBase>
+      </div>
     </div>
   );
 };

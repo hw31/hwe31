@@ -1,11 +1,11 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import loginService from "../services/authService";
+import loginService from "../../services/authService";
 import styled from "styled-components";
 import { motion } from "framer-motion";
 import { useDispatch } from "react-redux";
-import { loginSuccess } from "../features/Auth/authSlice";
-import { setModoOscuro, fetchModoOscuro } from "../features/theme/themeSlice"; // <-- Importa fetchModoOscuro
+import { loginSuccess } from "../../features/Auth/authSlice";
+import { setModoOscuro, fetchModoOscuro } from "../../features/theme/themeSlice"; // <-- Importa fetchModoOscuro
 
 const containerVariants = {
   hidden: { opacity: 0, scale: 0.95 },

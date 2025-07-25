@@ -1,771 +1,431 @@
 import React, { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
 import Swal from "sweetalert2";
+
+import TablaBase from "../Shared/TablaBase";
+import BuscadorBase from "../Shared/BuscadorBase";
+import ContadoresBase from "../Shared/Contadores";
+import ModalBase from "../Shared/ModalBase";
+import FormularioBase from "../Shared/FormularioBase";
+
 import calificacionService from "../../services/Calificaciones";
-import usuarioRolService from "../../services/UsuariosRoles"; // para listarUsuariosRoles
-import usuarioService from "../../services/Usuario"; // para nombres de usuarios
-import inscripcionService from "../../services/Inscripcion";
 import materiaService from "../../services/Materias";
 import tipoCalificacionService from "../../services/TipoCalificacion";
 import estadoService from "../../services/Estado";
-
-import {
-  FaPlus,
-  FaEdit,
-  FaUserCheck,
-  FaUserTimes,
-  FaUser,
-  FaCheckCircle,
-  FaTimesCircle,
-} from "react-icons/fa";
+import inscripcionService from "../../services/Inscripcion";
+import usuarioService from "../../services/Usuario"; 
 
 const FrmCalificaciones = () => {
   const modoOscuro = useSelector((state) => state.theme.modoOscuro);
+  const idUsuario = useSelector((state) => state.auth.idUsuario);
+  const rol = useSelector((state) => state.auth.rol?.toLowerCase());
 
-  // Estados
-  const [busqueda, setBusqueda] = useState("");
   const [calificaciones, setCalificaciones] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [materias, setMaterias] = useState([]);
+  const [tiposCalificacion, setTiposCalificacion] = useState([]);
+  const [estados, setEstados] = useState([]);
+  const [inscripciones, setInscripciones] = useState([]);
+  const [usuarios, setUsuarios] = useState([]); // <-- Usuarios cargados
 
   const [modalOpen, setModalOpen] = useState(false);
   const [modoEdicion, setModoEdicion] = useState(false);
-  const [calificacionSeleccionada, setCalificacionSeleccionada] = useState(null);
-
-  const [formLoading, setFormLoading] = useState(false);
-  const [formError, setFormError] = useState("");
-
-  // Datos para selects
-  const [listas, setListas] = useState({
-    docentes: [],
-    usuarios: [], // para mapear nombres completos de estudiantes y docentes
-    inscripciones: [],
-    materias: [],
-    tiposCalificacion: [],
-    estados: [],
-  });
-
-  // Formulario controlado
-  const [formData, setFormData] = useState({
-    idDocente: "",
+  const [form, setForm] = useState({
+    idCalificacion: 0,
     idInscripcion: "",
-    idMateria: "",
     idTipoCalificacion: "",
-    valor: "",
-    idEstado: "",
+    calificacion: "",
+    idEstado: 1,
   });
+  const [busqueda, setBusqueda] = useState("");
 
-  // Cargar datos iniciales
-  const cargarListas = async () => {
-    try {
-      const [
-        usuariosRoles,
-        usuariosRaw,
-        inscripcionesRaw,
-        materiasRaw,
-        tiposCalificacionRaw,
-        estadosResult,
-      ] = await Promise.all([
-        usuarioRolService.listarUsuariosRoles(),
-        usuarioService.listarUsuario(),
-        inscripcionService.listarInscripciones(),
-        materiaService.listarMaterias(),
-        tipoCalificacionService.listarTiposCalificacion(),
-        estadoService.listarEstados(),
-      ]);
+  const contadorActivos = calificaciones.filter((c) => c.idEstado === 1).length;
+  const contadorInactivos = calificaciones.filter((c) => c.idEstado === 2).length;
+  const contadorTotal = calificaciones.length;
 
-      // Normalizar usuarios: aseguramos array
-      const usuarios = Array.isArray(usuariosRaw) ? usuariosRaw : usuariosRaw.resultado ?? [];
-
-      // Normalizar inscripciones:
-      const inscripciones = Array.isArray(inscripcionesRaw) ? inscripcionesRaw : inscripcionesRaw.resultado ?? [];
-
-      // Filtrar solo docentes (idRol === 2)
-      const docentesRaw = Array.isArray(usuariosRoles) ? usuariosRoles.filter(
-        (u) => Number(u.idRol) === 2
-      ) : [];
-
-      // Mapear docentes con nombre completo usando usuarios
-      const docentes = docentesRaw.map((doc) => {
-        // En usuarios la propiedad que relaciona es id_Usuario con idUsuario de usuarioRoles
-        const usuario = usuarios.find((u) => u.id_Usuario == doc.idUsuario);
-        return {
-          idUsuario: doc.idUsuario,
-          nombre: usuario?.persona?.trim() || `Docente ${doc.idUsuario}`,
-        };
-      });
-
-      // Normalizar materias:
-      const materias = Array.isArray(materiasRaw) ? materiasRaw : materiasRaw.resultado ?? [];
-
-      // Normalizar tiposCalificacion:
-      const tiposCalificacion = Array.isArray(tiposCalificacionRaw)
-        ? tiposCalificacionRaw
-        : tiposCalificacionRaw.resultado ?? [];
-
-      // Normalizar estados:
-      const estadosRaw = estadosResult?.data ?? [];
-      const estados = estadosRaw.map((e) => ({
-        idEstado: e.iD_Estado ?? e.idEstado,
-        nombreEstado: e.nombre_Estado ?? e.nombreEstado,
-      }));
-
-      setListas({
-        docentes,
-        usuarios,
-        inscripciones,
-        materias,
-        tiposCalificacion,
-        estados,
-      });
-    } catch (err) {
-      console.error("Error al cargar listas:", err);
-      Swal.fire("Error", "No se pudo cargar la información", "error");
-    }
+  const formatearFecha = (fecha) => {
+    if (!fecha) return "-";
+    const d = new Date(fecha);
+    return d.toLocaleDateString("es-NI", {
+      year: "numeric",
+      month: "short",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
   };
 
-  // Cargar calificaciones
-  const cargarCalificaciones = async () => {
-    try {
-      setLoading(true);
-      const respuesta = await calificacionService.listarCalificacion();
-      console.log("Calificaciones recibidas:", respuesta);
-
-      if (respuesta && Array.isArray(respuesta.data)) {
-        setCalificaciones(respuesta.data);
-        setError("");
-      } else {
-        setCalificaciones([]);
-        setError("No se recibieron calificaciones válidas");
-      }
-    } catch (err) {
-      setCalificaciones([]);
-      setError(err.message || "Error al cargar calificaciones");
-    } finally {
-      setLoading(false);
-    }
-  };
+  const esAdmin = rol === "admin" || rol === "administrador";
+  const esDocente = rol === "docente";
+  const esEstudiante = rol === "estudiante";
 
   useEffect(() => {
-    cargarListas();
-    cargarCalificaciones();
+    const cargarDatos = async () => {
+      try {
+        const [
+          calificacionesData,
+          materiasData,
+          tiposCalifData,
+          estadosData,
+          inscripcionesData,
+          usuariosData,
+        ] = await Promise.all([
+          calificacionService.listarCalificacion(),
+          materiaService.listarMaterias(),
+          tipoCalificacionService.listarTiposCalificacion(),
+          estadoService.listarEstados(),
+          inscripcionService.listarInscripciones(),
+          usuarioService.listarUsuarios(), // <-- carga usuarios
+        ]);
+
+        setCalificaciones(calificacionesData.data || []);
+        setMaterias(materiasData.resultado || []);
+        setTiposCalificacion(tiposCalifData.resultado || []);
+        setEstados(estadosData.data || []);
+        setInscripciones(inscripcionesData.resultado || []);
+        setUsuarios(usuariosData.data || []);
+      } catch (error) {
+        Swal.fire("Error", "No se pudieron cargar los datos.", "error");
+      }
+    };
+    cargarDatos();
   }, []);
 
-  // Manejo búsqueda
-  const handleBusquedaChange = (e) => {
-    setBusqueda(e.target.value);
+  // Buscar nombre estudiante desde inscripcion => usuario
+  const getNombreEstudiantePorInscripcion = (idInscripcion) => {
+    const insc = inscripciones.find((i) => i.iD_Inscripcion === Number(idInscripcion));
+    if (!insc) return "N/A";
+    const usuarioEst = usuarios.find((u) => u.id_Usuario === insc.id_Usuario);
+    return usuarioEst ? usuarioEst.persona.trim() : "N/A";
   };
 
-  // En el filtro de búsqueda:
-  const calificacionesFiltradas = calificaciones.filter((cal) => {
-    const texto = busqueda.toLowerCase();
+  // Buscar docente (idUsuarioDocente) nombre
+  // Para esto debes tener el campo idUsuarioDocente en calificacion (si no, no podrá mostrarse)
+  const getNombreDocentePorIdUsuario = (idUsuarioDocente) => {
+    const docente = usuarios.find((u) => u.id_Usuario === idUsuarioDocente);
+    return docente ? docente.persona.trim() : "N/A";
+  };
 
-    // Docente: busca en listas.docentes (suponiendo que ahí está)
-    const docenteNombre = listas.docentes.find((d) => d.idUsuario === cal.idUsuarioDocente)?.nombre.toLowerCase() ?? "";
+  // Filtra calificaciones según búsqueda (nombre estudiante o materia)
+  const calificacionesFiltradas = calificaciones.filter((c) => {
+    const nombreEstudiante = getNombreEstudiantePorInscripcion(c.idInscripcion).toLowerCase();
+    const materiaNombre = materias.find((m) => m.idMateria === c.idMateria)?.nombreMateria.toLowerCase() || "";
+    const textoBusqueda = busqueda.toLowerCase();
 
-    // Usar nombreEstudiante directo del cal (ya viene completo)
-    const estudianteNombre = cal.nombreEstudiante?.toLowerCase() ?? "";
-
-    const materiaNombre = listas.materias.find((m) => m.idMateria === cal.idMateria)?.nombreMateria.toLowerCase() ?? "";
-    const tipoCalifNombre = listas.tiposCalificacion.find((t) => t.idTipoCalificacion === cal.idTipoCalificacion)?.tipoCalificacionNombre.toLowerCase() ?? "";
-    const estadoNombre = cal.estado?.toLowerCase() ?? ""; // viene directo en el objeto
-
-    return (
-      docenteNombre.includes(texto) ||
-      estudianteNombre.includes(texto) ||
-      materiaNombre.includes(texto) ||
-      tipoCalifNombre.includes(texto) ||
-      estadoNombre.includes(texto)
-    );
+    return nombreEstudiante.includes(textoBusqueda) || materiaNombre.includes(textoBusqueda);
   });
 
-  // Contadores
-  const total = calificaciones.length;
-  const activos = calificaciones.filter((c) => {
-    const estadoObj = listas.estados.find((e) => e.idEstado === c.idEstado);
-    return estadoObj?.nombreEstado?.toLowerCase() === "activo";
-  }).length;
-  const inactivos = total - activos;
+  // Filtra por rol:
+  // Admin ve todo
+  // Docente ve solo las que él creó (idUsuarioDocente === idUsuario)
+  // Estudiante ve solo las suyas (por inscripcion que esté asociada a su idUsuario)
+  const filtrarPorRol = (lista) => {
+    if (!rol) return [];
 
-  // Clases para modo oscuro
-  const fondo = modoOscuro ? "bg-gray-900" : "bg-white";
-  const texto = modoOscuro ? "text-gray-200" : "text-gray-800";
-  const encabezado = modoOscuro ? "bg-gray-700 text-gray-200" : "bg-gray-100 text-gray-700";
+    if (esAdmin) return lista;
 
-  // Manejo modal
+    if (esDocente) return lista.filter((c) => c.idUsuarioDocente === idUsuario);
+
+    if (esEstudiante) {
+      // Obtener inscripciones del estudiante
+      const inscUsuario = inscripciones.filter((i) => i.id_Usuario === idUsuario).map(i => i.iD_Inscripcion);
+      return lista.filter((c) => inscUsuario.includes(c.idInscripcion));
+    }
+
+    return [];
+  };
+
+  const listaMostrada = filtrarPorRol(calificacionesFiltradas);
+
   const abrirModalNuevo = () => {
-    setModoEdicion(false);
-    setCalificacionSeleccionada(null);
-    setFormData({
-      idDocente: "",
+    setForm({
+      idCalificacion: 0,
       idInscripcion: "",
-      idMateria: "",
       idTipoCalificacion: "",
-      valor: "",
-      idEstado: "",
+      calificacion: "",
+      idEstado: 1,
     });
-    setFormError("");
+    setModoEdicion(false);
     setModalOpen(true);
   };
 
   const abrirModalEditar = (calificacion) => {
-    setModoEdicion(true);
-    setCalificacionSeleccionada(calificacion);
-    setFormData({
-      idDocente: calificacion.idUsuarioDocente || "",
-      idInscripcion: calificacion.idInscripcion || "",
-      idMateria: calificacion.idMateria || "",
-      idTipoCalificacion: calificacion.idTipoCalificacion || "",
-      valor: calificacion.calificacion?.toString() || "",
-      idEstado: calificacion.idEstado || "",
+    setForm({
+      idCalificacion: calificacion.idCalificacion,
+      idInscripcion: calificacion.idInscripcion,
+      idTipoCalificacion: calificacion.idTipoCalificacion,
+      calificacion: calificacion.calificacion,
+      idEstado: calificacion.idEstado,
     });
-    setFormError("");
+    setModoEdicion(true);
     setModalOpen(true);
   };
 
-  const cerrarModal = () => {
-    setModalOpen(false);
-    setFormError("");
-    setFormLoading(false);
-    setModoEdicion(false);
-    setCalificacionSeleccionada(null);
-    setFormData({
-      idDocente: "",
-      idInscripcion: "",
-      idMateria: "",
-      idTipoCalificacion: "",
-      valor: "",
-      idEstado: "",
-    });
-  };
-
-  // Manejar cambios formulario
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+    setForm((f) => ({ ...f, [name]: value }));
   };
 
-  // Validar formulario
   const validarFormulario = () => {
-    const { idDocente, idInscripcion, idMateria, idTipoCalificacion, valor, idEstado } = formData;
-    if (
-      !idDocente ||
-      !idInscripcion ||
-      !idMateria ||
-      !idTipoCalificacion ||
-      valor === "" ||
-      !idEstado
-    ) {
-      setFormError("Por favor, complete todos los campos.");
-      return false;
-    }
-    if (isNaN(parseFloat(valor))) {
-      setFormError("El valor debe ser un número válido.");
-      return false;
-    }
-    setFormError("");
-    return true;
+    if (!form.idInscripcion) return "Debes seleccionar un estudiante (inscripción)";
+    if (!form.idTipoCalificacion) return "Debes seleccionar un tipo de calificación";
+    if (form.calificacion === "") return "Debes ingresar la calificación";
+    if (isNaN(Number(form.calificacion)) || Number(form.calificacion) < 0 || Number(form.calificacion) > 100)
+      return "La calificación debe ser un número entre 0 y 100";
+    if (!form.idEstado) return "Debes seleccionar un estado";
+    return null;
   };
 
-  // Guardar calificación (insertar o actualizar)
-  const handleGuardar = async () => {
-    if (!validarFormulario()) return;
-
-    setFormLoading(true);
-
-    const datosEnviar = {
-      idDocente: Number(formData.idDocente),
-      idInscripcion: Number(formData.idInscripcion),
-      idMateria: Number(formData.idMateria),
-      idTipoCalificacion: Number(formData.idTipoCalificacion),
-      valor: parseFloat(formData.valor),
-      idEstado: Number(formData.idEstado),
-    };
+  const guardar = async () => {
+    const errorValidacion = validarFormulario();
+    if (errorValidacion) {
+      Swal.fire("Error", errorValidacion, "error");
+      return;
+    }
 
     try {
-      let respuesta;
-      if (modoEdicion && calificacionSeleccionada) {
-        respuesta = await calificacionService.actualizarCalificaciones({
-          ...datosEnviar,
-          idCalificacion: calificacionSeleccionada.idCalificacion,
-        });
+      let datosEnviar = {};
+
+      if (modoEdicion) {
+        if (esDocente) {
+          datosEnviar = {
+            idCalificacion: form.idCalificacion,
+            idTipoCalificacion: Number(form.idTipoCalificacion),
+            calificacion: Number(form.calificacion),
+          };
+        } else if (esAdmin) {
+          datosEnviar = {
+            idCalificacion: form.idCalificacion,
+            idInscripcion: Number(form.idInscripcion),
+            idTipoCalificacion: Number(form.idTipoCalificacion),
+            calificacion: Number(form.calificacion),
+            idEstado: Number(form.idEstado),
+          };
+        } else {
+          Swal.fire("Error", "No tienes permiso para editar esta calificación.", "error");
+          return;
+        }
+        await calificacionService.actualizarCalificaciones(datosEnviar);
+        Swal.fire("Actualizado", "Calificación actualizada correctamente", "success");
       } else {
-        respuesta = await calificacionService.insertarCalificaciones(datosEnviar);
+        if (esAdmin) {
+          datosEnviar = {
+            idInscripcion: Number(form.idInscripcion),
+            idTipoCalificacion: Number(form.idTipoCalificacion),
+            calificacion: Number(form.calificacion),
+            idEstado: Number(form.idEstado),
+          };
+          await calificacionService.insertarCalificaciones(datosEnviar);
+          Swal.fire("Registrado", "Calificación registrada correctamente", "success");
+        } else {
+          Swal.fire("Error", "No tienes permiso para registrar calificaciones.", "error");
+          return;
+        }
       }
-
-      // Validación respuesta
-      if (respuesta?.error || respuesta?.success === false) {
-        throw new Error(respuesta.message || "Error desconocido al guardar.");
-      }
-
-      cerrarModal();
-      await cargarCalificaciones();
-
-      await Swal.fire({
-        icon: "success",
-        title: modoEdicion ? "Actualizado" : "Guardado",
-        text: modoEdicion
-          ? "La calificación se actualizó correctamente."
-          : "La calificación se guardó correctamente.",
-        timer: 2000,
-        showConfirmButton: false,
-      });
-    } catch (err) {
-      console.error("Error al guardar:", err);
-      await Swal.fire({
-        icon: "error",
-        title: "Error",
-        text: err.message || "Error al guardar la calificación",
-      });
-    } finally {
-      setFormLoading(false);
+      setModalOpen(false);
+      const calificacionesData = await calificacionService.listarCalificacion();
+      setCalificaciones(calificacionesData.data || []);
+    } catch (error) {
+      Swal.fire("Error", "Error al guardar la calificación", "error");
     }
   };
+
+  const columnas = [
+    { nombre: "Estudiante", key: "nombreEstudiante" },
+    { nombre: "Materia", key: "materia" },
+    { nombre: "Tipo", key: "tipoCalificacion" },
+    { nombre: "Calificación", key: "calificacion" },
+    { nombre: "Creado", key: "fechaCreacion" },
+    { nombre: "Modificado", key: "fechaModificacion" },
+    { nombre: "Estado", key: "estado" },
+    { nombre: "Acciones", key: "acciones" },
+  ];
 
   return (
     <div
-      className={`p-4 ${modoOscuro ? "bg-gray-800 min-h-screen" : "bg-gray-50"}`}
-      style={{ paddingTop: 1 }}
+      className={`${
+        modoOscuro ? "bg-gray-900 text-gray-200" : "bg-white text-gray-800"
+      } min-h-screen p-6`}
     >
-      <div className={`shadow-md rounded-xl p-6 ${fondo}`}>
-        <div style={{ maxWidth: 600, margin: "20px auto 30px", width: "90%" }}>
-          <input
-            type="text"
-            placeholder="Buscar..."
-            value={busqueda}
-            onChange={handleBusquedaChange}
-            style={{
-              width: "50%",
-              padding: "8px 16px",
-              fontSize: 16,
-              borderRadius: "9999px",
-              border: `1.2px solid ${modoOscuro ? "#444" : "#ccc"}`,
-              outline: "none",
-              boxShadow: modoOscuro
-                ? "inset 0 1px 4px rgba(234, 227, 227, 0.1)"
-                : "inset 0 1px 4px rgba(0,0,0,0.1)",
-              color: modoOscuro ? "white" : "black",
-              transition: "border-color 0.3s ease",
-              display: "block",
-              margin: "0 auto",
-            }}
-            onFocus={(e) =>
-              (e.target.style.borderColor = modoOscuro ? "#90caf9" : "#1976d2")
-            }
-            onBlur={(e) =>
-              (e.target.style.borderColor = modoOscuro ? "#444" : "#ccc")
-            }
-          />
-        </div>
+      {rol !== "estudiante" && (
+        <BuscadorBase
+          busqueda={busqueda}
+          setBusqueda={setBusqueda}
+          placeholder="Buscar por estudiante o materia"
+          modoOscuro={modoOscuro}
+        />
+      )}
 
-        <div className="flex flex-wrap justify-between items-center mb-6 gap-4">
-          {/* Contadores */}
-          <div className="flex flex-wrap justify-center gap-6 flex-grow min-w-[250px]">
-            {/* Activos */}
-            <div
-              style={{
-                background: "linear-gradient(135deg, #127f45ff, #0c0b0bff)",
-                color: "white",
-                padding: "14px 24px",
-                borderRadius: 10,
-                fontWeight: "700",
-                fontSize: 18,
-                minWidth: 140,
-                textAlign: "center",
-                boxShadow: "0 3px 8px rgba(2, 79, 33, 0.4)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: 8,
-                userSelect: "none",
-                cursor: "pointer",
-                transition: "background 0.3s ease",
-              }}
-              aria-label={`Calificaciones activas: ${activos}`}
-              onMouseEnter={(e) =>
-                (e.currentTarget.style.background =
-                  "linear-gradient(135deg, #0c0b0bff,  #084b27 )")
-              }
-              onMouseLeave={(e) =>
-                (e.currentTarget.style.background =
-                  "linear-gradient(135deg, #127f45ff, #0c0b0bff)")
-              }
-            >
-              <FaUserCheck /> Activos
-              <div style={{ fontSize: 26, marginLeft: 8 }}>{activos}</div>
-            </div>
+      <ContadoresBase
+        activo={contadorActivos}
+        inactivo={contadorInactivos}
+        total={contadorTotal}
+        mostrarContadores={esAdmin}
+        onNuevo={esAdmin ? abrirModalNuevo : null}
+        modoOscuro={modoOscuro}
+      />
 
-            {/* Inactivos */}
-            <div
-              style={{
-                background: "linear-gradient(135deg, #ef5350, #0c0b0bff)",
-                color: "white",
-                padding: "14px 24px",
-                borderRadius: 10,
-                fontWeight: "700",
-                fontSize: 18,
-                minWidth: 140,
-                textAlign: "center",
-                boxShadow: "0 3px 8px rgba(244,67,54,0.4)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: 8,
-                userSelect: "none",
-                cursor: "pointer",
-                transition: "background 0.3s ease",
-              }}
-              aria-label={`Calificaciones inactivas: ${inactivos}`}
-              onMouseEnter={(e) =>
-                (e.currentTarget.style.background =
-                  "linear-gradient(135deg, #101010ff, #de1717ff)")
-              }
-              onMouseLeave={(e) =>
-                (e.currentTarget.style.background =
-                  "linear-gradient(135deg, #ef5350, #0c0b0ff)")
-              }
-            >
-              <FaUserTimes /> Inactivos
-              <div style={{ fontSize: 26, marginLeft: 8 }}>{inactivos}</div>
-            </div>
+      <TablaBase columnas={columnas} modoOscuro={modoOscuro}>
+        {listaMostrada.length === 0 ? (
+          <tr>
+            <td colSpan={8} className="text-center py-4">
+              No hay calificaciones para mostrar.
+            </td>
+          </tr>
+        ) : (
+          listaMostrada.map((c) => {
+            const materia = materias.find((m) => m.idMateria === c.idMateria);
+            const tipoCalif = tiposCalificacion.find((t) => t.idTipoCalificacion === c.idTipoCalificacion);
+            const estado = estados.find((e) => e.idEstado === c.idEstado);
+            const nombreEstudiante = getNombreEstudiantePorInscripcion(c.idInscripcion);
 
-            {/* Total */}
-            <div
-              style={{
-                background: "linear-gradient(135deg, #0960a8ff, #20262dff)",
-                color: "white",
-                padding: "14px 24px",
-                borderRadius: 10,
-                fontWeight: "700",
-                fontSize: 18,
-                minWidth: 140,
-                textAlign: "center",
-                boxShadow: "0 3px 8px rgba(25,118,210,0.4)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: 8,
-                userSelect: "none",
-                cursor: "pointer",
-                transition: "background 0.3s ease",
-              }}
-              aria-label={`Total de calificaciones: ${total}`}
-              onMouseEnter={(e) =>
-                (e.currentTarget.style.background =
-                  "linear-gradient(135deg, #20262dff, #0d47a1)")
-              }
-              onMouseLeave={(e) =>
-                (e.currentTarget.style.background =
-                  "linear-gradient(135deg, #0960a8ff, #20262dff)")
-              }
-            >
-              <FaUser /> Total
-              <div style={{ fontSize: 26, marginLeft: 8 }}>{total}</div>
-            </div>
-          </div>
-
-          {/* Botón Nuevo */}
-          <button
-            onClick={abrirModalNuevo}
-            style={{
-              backgroundColor: "#1976d2",
-              border: "none",
-              color: "#fff",
-              padding: "12px 22px",
-              borderRadius: 8,
-              cursor: "pointer",
-              fontWeight: "600",
-              fontSize: 20,
-              display: "flex",
-              alignItems: "center",
-              gap: 10,
-              userSelect: "none",
-              transition: "background-color 0.3s ease",
-              whiteSpace: "nowrap",
-              marginTop: "8px",
-            }}
-            onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#115293")}
-            onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#1976d2")}
-            type="button"
-            aria-label="Agregar nueva calificación"
-          >
-            <FaPlus /> Nuevo
-          </button>
-        </div>
-
-        {/* Mensajes */}
-        {loading && <p className="text-gray-400 italic">Cargando calificaciones...</p>}
-        {error && <p className="text-red-500 font-medium">Error: {error}</p>}
-        {!loading && calificaciones.length === 0 && (
-          <p className="text-gray-400">No hay calificaciones para mostrar.</p>
+            return (
+              <tr key={c.idCalificacion} className="hover:bg-blue-200 cursor-pointer">
+                <td>{nombreEstudiante}</td>
+                <td>{materia?.nombreMateria || "N/A"}</td>
+                <td>{tipoCalif?.nombreTipoCalificacion || "N/A"}</td>
+                <td>{c.calificacion}</td>
+                <td>{formatearFecha(c.fechaCreacion)}</td>
+                <td>{formatearFecha(c.fechaModificacion)}</td>
+                <td>{estado?.nombreEstado || "N/A"}</td>
+                <td className="flex gap-2 justify-center">
+                  {(esAdmin || esDocente) && (
+                    <button
+                      onClick={() => abrirModalEditar(c)}
+                      className="bg-blue-600 text-white rounded px-2 py-1 hover:bg-blue-700"
+                    >
+                      Editar
+                    </button>
+                  )}
+                </td>
+              </tr>
+            );
+          })
         )}
+      </TablaBase>
 
-       
-{!loading && calificacionesFiltradas.length > 0 && (
-  <div className="scroll-modern overflow-x-auto">
-    <table className="min-w-full text-sm text-left">
-      <thead className={encabezado}>
-        <tr>
-          <th className="px-4 py-2 font-semibold">Docente</th>
-          <th className="px-4 py-2 font-semibold">Estudiante</th>
-          <th className="px-4 py-2 font-semibold">Materia</th>
-          <th className="px-4 py-2 font-semibold">Tipo Calificación</th>
-          <th className="px-4 py-2 font-semibold">Valor</th>
-          <th className="px-4 py-2 font-semibold text-center">Estado</th>
-          <th className="px-4 py-2 font-semibold">Fecha de Registro</th>
-          <th className="px-4 py-2 font-semibold">Creador</th>
-          <th className="px-4 py-2 font-semibold">Fecha de Creación</th>
-          <th className="px-4 py-2 font-semibold">Modificador</th>
-          <th className="px-4 py-2 font-semibold">Fecha de Modificación</th>
-          <th className="px-4 py-2 font-semibold text-center">Acciones</th>
-        </tr>
-      </thead>
-      <tbody className="divide-y divide-gray-100">
-        {calificaciones.map((cal) => {
-          const docente = listas.usuarios.find((u) => u.id_Usuario === cal.idUsuarioDocente);
-          const nombreDocente = docente?.persona ?? "N/D";
-
-          const inscripcion = listas.inscripciones?.find((i) => i.iD_Inscripcion === cal.idInscripcion);
-          const estudiante = listas.usuarios.find((u) => u.id_Usuario === inscripcion?.idEstudiante);
-          const estudianteNombre = cal.nombreEstudiante?.trim() || estudiante?.persona || "N/D";
-
-          const materiaNombre = listas.materias?.find((m) => m.idMateria === cal.idMateria)?.nombreMateria || "N/D";
-          const tipoCalifNombre = listas.tiposCalificacion?.find((t) => t.idTipoCalificacion === cal.idTipoCalificacion)?.tipoCalificacionNombre || "N/D";
-          const estado = listas.estados?.find((e) => e.idEstado === cal.idEstado);
-
-          const formatoFecha = (f) => f ? new Date(f).toLocaleString("es-NI") : "N/D";
-
-          return (
-            <tr key={cal.idCalificacion} className={`transition-colors ${modoOscuro ? "hover:bg-gray-700" : "hover:bg-blue-50"}`}>
-              <td className={`px-4 py-2 ${texto}`}>{nombreDocente}</td>
-              <td className={`px-4 py-2 ${texto}`}>{estudianteNombre}</td>
-              <td className={`px-4 py-2 ${texto}`}>{materiaNombre}</td>
-              <td className={`px-4 py-2 ${texto}`}>{tipoCalifNombre}</td>
-              <td className={`px-4 py-2 ${texto}`}>{cal.calificacion}</td>
-              <td className="px-4 py-2 text-center">
-                {estado?.nombreEstado?.toLowerCase() === "activo" ? (
-                  <FaCheckCircle className="text-green-500 text-xl mx-auto" />
-                ) : (
-                  <FaTimesCircle className="text-red-500 text-xl mx-auto" />
-                )}
-              </td>
-              <td className={`px-4 py-2 ${texto}`}>{formatoFecha(cal.fechaRegistro)}</td>
-              <td className={`px-4 py-2 ${texto}`}>{cal.creador?.trim() || "N/D"}</td>
-              <td className={`px-4 py-2 ${texto}`}>{formatoFecha(cal.fechaCreacion)}</td>
-              <td className={`px-4 py-2 ${texto}`}>{cal.modificador?.trim() || "N/D"}</td>
-              <td className={`px-4 py-2 ${texto}`}>{formatoFecha(cal.fechaModificacion)}</td>
-              <td className="px-4 py-2 text-center">
-                <button
-                  className="text-blue-600 hover:text-blue-800 text-xl"
-                  onClick={() => abrirModalEditar(cal)}
-                  aria-label="Editar calificación"
+      {modalOpen && (
+        <ModalBase
+          titulo={modoEdicion ? "Editar Calificación" : "Nueva Calificación"}
+          cerrar={() => setModalOpen(false)}
+          modoOscuro={modoOscuro}
+        >
+          <FormularioBase>
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                guardar();
+              }}
+              className="flex flex-col gap-4"
+            >
+              {/* Inscripción (Estudiante) */}
+              <div>
+                <label className="block mb-1 font-semibold">Estudiante (Inscripción)</label>
+                <select
+                  name="idInscripcion"
+                  value={form.idInscripcion}
+                  onChange={handleChange}
+                  className={`w-full p-2 rounded border ${
+                    modoOscuro ? "bg-gray-800 border-gray-600 text-gray-200" : "bg-white border-gray-300"
+                  }`}
+                  disabled={modoEdicion || esDocente} // docente no puede cambiar inscripción
+                  required
                 >
-                  <FaEdit />
+                  <option value="">-- Selecciona Estudiante --</option>
+                  {inscripciones.map((insc) => {
+                    const estudiante = usuarios.find((u) => u.id_Usuario === insc.id_Usuario);
+                    return (
+                      <option key={insc.iD_Inscripcion} value={insc.iD_Inscripcion}>
+                        {estudiante ? estudiante.persona.trim() : "N/A"}
+                      </option>
+                    );
+                  })}
+                </select>
+              </div>
+
+              {/* Tipo Calificación */}
+              <div>
+                <label className="block mb-1 font-semibold">Tipo de Calificación</label>
+                <select
+                  name="idTipoCalificacion"
+                  value={form.idTipoCalificacion}
+                  onChange={handleChange}
+                  className={`w-full p-2 rounded border ${
+                    modoOscuro ? "bg-gray-800 border-gray-600 text-gray-200" : "bg-white border-gray-300"
+                  }`}
+                  required
+                  disabled={!(esAdmin || esDocente)}
+                >
+                  <option value="">-- Selecciona Tipo --</option>
+                  {tiposCalificacion.map((t) => (
+                    <option key={t.idTipoCalificacion} value={t.idTipoCalificacion}>
+                      {t.nombreTipoCalificacion}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Calificación */}
+              <div>
+                <label className="block mb-1 font-semibold">Calificación</label>
+                <input
+                  type="number"
+                  name="calificacion"
+                  min="0"
+                  max="100"
+                  value={form.calificacion}
+                  onChange={handleChange}
+                  className={`w-full p-2 rounded border ${
+                    modoOscuro ? "bg-gray-800 border-gray-600 text-gray-200" : "bg-white border-gray-300"
+                  }`}
+                  required
+                  disabled={!(esAdmin || esDocente)}
+                />
+              </div>
+
+              {/* Estado */}
+              {esAdmin && (
+                <div>
+                  <label className="block mb-1 font-semibold">Estado</label>
+                  <select
+                    name="idEstado"
+                    value={form.idEstado}
+                    onChange={handleChange}
+                    className={`w-full p-2 rounded border ${
+                      modoOscuro ? "bg-gray-800 border-gray-600 text-gray-200" : "bg-white border-gray-300"
+                    }`}
+                    required
+                  >
+                    {estados.map((e) => (
+                      <option key={e.idEstado} value={e.idEstado}>
+                        {e.nombreEstado}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {/* Botones */}
+              <div className="flex justify-end gap-3 mt-4">
+                <button
+                  type="button"
+                  onClick={() => setModalOpen(false)}
+                  className="px-4 py-2 rounded border border-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700"
+                >
+                  Cancelar
                 </button>
-              </td>
-            </tr>
-          );
-        })}
-      </tbody>
-    </table>
-  </div>
-)}
-
-{/* Modal */}
-{modalOpen && (
-  <div
-    style={{
-      position: "fixed",
-      inset: 0,
-      backgroundColor: "rgba(0,0,0,0.35)",
-      display: "flex",
-      justifyContent: "center",
-      alignItems: "center",
-      zIndex: 9999,
-      padding: 20,
-    }}
-    role="dialog"
-    aria-modal="true"
-    aria-labelledby="tituloModal"
-    onClick={cerrarModal}
-  >
-    <div
-      style={{
-        backgroundColor: modoOscuro ? "#222" : "#fff",
-        borderRadius: 15,
-        maxWidth: 500,
-        width: "100%",
-        padding: 25,
-        boxShadow: modoOscuro
-          ? "0 8px 20px rgba(255,255,255,0.2)"
-          : "0 8px 20px rgba(0,0,0,0.2)",
-        color: modoOscuro ? "#eee" : "#222",
-        animation: "fadeInScale 0.3s ease forwards",
-        maxHeight: "80vh",
-        overflowY: "auto",
-      }}
-      onClick={(e) => e.stopPropagation()}
-    >
-      <h3 id="tituloModal" style={{ marginBottom: 20, color: "#1976d2" }}>
-        {modoEdicion ? "Editar Calificación" : "Nueva Calificación"}
-      </h3>
-
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          handleGuardar();
-        }}
-      >
-        {/* Docente */}
-        <label className="block mb-2 font-semibold">
-          Docente:
-          <select
-            name="idDocente"
-            value={formData.idDocente}
-            onChange={handleChange}
-            className="w-full p-2 mt-1 mb-4 rounded border"
-            required
-          >
-            <option value="">Seleccione un docente</option>
-            {listas.docentes.map((d, idx) => (
-              <option key={d.idUsuario ?? idx} value={d.idUsuario ?? ""}>
-                {d.nombre ?? "Sin nombre"}
-              </option>
-            ))}
-          </select>
-        </label>
-
-        {/* Inscripción */}
-        <label className="block mb-2 font-semibold">
-          Estudiante (Inscripción):
-          <select
-            name="idInscripcion"
-            value={formData.idInscripcion}
-            onChange={handleChange}
-            className="w-full p-2 mt-1 mb-4 rounded border"
-            required
-          >
-            <option value="">Seleccione una inscripción</option>
-            {Array.isArray(listas.inscripciones) &&
-              listas.inscripciones.map((i, idx) => {
-                const estudiante = listas.usuarios.find((u) => u.id_Usuario === i.idEstudiante);
-                const nombreEst = estudiante?.persona ?? `Estudiante ${i.idEstudiante}`;
-
-                return (
-                  <option key={i.iD_Inscripcion ?? idx} value={i.iD_Inscripcion ?? ""}>
-                    {nombreEst}
-                  </option>
-                );
-              })}
-          </select>
-        </label>
-
-        {/* Materia */}
-        <label className="block mb-2 font-semibold">
-          Materia:
-          <select
-            name="idMateria"
-            value={formData.idMateria}
-            onChange={handleChange}
-            className="w-full p-2 mt-1 mb-4 rounded border"
-            required
-          >
-            <option value="">Seleccione una materia</option>
-            {listas.materias.map((m, idx) => (
-              <option key={m.idMateria ?? idx} value={m.idMateria ?? ""}>
-                {m.nombreMateria ?? "Sin nombre"}
-              </option>
-            ))}
-          </select>
-        </label>
-
-        {/* Tipo Calificación */}
-        <label className="block mb-2 font-semibold">
-          Tipo Calificación:
-          <select
-            name="idTipoCalificacion"
-            value={formData.idTipoCalificacion}
-            onChange={handleChange}
-            className="w-full p-2 mt-1 mb-4 rounded border"
-            required
-          >
-            <option value="">Seleccione un tipo de calificación</option>
-            {listas.tiposCalificacion.map((t, idx) => (
-              <option key={t.idTipoCalificacion ?? idx} value={t.idTipoCalificacion ?? ""}>
-                {t.tipoCalificacionNombre ?? "Sin nombre"}
-              </option>
-            ))}
-          </select>
-        </label>
-
-        {/* Valor */}
-        <label className="block mb-2 font-semibold">
-          Valor:
-          <input
-            type="number"
-            name="valor"
-            value={formData.valor}
-            onChange={handleChange}
-            className="w-full p-2 mt-1 mb-4 rounded border"
-            required
-            step="any"
-          />
-        </label>
-
-        {/* Estado */}
-        <label className="block mb-2 font-semibold">
-          Estado:
-          <select
-            name="idEstado"
-            value={formData.idEstado}
-            onChange={handleChange}
-            className="w-full p-2 mt-1 mb-4 rounded border"
-            required
-          >
-            <option value="">Seleccione un estado</option>
-            {listas.estados
-              .filter((e) => e.idEstado === 1 || e.idEstado === 2)
-              .map((e, idx) => (
-                <option key={e.idEstado ?? idx} value={e.idEstado ?? ""}>
-                  {e.nombreEstado ?? "Sin nombre"}
-                </option>
-              ))}
-          </select>
-        </label>
-
-        {formError && (
-          <p className="text-red-500 mb-3 font-semibold">{formError}</p>
-        )}
-
-        <div className="flex justify-end">
-          <button
-            type="button"
-            onClick={cerrarModal}
-            className={`mr-4 px-4 py-2 rounded border ${
-              modoOscuro ? "border-gray-600 text-gray-300" : "border-gray-400 text-gray-700"
-            }`}
-            disabled={formLoading}
-          >
-            Cancelar
-          </button>
-          <button
-            type="submit"
-            className={`px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700 ${
-              formLoading ? "opacity-50 cursor-not-allowed" : ""
-            }`}
-            disabled={formLoading}
-          >
-            {formLoading ? "Guardando..." : modoEdicion ? "Actualizar" : "Guardar"}
-          </button>
-        </div>
-      </form>
-    </div>
-  </div>
-)}
-      </div>
+                {(esAdmin || esDocente) && (
+                  <button
+                    type="submit"
+                    className="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700"
+                  >
+                    {modoEdicion ? "Actualizar" : "Guardar"}
+                  </button>
+                )}
+              </div>
+            </form>
+          </FormularioBase>
+        </ModalBase>
+      )}
     </div>
   );
 };

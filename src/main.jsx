@@ -9,10 +9,10 @@ import { PersistGate } from 'redux-persist/integration/react';
 import { createBrowserRouter, RouterProvider, Navigate } from 'react-router-dom';
 
 import Main from './layout/Main';            // Layout principal para rutas públicas
-import Start from './components/Start';      // Página pública principal
-import Login from './components/Login';      // Login público
-import Loading from './components/Loading';  // Pantalla de carga
-import Dashboard from './components/Dashboard'; // Layout privado para rutas dentro del dashboard
+import Start from './components/Shared/Start';      // Página pública principal
+import Login from './components/Shared/Login';      // Login público
+import Loading from './components/Shared/Loading';  // Pantalla de carga
+import Dashboard from './components/Shared/Dashboard'; // Layout privado para rutas dentro del dashboard
 import PrivateRoute from './routes/PrivateRoute'; // Componente para proteger rutas privadas
 import FrmUsuarios from './components/pages/FrmUsuarios';   // Ejemplo formulario privado
 import FrmAsignacion from "./components/pages/FrmAsignacion";

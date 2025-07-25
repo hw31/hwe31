@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
-import { fetchModoOscuro } from "../theme/themeSlice"; // importa el thunk para obtener modo oscuro
+import { jwtDecode } from "jwt-decode"; 
+import { fetchModoOscuro } from "../theme/themeSlice";
 
 // Acción para verificar sesión (persistencia)
 export const checkSession = createAsyncThunk(
@@ -8,9 +9,7 @@ export const checkSession = createAsyncThunk(
     const state = getState().auth;
 
     if (state.token && state.idSesion) {
-      // Disparar fetchModoOscuro para obtener configuración guardada en backend
       await dispatch(fetchModoOscuro());
-
       return {
         isAuthenticated: true,
         ...state,
@@ -29,9 +28,10 @@ const initialState = {
   idSesion: null,
   persona: null,
   idUsuario: null,
-  modo: "light", // <-- modo claro por defecto
+  modo: "light",
   isAuthenticated: false,
   loading: true,
+  rol: null,
 };
 
 const authSlice = createSlice({
@@ -39,15 +39,38 @@ const authSlice = createSlice({
   initialState,
   reducers: {
     loginSuccess: (state, action) => {
-  state.usuario = action.payload.usuario || null;
-  state.token = action.payload.accessToken || null;
-  state.idSesion = action.payload.id_sesion || null;    // <-- CORREGIDO aquí
-  state.persona = action.payload.persona || null;
-  state.idUsuario = action.payload.id_usuario || null;  // también cambiar para idUsuario
-  state.modo = action.payload.modo_oscuro === 1 ? "dark" : "light";
-  state.isAuthenticated = true;
-  state.loading = false;
-},
+      const {
+        usuario,
+        accessToken,
+        id_sesion,
+        persona,
+        id_usuario,
+        modo_oscuro,
+      } = action.payload;
+
+      state.usuario = usuario || null;
+      state.token = accessToken || null;
+      state.idSesion = id_sesion || null;
+      state.persona = persona || null;
+      state.idUsuario = id_usuario || null;
+      state.modo = modo_oscuro === 1 ? "dark" : "light";
+      state.isAuthenticated = true;
+      state.loading = false;
+
+      if (accessToken) {
+        try {
+          const decoded = jwtDecode(accessToken); 
+          state.rol =
+            decoded[
+              "http://schemas.microsoft.com/ws/2008/06/identity/claims/role"
+            ] || decoded.role || null;
+        } catch {
+          state.rol = null;
+        }
+      } else {
+        state.rol = null;
+      }
+    },
 
     logout: (state) => {
       state.usuario = null;
@@ -58,8 +81,10 @@ const authSlice = createSlice({
       state.modo = "light";
       state.isAuthenticated = false;
       state.loading = false;
+      state.rol = null;
     },
   },
+
   extraReducers: (builder) => {
     builder.addCase(checkSession.fulfilled, (state, action) => {
       state.isAuthenticated = action.payload.isAuthenticated;
@@ -67,15 +92,32 @@ const authSlice = createSlice({
 
       if (action.payload.isAuthenticated) {
         state.usuario = action.payload.usuario;
-        state.token = action.payload.accessToken;
+        state.token = action.payload.token || action.payload.accessToken;
         state.idSesion = action.payload.idSesion;
         state.persona = action.payload.persona;
         state.idUsuario = action.payload.idUsuario;
-        state.modo = action.payload.modo_oscuro === 1 ? "dark" : "light";
+        state.modo =
+          action.payload.modo === "dark" ||
+          action.payload.modo_oscuro === 1
+            ? "dark"
+            : "light";
+
+        if (state.token) {
+          try {
+            const decoded = jwtDecode(state.token); 
+            state.rol =
+              decoded[
+                "http://schemas.microsoft.com/ws/2008/06/identity/claims/role"
+              ] || decoded.role || null;
+          } catch {
+            state.rol = null;
+          }
+        }
       }
     });
   },
 });
 
 export const { loginSuccess, logout } = authSlice.actions;
+export const selectRol = (state) => state.auth.rol;
 export default authSlice.reducer;

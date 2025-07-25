@@ -5,7 +5,7 @@ import {
   Calendar, Book, Edit, Award, MapPin, Clock, Clipboard,
   Percent, Activity, Settings, FileText,
 } from "lucide-react";
-import { getMenu } from "../services/menuService";
+import { getMenu } from "../../services/menuService";
 
 const iconMap = {
   home: Home,

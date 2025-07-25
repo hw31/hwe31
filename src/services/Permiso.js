@@ -3,7 +3,7 @@ import api from './api';
 /* INSERTAR */
 const insertarPermiso = async (datosPermiso) => {
   try {
-    const res = await api.post('Personas/insertar', datosPermiso);
+    const res = await api.post('Permisos/insertar', datosPermiso);
 
     if (res.data.success) {
       console.log('Permiso insertado correctamente');
@@ -19,7 +19,7 @@ const insertarPermiso = async (datosPermiso) => {
 /* ACTUALIZAR */
 const actualizarPermiso = async (datosPermiso) => {
   try {
-    const res = await api.put('Personas/actualizar', datosPermiso);
+    const res = await api.put('Permisos/actualizar', datosPermiso);
 
     if (res.data.success) {
       console.log('Permiso actualizado correctamente');
@@ -35,7 +35,7 @@ const actualizarPermiso = async (datosPermiso) => {
 /* FILTRAR POR ID */
 const filtrarPorIdPermiso = async (idPermiso) => {
   try {
-    const res = await api.get('Personas/filtrar_por_id', {
+    const res = await api.get('Permisos/filtrar_por_id', {
       params: { idPermiso }
     });
     return res.data;
@@ -48,7 +48,7 @@ const filtrarPorIdPermiso = async (idPermiso) => {
 /* LISTAR PERMISOS */
 const listarPermisos = async () => {
   try {
-    const res = await api.get('Personas/listar');
+    const res = await api.get('Permisos/listar');
     return res.data;
   } catch (error) {
     console.error('Error al listar permisos:', error.message);

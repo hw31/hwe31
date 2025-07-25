@@ -2,11 +2,11 @@ import React, { useEffect, useState, useRef } from "react";
 import { useNavigate, Outlet, useLocation } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
 import { Moon, Sun, LogOut, User } from "lucide-react";
-import authService from "../services/authService";
+import authService from "../../services/authService";
 import styled from "styled-components";
-import { logout as logoutAction } from "../features/Auth/authSlice";
-import { toggleModoOscuro, fetchModoOscuro, setModoOscuro } from "../features/theme/themeSlice";
-import SidebarMenu from "../components/SidebarMenu";
+import { logout as logoutAction } from "../../features/Auth/authSlice";
+import { toggleModoOscuro, fetchModoOscuro, setModoOscuro } from "../../features/theme/themeSlice";
+import SidebarMenu from "../Shared/SidebarMenu";
 
 const Dashboard = () => {
   const dispatch = useDispatch();

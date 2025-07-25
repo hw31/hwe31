@@ -1,154 +1,211 @@
-import React, { useEffect, useState } from 'react';
-import Swal from 'sweetalert2';
-import usuariosRolesService from '../../services/UsuariosRoles';
-import { FaPlus, FaEdit } from 'react-icons/fa';
+import React, { useEffect, useState } from "react";
+import { useSelector } from "react-redux";
+import Swal from "sweetalert2";
+import usuarioRolService from "../../services/UsuariosRoles";
+import usuarioService from "../../services/Usuario";
+import rolService from "../../services/Roles";
+import estadoService from "../../services/Estado";
+
+import TablaBase from "../../shared/TablaBase";
+import ModalBase from "../../shared/ModalBase";
+import BuscadorBase from "../../shared/BuscadorBase";
+import ContadoresBase from "../../shared/ContadoresBase";
 
 const FrmUsuariosRoles = () => {
+  const modoOscuro = useSelector((state) => state.tema.modoOscuro);
+
   const [usuariosRoles, setUsuariosRoles] = useState([]);
-  const [modoEdicion, setModoEdicion] = useState(false);
+  const [usuarios, setUsuarios] = useState([]);
+  const [roles, setRoles] = useState([]);
+  const [estados, setEstados] = useState([]);
+
   const [form, setForm] = useState({
-    idUsuarioRol: 0,
-    idUsuario: '',
-    idRol: '',
-    estado: 'Activo'
+    idUsuarioRoles: 0,
+    idUsuario: "",
+    idRol: "",
+    idEstado: 1,
   });
 
-  const obtenerDatos = async () => {
-    const res = await usuariosRolesService.listarUsuariosRoles();
-    if (res && Array.isArray(res)) {
-      setUsuariosRoles(res);
-    }
-  };
+  const [modoEdicion, setModoEdicion] = useState(false);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [busqueda, setBusqueda] = useState("");
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setForm(prev => ({ ...prev, [name]: value }));
-  };
-
-  const limpiarFormulario = () => {
-    setForm({ idUsuarioRol: 0, idUsuario: '', idRol: '', estado: 'Activo' });
-    setModoEdicion(false);
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
-    const datos = {
-      idUsuario: Number(form.idUsuario),
-      idRol: Number(form.idRol),
-      estado: form.estado
-    };
-
-    try {
-      let res;
-      if (modoEdicion) {
-        datos.idUsuarioRol = form.idUsuarioRol;
-        res = await usuariosRolesService.actualizarUsuarioRol(datos);
-      } else {
-        res = await usuariosRolesService.insertarUsuarioRol(datos);
-      }
-
-      if (res.success) {
-        Swal.fire('Éxito', res.message, 'success');
-        obtenerDatos();
-        limpiarFormulario();
-      } else {
-        Swal.fire('Error', res.message || 'No se pudo completar la operación.', 'error');
-      }
-    } catch (error) {
-      Swal.fire('Error', 'Ocurrió un error en la operación', 'error');
-    }
-  };
-
-  const seleccionar = (relacion) => {
-    setForm({ ...relacion });
-    setModoEdicion(true);
-  };
-
+  // Fetch inicial
   useEffect(() => {
     obtenerDatos();
   }, []);
 
+  const obtenerDatos = async () => {
+    try {
+      const [resUR, resU, resR, resE] = await Promise.all([
+        usuarioRolService.listarUsuariosRoles(),
+        usuarioService.listarUsuarios(),
+        rolService.listarRoles(),
+        estadoService.listarEstados(),
+      ]);
+
+      const estadosFiltrados = resE.filter((e) => e.idEstado === 1 || e.idEstado === 2);
+
+      const data = resUR.map((ur) => {
+        const usuario = resU.find((u) => u.idUsuario === ur.idUsuario);
+        const rol = resR.find((r) => r.idRol === ur.idRol);
+        const estado = estadosFiltrados.find((e) => e.idEstado === ur.idEstado);
+        return {
+          ...ur,
+          nombreUsuario: usuario?.nombreCompleto || "N/D",
+          nombreRol: rol?.nombreRol || "N/D",
+          nombreEstado: estado?.nombreEstado || "N/D",
+        };
+      });
+
+      setUsuariosRoles(data);
+      setUsuarios(resU);
+      setRoles(resR);
+      setEstados(estadosFiltrados);
+    } catch (error) {
+      console.error("Error cargando datos:", error);
+    }
+  };
+
+  const abrirModal = () => {
+    setModoEdicion(false);
+    setForm({ idUsuarioRoles: 0, idUsuario: "", idRol: "", idEstado: 1 });
+    setModalOpen(true);
+  };
+
+  const abrirModalEdicion = (item) => {
+    setModoEdicion(true);
+    setForm({ ...item });
+    setModalOpen(true);
+  };
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setForm({ ...form, [name]: value });
+  };
+
+  const handleGuardar = async () => {
+    try {
+      const datos = {
+        idUsuario: Number(form.idUsuario),
+        idRol: Number(form.idRol),
+        idEstado: Number(form.idEstado),
+      };
+
+      let res;
+      if (modoEdicion) {
+        datos.idUsuarioRoles = form.idUsuarioRoles;
+        res = await usuarioRolService.actualizarUsuarioRol(datos);
+      } else {
+        res = await usuarioRolService.insertarUsuarioRol(datos);
+      }
+
+      if (res.success) {
+        Swal.fire("Éxito", res.message, "success");
+        setModalOpen(false);
+        obtenerDatos();
+      } else {
+        Swal.fire("Error", res.message, "error");
+      }
+    } catch (error) {
+      console.error("Error al guardar:", error.message);
+    }
+  };
+
+  const columnas = [
+    { key: "idUsuarioRoles", label: "ID" },
+    { key: "nombreUsuario", label: "Usuario" },
+    { key: "nombreRol", label: "Rol" },
+    { key: "nombreEstado", label: "Estado" },
+  ];
+
+  const datosFiltrados = usuariosRoles.filter((item) =>
+    item.nombreUsuario.toLowerCase().includes(busqueda.toLowerCase())
+  );
+
+  const total = usuariosRoles.length;
+  const activos = usuariosRoles.filter((u) => u.idEstado === 1).length;
+  const inactivos = usuariosRoles.filter((u) => u.idEstado === 2).length;
+
   return (
-    <div className="p-4 max-w-5xl mx-auto">
-      <h2 className="text-2xl font-bold mb-4">Gestión de Roles por Usuario</h2>
+    <div className="p-4 max-w-6xl mx-auto">
+      {/* Contadores y botón */}
+      <ContadoresBase
+        total={total}
+        activos={activos}
+        inactivos={inactivos}
+        onAgregar={abrirModal}
+      />
 
-      <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        <input
-          type="number"
-          name="idUsuario"
-          placeholder="ID Usuario"
-          value={form.idUsuario}
-          onChange={handleChange}
-          required
-          className="p-2 rounded bg-gray-900 text-white"
-        />
-        <input
-          type="number"
-          name="idRol"
-          placeholder="ID Rol"
-          value={form.idRol}
-          onChange={handleChange}
-          required
-          className="p-2 rounded bg-gray-900 text-white"
-        />
-        <select
-          name="estado"
-          value={form.estado}
-          onChange={handleChange}
-          className="p-2 rounded bg-gray-900 text-white"
-        >
-          <option value="Activo">Activo</option>
-          <option value="Inactivo">Inactivo</option>
-        </select>
+      {/* Buscador */}
+      <BuscadorBase
+        valor={busqueda}
+        onChange={(e) => setBusqueda(e.target.value)}
+        placeholder="Buscar por nombre de usuario..."
+      />
 
-        <button
-          type="submit"
-          className="md:col-span-3 bg-green-600 hover:bg-green-700 text-white p-2 rounded flex items-center justify-center gap-2"
-        >
-          {modoEdicion ? <FaEdit /> : <FaPlus />}
-          {modoEdicion ? 'Actualizar' : 'Registrar'}
-        </button>
-      </form>
+      {/* Tabla */}
+      <TablaBase
+        datos={datosFiltrados}
+        columnas={columnas}
+        modoOscuro={modoOscuro}
+        texto="text-gray-800 dark:text-white"
+        onEditar={abrirModalEdicion}
+        encabezadoClase="bg-gray-200 dark:bg-gray-800 text-gray-800 dark:text-white"
+      />
 
-      <div className="overflow-x-auto">
-        <table className="w-full table-auto bg-gray-950 text-white rounded shadow">
-          <thead className="bg-gray-800">
-            <tr>
-              <th className="p-2">ID</th>
-              <th className="p-2">Usuario</th>
-              <th className="p-2">Rol</th>
-              <th className="p-2">Estado</th>
-              <th className="p-2">Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            {usuariosRoles.map((rel) => (
-              <tr key={rel.idUsuarioRol} className="border-t border-gray-700 hover:bg-gray-800">
-                <td className="p-2 text-center">{rel.idUsuarioRol}</td>
-                <td className="p-2 text-center">{rel.idUsuario}</td>
-                <td className="p-2 text-center">{rel.idRol}</td>
-                <td className="p-2 text-center">{rel.estado}</td>
-                <td className="p-2 text-center">
-                  <button
-                    onClick={() => seleccionar(rel)}
-                    className="text-yellow-400 hover:text-yellow-300"
-                  >
-                    <FaEdit />
-                  </button>
-                </td>
-              </tr>
+      {/* Modal */}
+      <ModalBase
+        isOpen={modalOpen}
+        onClose={() => setModalOpen(false)}
+        onGuardar={handleGuardar}
+        titulo={modoEdicion ? "Editar Asignación" : "Nueva Asignación"}
+      >
+        {/* Campos */}
+        <div className="grid gap-4">
+          <select
+            name="idUsuario"
+            value={form.idUsuario}
+            onChange={handleChange}
+            className="p-2 rounded bg-white dark:bg-gray-800 dark:text-white"
+          >
+            <option value="">Seleccione un usuario</option>
+            {usuarios.map((u) => (
+              <option key={u.idUsuario} value={u.idUsuario}>
+                {u.nombreCompleto}
+              </option>
             ))}
-            {usuariosRoles.length === 0 && (
-              <tr>
-                <td colSpan="5" className="p-4 text-center text-gray-500">
-                  No hay registros
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
+          </select>
+
+          <select
+            name="idRol"
+            value={form.idRol}
+            onChange={handleChange}
+            className="p-2 rounded bg-white dark:bg-gray-800 dark:text-white"
+          >
+            <option value="">Seleccione un rol</option>
+            {roles.map((r) => (
+              <option key={r.idRol} value={r.idRol}>
+                {r.nombreRol}
+              </option>
+            ))}
+          </select>
+
+          <select
+            name="idEstado"
+            value={form.idEstado}
+            onChange={handleChange}
+            className="p-2 rounded bg-white dark:bg-gray-800 dark:text-white"
+          >
+            <option value="">Seleccione estado</option>
+            {estados.map((e) => (
+              <option key={e.idEstado} value={e.idEstado}>
+                {e.nombreEstado}
+              </option>
+            ))}
+          </select>
+        </div>
+      </ModalBase>
     </div>
   );
 };
