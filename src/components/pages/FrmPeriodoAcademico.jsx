@@ -1,172 +1,145 @@
-import React, { useState, useEffect } from "react";
-import periodoService from "../../services/PeriodoAcademico"; 
-import Swal from "sweetalert2";
+import React, { useEffect, useState } from "react";
+import { FaPlus, FaEdit } from "react-icons/fa";
 
-const FrmPeriodosAcademicos = () => {
+const FrmPeriodoAcademico = () => {
   const [periodos, setPeriodos] = useState([]);
-  const [form, setForm] = useState({ idPeriodo: "", nombre: "", fechaInicio: "", fechaFin: "" });
-  const [modoEdicion, setModoEdicion] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [modalAbierto, setModalAbierto] = useState(false);
+  const [formData, setFormData] = useState({
+    nombre: "",
+    fechaInicio: "",
+    fechaFin: "",
+  });
 
   useEffect(() => {
-    cargarPeriodos();
+    // Aquí puedes cargar datos mock o reales
+    setPeriodos([
+      { id: 1, nombre: "2024-I", fechaInicio: "2024-01-15", fechaFin: "2024-06-30" },
+      { id: 2, nombre: "2024-II", fechaInicio: "2024-07-01", fechaFin: "2024-12-15" },
+    ]);
   }, []);
 
-  const cargarPeriodos = async () => {
-    try {
-      setLoading(true);
-      const data = await periodoService.listarPeriodosAcademicos();
-      setPeriodos(data);
-    } catch (error) {
-      console.error("Error cargando periodos", error);
-      Swal.fire("Error", "No se pudieron cargar los periodos académicos", "error");
-    } finally {
-      setLoading(false);
-    }
+  const abrirModal = () => setModalAbierto(true);
+  const cerrarModal = () => {
+    setModalAbierto(false);
+    setFormData({ nombre: "", fechaInicio: "", fechaFin: "" });
   };
 
   const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
-    if (!form.nombre.trim()) {
-      return Swal.fire("Atención", "El nombre del periodo es obligatorio", "warning");
-    }
-    if (!form.fechaInicio) {
-      return Swal.fire("Atención", "La fecha de inicio es obligatoria", "warning");
-    }
-    if (!form.fechaFin) {
-      return Swal.fire("Atención", "La fecha de fin es obligatoria", "warning");
-    }
-    try {
-      if (modoEdicion) {
-        const res = await periodoService.actualizarPeriodoAcademico(form);
-        if (res.success) {
-          Swal.fire("Actualizado", "Periodo académico actualizado correctamente", "success");
-          setModoEdicion(false);
-          setForm({ idPeriodo: "", nombre: "", fechaInicio: "", fechaFin: "" });
-          cargarPeriodos();
-        }
-      } else {
-        const res = await periodoService.insertarPeriodoAcademico(form);
-        if (res.success) {
-          Swal.fire("Agregado", "Periodo académico insertado correctamente", "success");
-          setForm({ idPeriodo: "", nombre: "", fechaInicio: "", fechaFin: "" });
-          cargarPeriodos();
-        }
-      }
-    } catch (error) {
-      Swal.fire("Error", "Hubo un problema al guardar el periodo académico", "error");
-    }
-  };
-
-  const editar = async (id) => {
-    try {
-      const periodo = await periodoService.filtrarPorIdPeriodo(id);
-      setForm(periodo);
-      setModoEdicion(true);
-    } catch (error) {
-      Swal.fire("Error", "No se pudo cargar el periodo para editar", "error");
-    }
+    const nuevoPeriodo = { id: Date.now(), ...formData };
+    setPeriodos((prev) => [...prev, nuevoPeriodo]);
+    cerrarModal();
   };
 
   return (
-    <div className="container mx-auto p-4 max-w-2xl">
-      <h2 className="text-2xl font-bold mb-4 text-gray-900 dark:text-gray-100">
-        {modoEdicion ? "Editar Periodo Académico" : "Nuevo Periodo Académico"}
-      </h2>
+    <div className="p-6">
+      <h2 className="text-2xl font-semibold mb-4">Gestión de Periodos Académicos</h2>
 
-      <form onSubmit={handleSubmit} className="mb-6 space-y-4">
-        <input
-          type="text"
-          name="nombre"
-          placeholder="Nombre del periodo"
-          value={form.nombre}
-          onChange={handleChange}
-          className="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white"
-        />
-        <div className="flex gap-4">
-          <input
-            type="date"
-            name="fechaInicio"
-            placeholder="Fecha de inicio"
-            value={form.fechaInicio}
-            onChange={handleChange}
-            className="flex-1 px-3 py-2 border rounded dark:bg-gray-700 dark:text-white"
-          />
-          <input
-            type="date"
-            name="fechaFin"
-            placeholder="Fecha de fin"
-            value={form.fechaFin}
-            onChange={handleChange}
-            className="flex-1 px-3 py-2 border rounded dark:bg-gray-700 dark:text-white"
-          />
-        </div>
+      <div className="mb-4 flex justify-between items-center">
         <button
-          type="submit"
-          className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+          onClick={abrirModal}
+          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 flex items-center gap-2"
         >
-          {modoEdicion ? "Actualizar" : "Agregar"}
+          <FaPlus /> Agregar Periodo
         </button>
-        {modoEdicion && (
-          <button
-            type="button"
-            onClick={() => {
-              setModoEdicion(false);
-              setForm({ idPeriodo: "", nombre: "", fechaInicio: "", fechaFin: "" });
-            }}
-            className="ml-2 px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700"
-          >
-            Cancelar
-          </button>
-        )}
-      </form>
+      </div>
 
-      <h3 className="text-xl font-semibold mb-2 text-gray-900 dark:text-gray-100">
-        Lista de Periodos Académicos
-      </h3>
-
-      {loading ? (
-        <p className="text-gray-700 dark:text-gray-300">Cargando...</p>
-      ) : periodos.length === 0 ? (
-        <p className="text-gray-700 dark:text-gray-300">No hay periodos académicos registrados.</p>
-      ) : (
-        <table className="w-full table-auto border-collapse border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100">
-          <thead>
+      <div className="overflow-x-auto shadow rounded-lg border border-gray-200">
+        <table className="min-w-full divide-y divide-gray-200">
+          <thead className="bg-gray-100">
             <tr>
-              <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-left">ID</th>
-              <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-left">Nombre</th>
-              <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-left">Fecha Inicio</th>
-              <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-left">Fecha Fin</th>
-              <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-center">Acciones</th>
+              <th className="px-4 py-2 text-left text-sm font-medium">Nombre</th>
+              <th className="px-4 py-2 text-left text-sm font-medium">Fecha Inicio</th>
+              <th className="px-4 py-2 text-left text-sm font-medium">Fecha Fin</th>
+              <th className="px-4 py-2 text-sm font-medium">Acciones</th>
             </tr>
           </thead>
-          <tbody>
+          <tbody className="bg-white divide-y divide-gray-100">
             {periodos.map((p) => (
-              <tr key={p.idPeriodo} className="hover:bg-gray-100 dark:hover:bg-gray-700">
-                <td className="border border-gray-300 dark:border-gray-600 px-3 py-2">{p.idPeriodo}</td>
-                <td className="border border-gray-300 dark:border-gray-600 px-3 py-2">{p.nombre}</td>
-                <td className="border border-gray-300 dark:border-gray-600 px-3 py-2">{p.fechaInicio}</td>
-                <td className="border border-gray-300 dark:border-gray-600 px-3 py-2">{p.fechaFin}</td>
-                <td className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-center">
+              <tr key={p.id}>
+                <td className="px-4 py-2 text-sm">{p.nombre}</td>
+                <td className="px-4 py-2 text-sm">{p.fechaInicio}</td>
+                <td className="px-4 py-2 text-sm">{p.fechaFin}</td>
+                <td className="px-4 py-2 text-center text-sm">
                   <button
-                    onClick={() => editar(p.idPeriodo)}
-                    className="px-2 py-1 bg-yellow-500 text-white rounded hover:bg-yellow-600"
-                    title="Editar"
+                    className="text-yellow-500 hover:text-yellow-700"
+                    onClick={() => {
+                      setFormData(p);
+                      setModalAbierto(true);
+                    }}
                   >
-                    Editar
+                    <FaEdit />
                   </button>
                 </td>
               </tr>
             ))}
+            {periodos.length === 0 && (
+              <tr>
+                <td colSpan={4} className="px-4 py-4 text-center text-gray-400">
+                  No hay periodos registrados.
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
+      </div>
+
+      {modalAbierto && (
+        <div className="fixed inset-0 flex justify-center items-center bg-black bg-opacity-40 z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md shadow-lg">
+            <h3 className="text-lg font-semibold mb-4">Periodo Académico</h3>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <input
+                type="text"
+                name="nombre"
+                value={formData.nombre}
+                onChange={handleChange}
+                placeholder="Nombre del periodo"
+                className="w-full px-3 py-2 border rounded"
+                required
+              />
+              <input
+                type="date"
+                name="fechaInicio"
+                value={formData.fechaInicio}
+                onChange={handleChange}
+                className="w-full px-3 py-2 border rounded"
+                required
+              />
+              <input
+                type="date"
+                name="fechaFin"
+                value={formData.fechaFin}
+                onChange={handleChange}
+                className="w-full px-3 py-2 border rounded"
+                required
+              />
+              <div className="flex justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={cerrarModal}
+                  className="px-4 py-2 rounded bg-gray-300 hover:bg-gray-400"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700"
+                >
+                  Guardar
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
       )}
     </div>
   );
 };
 
-export default FrmPeriodosAcademicos;
+export default FrmPeriodoAcademico;

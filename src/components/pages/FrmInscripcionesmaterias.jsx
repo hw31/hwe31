@@ -5,6 +5,7 @@ import inscripcionService from "../../services/Inscripcion";
 import materiaService from "../../services/Materias";
 import estadoService from "../../services/Estado";
 import usuarioService from "../../services/Usuario";
+ 
 import Swal from "sweetalert2";
 import { FaEdit, FaPlus, FaUserCheck, FaUserTimes, FaUser,FaCheckCircle, FaTimesCircle } from "react-icons/fa";
 
@@ -39,7 +40,7 @@ const FrmInscripcionesMaterias = () => {
   const cargarListas = async () => {
     setLoadingListas(true);
     try {
-      const [materiasResp, estadosResp, usuariosResp] = await Promise.all([
+      const [materiasResp, estadosResp, usuariosResp,] = await Promise.all([
         materiaService.listarMaterias(),
         estadoService.listarEstados(),
         usuarioService.listarUsuario(),
@@ -80,18 +81,19 @@ const FrmInscripcionesMaterias = () => {
   };
 
   // Cargar inscripciones para obtener los nombres de estudiantes
-  const cargarInscripciones = async () => {
-    try {
-      const resultado = await inscripcionService.listarInscripcion();
-      setListas((prev) => ({
-        ...prev,
-        inscripciones: resultado,
-      }));
-    } catch (err) {
-      console.error(err);
-      setError("Error al listar inscripciones.");
-    }
-  };
+const cargarInscripciones = async () => {
+  try {
+    const resultado = await inscripcionService.listarInscripciones();
+    setListas((prev) => ({
+      ...prev,
+      inscripciones: resultado,
+    }));
+  } catch (err) {
+    console.error(err);
+    setError("Error al listar inscripciones.");
+  }
+};
+
 
   useEffect(() => {
     cargarListas();
@@ -100,9 +102,10 @@ const FrmInscripcionesMaterias = () => {
   }, []);
 
   // Funciones para obtener nombres según IDs
-  const buscarNombreEstudiante = (idInscripcion) =>
-    listas.inscripciones.find((i) => Number(i.iD_Inscripcion) === Number(idInscripcion))
-      ?.nombreEstudiante ?? "N/A";
+const buscarNombreEstudiante = (idInscripcion) =>
+  listas.inscripciones.find((i) => Number(i.iD_Inscripcion) === Number(idInscripcion))
+    ?.nombreEstudiante ?? "N/A";
+
 
   const buscarNombreMateria = (id) =>
     listas.materias.find((m) => Number(m.idMateria) === Number(id))?.nombreMateria ?? "";
@@ -184,44 +187,56 @@ const FrmInscripcionesMaterias = () => {
     return true;
   };
 
-  const handleGuardar = async () => {
-    if (!validarFormulario()) return;
+const handleGuardar = async () => {
+  if (!validarFormulario()) return;
 
-    try {
-      setFormLoading(true);
-      let res;
-      if (modoEdicion && inscripcionSeleccionada) {
-        res = await inscripcionesmateriaService.actualizarInscripcionMateria({
-          idInscripcionMateria: inscripcionSeleccionada.idInscripcionMateria,
-          ...formData,
-        });
-      } else {
-        res = await inscripcionesmateriaService.insertarInscripcionMateria(formData);
-      }
+  try {
+    setFormLoading(true);
+    let res;
 
-      if (res.success) {
-        await cargarInscripcionesMaterias();
-        cerrarModal();
-        Swal.fire({
-          icon: "success",
-          title: modoEdicion ? "Actualizado" : "Guardado",
-          timer: 1500,
-          showConfirmButton: false,
-        });
-      } else {
-        throw new Error(res.mensaje || "Error en la operación.");
-      }
-    } catch (err) {
-      console.error(err);
+    if (modoEdicion && inscripcionSeleccionada) {
+      res = await inscripcionesmateriaService.actualizarInscripcionMateria({
+        idInscripcionMateria: inscripcionSeleccionada.idInscripcionMateria,
+        ...formData,
+      });
+    } else {
+      res = await inscripcionesmateriaService.insertarInscripcionMateria(formData);
+    }
+
+    // Si todo va bien (no entró en catch), mostramos éxito
+    if (res.success) {
+      await cargarInscripcionesMaterias();
+      cerrarModal();
+      Swal.fire({
+        icon: "success",
+        title: modoEdicion ? "Actualizado" : "Guardado",
+        timer: 1500,
+        showConfirmButton: false,
+      });
+    } else {
+      cerrarModal();
       Swal.fire({
         icon: "error",
         title: "Error",
-        text: err.message || "Error inesperado",
+        text: res.mensaje || "Ocurrió un error",
       });
-    } finally {
-      setFormLoading(false);
     }
-  };
+  } catch (err) {
+    cerrarModal(); 
+
+    const mensaje =
+      err.response?.data?.mensaje || err.message || "Error inesperado";
+
+    Swal.fire({
+      icon: "error",
+      title: "Error",
+      text: mensaje,
+    });
+  } finally {
+    setFormLoading(false);
+  }
+};
+
 
   // Estilos condicionales
   const fondo = modoOscuro ? "bg-gray-900" : "bg-white";
@@ -234,7 +249,7 @@ const FrmInscripcionesMaterias = () => {
         <div style={{ maxWidth: 600, margin: "20px auto 30px", width: "90%" }}>
           <input
             type="text"
-            placeholder="Buscar por estudiante, materia o estado..."
+            placeholder="Buscar..."
             value={busqueda}
             onChange={handleBusquedaChange}
             style={{
@@ -252,114 +267,144 @@ const FrmInscripcionesMaterias = () => {
             }}
             onFocus={(e) => (e.target.style.borderColor = modoOscuro ? "#90caf9" : "#1976d2")}
             onBlur={(e) => (e.target.style.borderColor = modoOscuro ? "#444" : "#ccc")}
-            aria-label="Buscar inscripciones por estudiante, materia o estado"
           />
         </div>
 
         <div className="flex flex-wrap justify-between items-center mb-6 gap-4">
-          {/* Contadores */}
-          <div className="flex flex-wrap justify-center gap-6 flex-grow min-w-[250px]">
-            <div
-              style={{
-                background: "linear-gradient(135deg, #127f45ff, #0c0b0bff)",
-                color: "white",
-                padding: "14px 24px",
-                borderRadius: 10,
-                fontWeight: "700",
-                fontSize: 18,
-                minWidth: 140,
-                textAlign: "center",
-                boxShadow: "0 3px 8px rgba(2, 79, 33, 0.4)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: 8,
-                userSelect: "none",
-                cursor: "default",
-              }}
-              aria-label={`Inscripciones activas: ${activos}`}
-            >
-              <FaUserCheck /> Activas
-              <div style={{ fontSize: 26, marginLeft: 8 }}>{activos}</div>
-            </div>
+  {/* Contenedores de contadores centrados */}
+  <div className="flex flex-wrap justify-center gap-6 flex-grow min-w-[250px]">
+    {/* Activos */}
+    <div
+      style={{
+        background: "linear-gradient(135deg, #127f45ff, #0c0b0bff)",
+        color: "white",
+        padding: "14px 24px",
+        borderRadius: 10,
+        fontWeight: "700",
+        fontSize: 18,
+        minWidth: 140,
+        textAlign: "center",
+        boxShadow: "0 3px 8px rgba(2, 79, 33, 0.4)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 8,
+        userSelect: "none",
+        cursor: "pointer",
+        transition: "background 0.3s ease",
+      }}
+      aria-label={`Usuarios activos: ${activos}`}
+      onMouseEnter={(e) =>
+        (e.currentTarget.style.background =
+          "linear-gradient(135deg, #0c0b0bff,  #084b27 )")
+      }
+      onMouseLeave={(e) =>
+        (e.currentTarget.style.background =
+          "linear-gradient(135deg, #127f45ff, #0c0b0bff)")
+      }
+    >
+      <FaUserCheck /> Activos
+      <div style={{ fontSize: 26, marginLeft: 8 }}>{activos}</div>
+    </div>
 
-            <div
-              style={{
-                background: "linear-gradient(135deg, #ef5350, #0c0b0bff)",
-                color: "white",
-                padding: "14px 24px",
-                borderRadius: 10,
-                fontWeight: "700",
-                fontSize: 18,
-                minWidth: 140,
-                textAlign: "center",
-                boxShadow: "0 3px 8px rgba(244,67,54,0.4)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: 8,
-                userSelect: "none",
-                cursor: "default",
-              }}
-              aria-label={`Inscripciones inactivas: ${inactivos}`}
-            >
-              <FaUserTimes /> Inactivas
-              <div style={{ fontSize: 26, marginLeft: 8 }}>{inactivos}</div>
-            </div>
+    {/* Inactivos */}
+    <div
+      style={{
+        background: "linear-gradient(135deg, #ef5350, #0c0b0bff)",
+        color: "white",
+        padding: "14px 24px",
+        borderRadius: 10,
+        fontWeight: "700",
+        fontSize: 18,
+        minWidth: 140,
+        textAlign: "center",
+        boxShadow: "0 3px 8px rgba(244,67,54,0.4)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 8,
+        userSelect: "none",
+        cursor: "pointer",
+        transition: "background 0.3s ease",
+      }}
+      aria-label={`Usuarios inactivos: ${inactivos}`}
+      onMouseEnter={(e) =>
+        (e.currentTarget.style.background =
+          "linear-gradient(135deg, #101010ff, #de1717ff)")
+      }
+      onMouseLeave={(e) =>
+        (e.currentTarget.style.background =
+          "linear-gradient(135deg, #ef5350, #0c0b0bff)")
+      }
+    >
+      <FaUserTimes /> Inactivos
+      <div style={{ fontSize: 26, marginLeft: 8 }}>{inactivos}</div>
+    </div>
 
-            <div
-              style={{
-                background: "linear-gradient(135deg, #0960a8ff, #20262dff)",
-                color: "white",
-                padding: "14px 24px",
-                borderRadius: 10,
-                fontWeight: "700",
-                fontSize: 18,
-                minWidth: 140,
-                textAlign: "center",
-                boxShadow: "0 3px 8px rgba(25,118,210,0.4)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: 8,
-                userSelect: "none",
-                cursor: "default",
-              }}
-              aria-label={`Total inscripciones: ${total}`}
-            >
-              <FaUser /> Total
-              <div style={{ fontSize: 26, marginLeft: 8 }}>{total}</div>
-            </div>
-          </div>
+    {/* Total */}
+    <div
+      style={{
+        background: "linear-gradient(135deg, #0960a8ff, #20262dff)",
+        color: "white",
+        padding: "14px 24px",
+        borderRadius: 10,
+        fontWeight: "700",
+        fontSize: 18,
+        minWidth: 140,
+        textAlign: "center",
+        boxShadow: "0 3px 8px rgba(25,118,210,0.4)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 8,
+        userSelect: "none",
+        cursor: "pointer",
+        transition: "background 0.3s ease",
+      }}
+      aria-label={`Total de usuarios: ${total}`}
+      onMouseEnter={(e) =>
+        (e.currentTarget.style.background =
+          "linear-gradient(135deg, #20262dff, #0d47a1)")
+      }
+      onMouseLeave={(e) =>
+        (e.currentTarget.style.background =
+          "linear-gradient(135deg, #0960a8ff, #20262dff)")
+      }
+    >
+      <FaUser /> Total
+      <div style={{ fontSize: 26, marginLeft: 8 }}>{total}</div>
+    </div>
+  </div>
 
-          {/* Botón Nuevo */}
-          <button
-            onClick={abrirModalNuevo}
-            style={{
-              backgroundColor: "#1976d2",
-              border: "none",
-              color: "#fff",
-              padding: "12px 22px",
-              borderRadius: 8,
-              cursor: "pointer",
-              fontWeight: "600",
-              fontSize: 20,
-              display: "flex",
-              alignItems: "center",
-              gap: 10,
-              userSelect: "none",
-              transition: "background-color 0.3s ease",
-              whiteSpace: "nowrap",
-              marginTop: "8px",
-            }}
-            onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#115293")}
-            onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#1976d2")}
-            type="button"
-            aria-label="Agregar nueva inscripción"
-          >
-            <FaPlus /> Nuevo
-          </button>
-        </div>
+  {/* Botón "Nuevo" alineado a la derecha */}
+  <button
+    onClick={abrirModalNuevo}
+    style={{
+      backgroundColor: "#1976d2",
+      border: "none",
+      color: "#fff",
+      padding: "12px 22px",
+      borderRadius: 8,
+      cursor: "pointer",
+      fontWeight: "600",
+      fontSize: 20,
+      display: "flex",
+      alignItems: "center",
+      gap: 10,
+      userSelect: "none",
+      transition: "background-color 0.3s ease",
+      whiteSpace: "nowrap",
+      marginTop: "8px",
+    }}
+    onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#115293")}
+    onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#1976d2")}
+    type="button"
+    aria-label="Agregar nueva asignación docente"
+  >
+    <FaPlus /> Nuevo
+  </button>
+</div>
+
 
         {/* Mensajes de estado */}
         {(loading || loadingListas) && <p className="text-gray-400 italic">Cargando datos...</p>}
@@ -386,40 +431,53 @@ const FrmInscripcionesMaterias = () => {
                   <th className="px-4 py-2 text-left text-sm font-semibold">Acciones</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100">
-                {inscripcionesFiltradas.map((i) => (
-                  <tr
-                    key={i.idInscripcionMateria}
-                    className={`transition-colors ${modoOscuro ? "hover:bg-gray-700" : "hover:bg-blue-50"}`}
-                  >
-                   {/* <td className={`px-4 py-2 text-sm ${texto}`}>{i.idInscripcionMateria}</td>*/}
-                    <td className={`px-4 py-2 text-sm ${texto}`}>{buscarNombreEstudiante(i.idInscripcion)}</td>
-                    <td className={`px-4 py-2 text-sm ${texto}`}>{buscarNombreMateria(i.idMateria)}</td>
-                   
-                    <td className={`px-4 py-2 text-sm ${texto}`}>{buscarNombreUsuario(i.idCreador)}</td>
-                    <td className={`px-4 py-2 text-sm ${texto}`}>{buscarNombreUsuario(i.idModificador)}</td>
-                    <td className={`px-4 py-2 text-sm ${texto}`}>{new Date(i.fechaCreacion).toLocaleString()}</td>
-                    <td className={`px-4 py-2 text-sm ${texto}`}>{new Date(i.fechaModificacion).toLocaleString()}</td>
-                    <td className="px-4 py-2 text-center">
-                      {buscarNombreEstado(i.idEstado).toLowerCase() === "activo" ? (
-                        <FaCheckCircle className="text-green-500 text-xl mx-auto" />
-                      ) : (
-                        <FaTimesCircle className="text-red-500 text-xl mx-auto" />
-                      )}
-                    </td>
+             <tbody className="divide-y divide-gray-100">
+  {inscripcionesFiltradas.map((i) => {
+    console.log("InscripcionMateria fila:", i);
+    return (
+      <tr
+        key={i.idInscripcionMateria}
+        className={`transition-colors ${modoOscuro ? "hover:bg-gray-700" : "hover:bg-blue-50"}`}
+      >
+        <td className={`px-4 py-2 text-sm ${texto}`}>
+          {buscarNombreEstudiante(i.idInscripcion)}
+        </td>
+        <td className={`px-4 py-2 text-sm ${texto}`}>
+          {buscarNombreMateria(i.idMateria)}
+        </td>
+        <td className={`px-4 py-2 text-sm ${texto}`}>
+          {buscarNombreUsuario(i.idCreador)}
+        </td>
+        <td className={`px-4 py-2 text-sm ${texto}`}>
+          {buscarNombreUsuario(i.idModificador)}
+        </td>
+        <td className={`px-4 py-2 text-sm ${texto}`}>
+          {new Date(i.fechaCreacion).toLocaleString()}
+        </td>
+        <td className={`px-4 py-2 text-sm ${texto}`}>
+          {new Date(i.fechaModificacion).toLocaleString()}
+        </td>
+        <td className="px-4 py-2 text-center">
+          {buscarNombreEstado(i.idEstado).toLowerCase() === "activo" ? (
+            <FaCheckCircle className="text-green-500 text-xl mx-auto" />
+          ) : (
+            <FaTimesCircle className="text-red-500 text-xl mx-auto" />
+          )}
+        </td>
+        <td className="px-4 py-2 text-sm">
+          <button
+            className="text-blue-600 hover:text-blue-800 text-xl flex justify-center items-center w-full"
+            onClick={() => abrirModalEditar(i)}
+            aria-label="Editar inscripción"
+          >
+            <FaEdit />
+          </button>
+        </td>
+      </tr>
+    );
+  })}
+</tbody>
 
-                    <td className="px-4 py-2 text-sm">
-                      <button
-                        className="text-blue-600 hover:text-blue-800 text-xl flex justify-center items-center w-full"
-                        onClick={() => abrirModalEditar(i)}
-                        aria-label="Editar inscripción"
-                      >
-                        <FaEdit />
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
             </table>
           </div>
         )}

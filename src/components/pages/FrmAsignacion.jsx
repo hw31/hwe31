@@ -73,7 +73,7 @@ const AsignacionDocenteList = () => {
       ]);
 
       const usuariosRoles = (usuariosRolesTodos ?? []).filter(
-        (u) => u.iD_Rol === 2 // ✅ Solo docentes
+        (u) => u.iD_Rol === 2 // Solo docentes
       );
 
       const estadosRaw = estadosResult?.data ?? [];
@@ -455,7 +455,7 @@ const AsignacionDocenteList = () => {
                       modoOscuro ? "hover:bg-gray-700" : "hover:bg-blue-50"
                     }`}
                   >
-                  <td className={`px-4 py-2 text-sm ${texto}`}>
+                    <td className={`px-4 py-2 text-sm ${texto}`}>
                       {
                         listas.usuariosRoles.find(
                           (u) => u.iD_Usuario === asig.usuarioDocenteId
