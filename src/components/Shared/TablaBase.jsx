@@ -3,7 +3,7 @@ import { FaCheckCircle, FaTimesCircle, FaEdit } from "react-icons/fa";
 
 const TablaBase = ({
   datos = [],
-  columnas = [], // Array de objetos: [{ key, label, render? }]
+  columnas = [], // [{ key, label, render? }]
   modoOscuro = false,
   texto = "",
   loading = false,
@@ -31,20 +31,25 @@ const TablaBase = ({
 
   return (
     <div className="w-full overflow-x-auto rounded-lg shadow-md">
-      <table className="min-w-full table-auto border-collapse">
+      <table className="table-auto min-w-full border-collapse">
         <thead className={`${encabezadoClase || encabezadoColor}`}>
           <tr>
             {columnasFiltradas.map(({ key, label }) => (
               <th
                 key={key}
-                className="px-4 py-2 text-left text-sm font-semibold whitespace-nowrap select-none"
+                className={`py-2 text-sm font-semibold whitespace-nowrap select-none ${
+                  key === "activo" ? "w-20 text-center px-0" : "text-left px-4"
+                }`}
                 scope="col"
               >
                 {label}
               </th>
             ))}
             {onEditar && (
-              <th className="px-4 py-2 text-left text-sm font-semibold whitespace-nowrap select-none">
+              <th
+                className="py-2 w-20 text-center whitespace-nowrap select-none"
+                scope="col"
+              >
                 Acciones
               </th>
             )}
@@ -63,11 +68,11 @@ const TablaBase = ({
                   return (
                     <td
                       key={key}
-                      className="px-4 py-2 text-center text-xl whitespace-nowrap"
+                      className="py-2 w-20 text-center px-0 align-middle"
                     >
                       {item[key] ? (
                         <FaCheckCircle
-                           className="text-green-500 text-xl mx-auto" 
+                          className="text-green-500 text-xl mx-auto"
                           title="Activo"
                         />
                       ) : (
@@ -83,7 +88,7 @@ const TablaBase = ({
                 return (
                   <td
                     key={key}
-                    className={`px-4 py-2 text-sm whitespace-nowrap ${
+                    className={`py-2 px-4 text-sm whitespace-nowrap align-middle ${
                       texto || textoColor
                     }`}
                   >
@@ -92,7 +97,7 @@ const TablaBase = ({
                 );
               })}
               {onEditar && (
-                <td className="px-4 py-2 text-sm text-center whitespace-nowrap">
+                <td className="py-2 w-20 text-center whitespace-nowrap align-middle">
                   <button
                     className="text-blue-600 hover:text-blue-800 text-xl flex justify-center items-center w-full"
                     onClick={() => onEditar(item)}

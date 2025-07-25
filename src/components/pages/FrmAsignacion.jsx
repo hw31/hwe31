@@ -249,15 +249,20 @@ const AsignacionDocenteList = () => {
 
   return (
     
-    <div
-      className={`p-4 ${modoOscuro ? "bg-gray-800 min-h-screen" : "bg-gray-50"}`}
-        style={{ paddingTop: 1 }}  
-    >
+   <div className={`p-4 ${modoOscuro ? "bg-gray-800 min-h-screen" : "bg-gray-50"}`}
+     style={{ paddingTop: 1 }}  >
       <div className={`shadow-md rounded-xl p-6 ${fondo}`}>
         <div className="flex justify-between items-center mb-4">
-          
-          
+          <h2
+            className={`text-2xl md:text-3xl font-extrabold tracking-wide ${
+              modoOscuro ? "text-white" : "text-gray-800"
+            }`}
+          >
+            Gestión de Tipos de Calificación
+          </h2>
         </div>
+          
+
         <div style={{ maxWidth: 600, margin: "20px auto 30px", width: "90%" }}>
           <input
             type="text"
@@ -432,7 +437,7 @@ const AsignacionDocenteList = () => {
 
         {/* Tabla */}
         {!loading && asignaciones.length > 0 && (
-           <div className="scroll-modern">
+           <div className="overflow-x-auto">
             <table className="min-w-full">
               <thead className={encabezado}>
                 <tr>

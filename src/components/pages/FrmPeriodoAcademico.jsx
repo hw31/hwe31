@@ -1,143 +1,303 @@
-import React, { useEffect, useState } from "react";
-import { FaPlus, FaEdit } from "react-icons/fa";
+import React, { useState, useEffect } from "react";
+import { useSelector } from "react-redux";
+import Swal from "sweetalert2";
+import periodoService from "../../services/PeriodoAcademico";
+import TablaBase from "../Shared/TablaBase";
+import BuscadorBase from "../Shared/BuscadorBase";
+import ContadoresBase from "../Shared/Contadores";
+import ModalBase from "../Shared/ModalBase";
+import FormularioBase from "../Shared/FormularioBase";
 
 const FrmPeriodoAcademico = () => {
+  const modoOscuro = useSelector((state) => state.theme.modoOscuro);
+
+  const fondo = modoOscuro ? "bg-gray-900" : "bg-white";
+  const texto = modoOscuro ? "text-gray-200" : "text-gray-800";
+  const encabezado = modoOscuro
+    ? "bg-gray-700 text-gray-200"
+    : "bg-gray-100 text-gray-700";
+
   const [periodos, setPeriodos] = useState([]);
-  const [modalAbierto, setModalAbierto] = useState(false);
-  const [formData, setFormData] = useState({
+  const [busqueda, setBusqueda] = useState("");
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modoEdicion, setModoEdicion] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [formLoading, setFormLoading] = useState(false);
+  const [formError, setFormError] = useState("");
+  const [form, setForm] = useState({
+    idPeriodoAcademico: 0,
     nombre: "",
+    estado: "",
     fechaInicio: "",
     fechaFin: "",
   });
 
+  const formatearFecha = (fecha) => {
+    if (!fecha) return "-";
+    return new Date(fecha).toLocaleDateString("es-NI", {
+      year: "numeric",
+      month: "short",
+      day: "2-digit",
+    });
+  };
+
+  const cargarPeriodos = async () => {
+    try {
+      setLoading(true);
+      const res = await periodoService.listarPeriodosAcademicos();
+
+      if (Array.isArray(res.resultado)) {
+        setPeriodos(
+          res.resultado.map((p) => ({
+            idPeriodoAcademico: p.idPeriodoAcademico,
+            nombre: p.nombrePeriodo,
+            estado: p.activo ? "Activo" : "Inactivo",
+            activo: p.activo,
+            fechaInicio: p.fechaInicio,
+            fechaFin: p.fechaFin,
+            fechaInicioFormateada: formatearFecha(p.fechaInicio),
+            fechaFinFormateada: formatearFecha(p.fechaFin),
+          }))
+        );
+      } else {
+        setPeriodos([]);
+      }
+    } catch (error) {
+      Swal.fire("Error", "No se pudieron cargar los periodos", "error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    // Aquí puedes cargar datos mock o reales
-    setPeriodos([
-      { id: 1, nombre: "2024-I", fechaInicio: "2024-01-15", fechaFin: "2024-06-30" },
-      { id: 2, nombre: "2024-II", fechaInicio: "2024-07-01", fechaFin: "2024-12-15" },
-    ]);
+    cargarPeriodos();
   }, []);
 
-  const abrirModal = () => setModalAbierto(true);
+  const handleInputChange = (e) => {
+    setForm({ ...form, [e.target.name]: e.target.value });
+  };
+
+  const abrirModalNuevo = () => {
+    setForm({
+      idPeriodoAcademico: 0,
+      nombre: "",
+      estado: "",
+      fechaInicio: "",
+      fechaFin: "",
+    });
+    setFormError("");
+    setModoEdicion(false);
+    setModalOpen(true);
+  };
+
   const cerrarModal = () => {
-    setModalAbierto(false);
-    setFormData({ nombre: "", fechaInicio: "", fechaFin: "" });
+    setModalOpen(false);
+    setFormLoading(false);
+    setFormError("");
   };
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+  const handleEditar = (item) => {
+    setForm({
+      idPeriodoAcademico: item.idPeriodoAcademico,
+      nombre: item.nombre,
+      estado: item.estado,
+      fechaInicio: item.fechaInicio?.split("T")[0] || "",
+      fechaFin: item.fechaFin?.split("T")[0] || "",
+    });
+    setModoEdicion(true);
+    setModalOpen(true);
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    const nuevoPeriodo = { id: Date.now(), ...formData };
-    setPeriodos((prev) => [...prev, nuevoPeriodo]);
-    cerrarModal();
+  const handleGuardar = async () => {
+    setFormError("");
+
+    if (!form.nombre.trim()) return setFormError("El nombre es obligatorio");
+    if (!form.estado) return setFormError("Seleccione un estado");
+    if (!form.fechaInicio || !form.fechaFin)
+      return setFormError("Debe seleccionar fechas de inicio y fin");
+    if (form.fechaFin < form.fechaInicio)
+      return setFormError("La fecha de fin no puede ser menor que la de inicio");
+
+    try {
+      setFormLoading(true);
+
+      const datos = {
+        idPeriodoAcademico: form.idPeriodoAcademico,
+        nombrePeriodo: form.nombre.trim(),
+        activo: form.estado === "Activo",
+        fechaInicio: form.fechaInicio,
+        fechaFin: form.fechaFin,
+      };
+
+      const res = modoEdicion
+        ? await periodoService.actualizarPeriodoAcademico(datos)
+        : await periodoService.insertarPeriodoAcademico(datos);
+
+      if (res.numero && res.numero > 0) {
+        cerrarModal();
+        await Swal.fire(
+          modoEdicion ? "Actualizado" : "Agregado",
+          res.mensaje || `Periodo ${modoEdicion ? "actualizado" : "insertado"} correctamente`,
+          "success"
+        );
+        cargarPeriodos();
+      } else {
+        cerrarModal();
+        await Swal.fire("Error", res.mensaje || "Error desconocido", "error");
+      }
+    } catch (error) {
+      cerrarModal();
+      const mensajeError =
+        error.response?.data?.mensaje || error.message || "Hubo un error";
+      await Swal.fire("Error", mensajeError, "error");
+    } finally {
+      setFormLoading(false);
+    }
   };
+
+  // Filtrar periodos según texto de búsqueda
+  const datosFiltrados = periodos.filter((p) => {
+    const texto = busqueda.toLowerCase();
+    return (
+      p.nombre.toLowerCase().includes(texto) ||
+      p.estado.toLowerCase().includes(texto) ||
+      p.fechaInicioFormateada.toLowerCase().includes(texto) ||
+      p.fechaFinFormateada.toLowerCase().includes(texto)
+    );
+  });
+
+  // Define columnas para TablaBase
+  const columnas = [
+    { key: "nombre", label: "Nombre del Periodo", style: { maxWidth: "180px", width: "180px" } },
+    { key: "activo", label: "Estado", style: { width: "80px" } },
+    { key: "fechaInicioFormateada", label: "Inicio", style: { width: "90px" } },
+    { key: "fechaFinFormateada", label: "Fin", style: { width: "90px" } },
+  ];
 
   return (
-    <div className="p-6">
-      <h2 className="text-2xl font-semibold mb-4">Gestión de Periodos Académicos</h2>
+    <div className={`p-4 ${modoOscuro ? "bg-gray-800 min-h-screen" : "bg-gray-50"}`} style={{ paddingTop: 1 }}>
+      <div className={`shadow-md rounded-xl p-6 ${fondo}`}>
+        <div className="flex justify-between items-center mb-4">
+          <h2
+            className={`text-2xl md:text-3xl font-extrabold tracking-wide ${
+              modoOscuro ? "text-white" : "text-gray-800"
+            }`}
+          >
+            Gestión de Periodos Académicos
+          </h2>
+        </div>
 
-      <div className="mb-4 flex justify-between items-center">
-        <button
-          onClick={abrirModal}
-          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 flex items-center gap-2"
+        <BuscadorBase
+          placeholder="Buscar por nombre, estado o fecha..."
+          valor={busqueda}
+          onChange={(e) => setBusqueda(e.target.value)}
+          modoOscuro={modoOscuro}
+        />
+
+        <ContadoresBase
+          activos={periodos.filter((p) => p.estado === "Activo").length}
+          inactivos={periodos.filter((p) => p.estado === "Inactivo").length}
+          total={periodos.length}
+          onNuevo={abrirModalNuevo}
+          modoOscuro={modoOscuro}
+        />
+
+        {/* Contenedor para aplicar estilos solo a esta tabla */}
+        <div className="periodos-table-container">
+          <style>{`
+            .periodos-table-container table th,
+            .periodos-table-container table td {
+              padding-left: 6px !important;
+              padding-right: 6px !important;
+              white-space: nowrap;
+            }
+            .periodos-table-container table th:nth-child(1),
+            .periodos-table-container table td:nth-child(1) {
+              max-width: 80px;
+              width: 50px;
+              overflow: hidden;
+              text-overflow: ellipsis;
+            }
+            .periodos-table-container table th:nth-child(2),
+            .periodos-table-container table td:nth-child(2) {
+              width: 80px;
+              max-width: 80px;
+              text-align: center;
+            }
+            .periodos-table-container table th:nth-child(3),
+            .periodos-table-container table td:nth-child(3),
+            .periodos-table-container table th:nth-child(4),
+            .periodos-table-container table td:nth-child(4) {
+              width: 90px;
+              max-width: 90px;
+              text-align: center;
+            }
+          `}</style>
+
+          <TablaBase
+            datos={datosFiltrados}
+            columnas={columnas}
+            modoOscuro={modoOscuro}
+            onEditar={handleEditar}
+            loading={loading}
+            texto={texto}
+            encabezadoClase={encabezado}
+          />
+        </div>
+
+        <ModalBase
+          isOpen={modalOpen}
+          onClose={cerrarModal}
+          titulo={modoEdicion ? "Editar Periodo" : "Nuevo Periodo"}
+          modoOscuro={modoOscuro}
         >
-          <FaPlus /> Agregar Periodo
-        </button>
-      </div>
-
-      <div className="overflow-x-auto shadow rounded-lg border border-gray-200">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-100">
-            <tr>
-              <th className="px-4 py-2 text-left text-sm font-medium">Nombre</th>
-              <th className="px-4 py-2 text-left text-sm font-medium">Fecha Inicio</th>
-              <th className="px-4 py-2 text-left text-sm font-medium">Fecha Fin</th>
-              <th className="px-4 py-2 text-sm font-medium">Acciones</th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-100">
-            {periodos.map((p) => (
-              <tr key={p.id}>
-                <td className="px-4 py-2 text-sm">{p.nombre}</td>
-                <td className="px-4 py-2 text-sm">{p.fechaInicio}</td>
-                <td className="px-4 py-2 text-sm">{p.fechaFin}</td>
-                <td className="px-4 py-2 text-center text-sm">
-                  <button
-                    className="text-yellow-500 hover:text-yellow-700"
-                    onClick={() => {
-                      setFormData(p);
-                      setModalAbierto(true);
-                    }}
-                  >
-                    <FaEdit />
-                  </button>
-                </td>
-              </tr>
-            ))}
-            {periodos.length === 0 && (
-              <tr>
-                <td colSpan={4} className="px-4 py-4 text-center text-gray-400">
-                  No hay periodos registrados.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
-
-      {modalAbierto && (
-        <div className="fixed inset-0 flex justify-center items-center bg-black bg-opacity-40 z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md shadow-lg">
-            <h3 className="text-lg font-semibold mb-4">Periodo Académico</h3>
-            <form onSubmit={handleSubmit} className="space-y-4">
+          <FormularioBase
+            onSubmit={handleGuardar}
+            onCancel={cerrarModal}
+            modoOscuro={modoOscuro}
+            formError={formError}
+            formLoading={formLoading}
+            modoEdicion={modoEdicion}
+            titulo="Periodo Académico"
+          >
+            <div className="space-y-4">
               <input
                 type="text"
                 name="nombre"
-                value={formData.nombre}
-                onChange={handleChange}
                 placeholder="Nombre del periodo"
-                className="w-full px-3 py-2 border rounded"
-                required
+                value={form.nombre}
+                onChange={handleInputChange}
+                className="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white dark:border-gray-600"
+                autoFocus
               />
+              <select
+                name="estado"
+                value={form.estado}
+                onChange={handleInputChange}
+                className="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white dark:border-gray-600"
+              >
+                <option value="">Seleccione estado</option>
+                <option value="Activo">Activo</option>
+                <option value="Inactivo">Inactivo</option>
+              </select>
               <input
                 type="date"
                 name="fechaInicio"
-                value={formData.fechaInicio}
-                onChange={handleChange}
-                className="w-full px-3 py-2 border rounded"
-                required
+                value={form.fechaInicio}
+                onChange={handleInputChange}
+                className="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white dark:border-gray-600"
               />
               <input
                 type="date"
                 name="fechaFin"
-                value={formData.fechaFin}
-                onChange={handleChange}
-                className="w-full px-3 py-2 border rounded"
-                required
+                value={form.fechaFin}
+                onChange={handleInputChange}
+                className="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white dark:border-gray-600"
               />
-              <div className="flex justify-end gap-2 pt-2">
-                <button
-                  type="button"
-                  onClick={cerrarModal}
-                  className="px-4 py-2 rounded bg-gray-300 hover:bg-gray-400"
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700"
-                >
-                  Guardar
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+            </div>
+          </FormularioBase>
+        </ModalBase>
+      </div>
     </div>
   );
 };
