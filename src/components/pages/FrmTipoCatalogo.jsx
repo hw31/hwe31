@@ -1,156 +1,212 @@
-import React, { useState, useEffect } from "react";
-import tipoCatalogoService from "./tipoCatalogoService";
+import React, { useEffect, useState } from "react";
+import { useSelector } from "react-redux";
+import Swal from "sweetalert2";
+import tipoCatalogoService from "../../services/TipoCatalogo";
+import TablaBase from "../Shared/TablaBase";
+import BuscadorBase from "../Shared/BuscadorBase";
+import ContadoresBase from "../Shared/Contadores";
+import ModalBase from "../Shared/ModalBase";
+import FormularioBase from "../Shared/FormularioBase";
 
 const FrmTipoCatalogo = () => {
-  const [tipos, setTipos] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [errorMsg, setErrorMsg] = useState(null);
-  const [successMsg, setSuccessMsg] = useState(null);
+  const modoOscuro = useSelector((state) => state.theme.modoOscuro);
+  const [busqueda, setBusqueda] = useState("");
 
-  const [form, setForm] = useState({
-    idTipoCatalogo: 0,
-    nombre: "",
-    descripcion: "",
-  });
-
+  const [modalOpen, setModalOpen] = useState(false);
   const [modoEdicion, setModoEdicion] = useState(false);
+  const [formTipo, setFormTipo] = useState("activos"); // "activos" o "personalizados"
 
-  const cargarTipos = async () => {
-    setLoading(true);
+  const [form, setForm] = useState({ idTipoCatalogo: 0, nombre: "", descripcion: "" });
+  const [formLoading, setFormLoading] = useState(false);
+  const [formError, setFormError] = useState("");
+
+  const [activos, setActivos] = useState([]);
+  const [personalizados, setPersonalizados] = useState([]);
+  const [loadingActivos, setLoadingActivos] = useState(false);
+  const [loadingPersonalizados, setLoadingPersonalizados] = useState(false);
+
+  const cargarDatos = async () => {
     try {
+      setLoadingActivos(true);
+      setLoadingPersonalizados(true);
+
       const res = await tipoCatalogoService.listarTiposCatalogo();
-      setTipos(res || []);
-      setErrorMsg(null);
-    } catch (error) {
-      setErrorMsg("Error al cargar tipos de catálogo.");
+      const data = res.data || [];
+
+      const activosList = data.filter((d) => d.activo);
+      const personalizadosList = data.filter((d) => !d.activo);
+
+      setActivos(activosList);
+      setPersonalizados(personalizadosList);
+    } catch {
+      Swal.fire("Error", "No se pudieron cargar los tipos", "error");
+    } finally {
+      setLoadingActivos(false);
+      setLoadingPersonalizados(false);
     }
-    setLoading(false);
   };
 
   useEffect(() => {
-    cargarTipos();
+    cargarDatos();
   }, []);
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setForm(old => ({ ...old, [name]: value }));
-  };
-
-  const resetForm = () => {
-    setForm({
-      idTipoCatalogo: 0,
-      nombre: "",
-      descripcion: "",
-    });
+  const abrirModal = (tipo) => {
+    setFormTipo(tipo);
     setModoEdicion(false);
-    setErrorMsg(null);
-    setSuccessMsg(null);
+    setForm({ idTipoCatalogo: 0, nombre: "", descripcion: "" });
+    setFormError("");
+    setModalOpen(true);
   };
 
-  const cargarParaEditar = (tipo) => {
-    setForm({
-      idTipoCatalogo: tipo.idTipoCatalogo || tipo.IdTipoCatalogo || 0,
-      nombre: tipo.nombre || tipo.Nombre || "",
-      descripcion: tipo.descripcion || tipo.Descripcion || "",
-    });
+  const editarModal = (item, tipo) => {
+    setFormTipo(tipo);
     setModoEdicion(true);
-    setErrorMsg(null);
-    setSuccessMsg(null);
+    setForm({
+      idTipoCatalogo: item.idTipoCatalogo,
+      nombre: item.nombreTipoCatalogo || item.nombre,
+      descripcion: item.descripcion || (item.activo ? "Activo" : "Inactivo"),
+    });
+    setModalOpen(true);
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleInputChange = (e) => {
+    setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+  };
 
-    if (!form.nombre.trim()) {
-      setErrorMsg("El nombre es obligatorio.");
-      return;
-    }
+  const handleGuardar = async () => {
+    if (!form.nombre.trim()) return setFormError("El nombre es obligatorio.");
+    if (!form.descripcion) return setFormError("Seleccione un estado.");
+
+    const datos = {
+      nombreTipoCatalogo: form.nombre.trim(),
+      activo: form.descripcion === "Activo",
+    };
 
     try {
-      let res;
-      if (modoEdicion) {
-        res = await tipoCatalogoService.actualizarTipoCatalogo(form);
-      } else {
-        res = await tipoCatalogoService.insertarTipoCatalogo(form);
-      }
+      setFormLoading(true);
+      const res = modoEdicion
+        ? await tipoCatalogoService.actualizarTipoCatalogo({ idTipoCatalogo: form.idTipoCatalogo, ...datos })
+        : await tipoCatalogoService.insertarTipoCatalogo(datos);
 
-      if (res.success === false || res.success === undefined) {
-        setErrorMsg(res.message || "Error en la operación.");
+      if (res.Numero > 0) {
+        setModalOpen(false);
+        Swal.fire("Éxito", res.Mensaje, "success");
+        cargarDatos();
       } else {
-        setSuccessMsg("Operación realizada con éxito.");
-        resetForm();
-        cargarTipos();
+        Swal.fire("Error", res.Mensaje || "Error desconocido", "error");
       }
     } catch (error) {
-      setErrorMsg("Error inesperado en la operación.");
+      Swal.fire("Error", error.message || "Error al guardar", "error");
+    } finally {
+      setFormLoading(false);
     }
   };
 
+  const filtro = (arr) =>
+    arr.filter((item) => item.nombreTipoCatalogo.toLowerCase().includes(busqueda.toLowerCase()));
+
+  const columnas = [
+    { key: "nombreTipoCatalogo", label: "Nombre" },
+    {
+      key: "activo",
+      label: "Estado",
+      render: (item) =>
+        item.activo ? (
+          <span className="text-green-500 font-semibold">Activo</span>
+        ) : (
+          <span className="text-red-500 font-semibold">Inactivo</span>
+        ),
+    },
+  ];
+
   return (
-    <div style={{ maxWidth: 700, margin: "auto", padding: 20 }}>
-      <h2>{modoEdicion ? "Editar Tipo de Catálogo" : "Nuevo Tipo de Catálogo"}</h2>
+    <div className={`p-4 ${modoOscuro ? "bg-gray-800 min-h-screen" : "bg-gray-50"}`}>
+      <h1 className={`text-3xl font-bold mb-4 ${modoOscuro ? "text-white" : "text-gray-800"}`}>
+        Tipos de Catálogo
+      </h1>
 
-      {errorMsg && <div style={{ color: "red", marginBottom: 10 }}>{errorMsg}</div>}
-      {successMsg && <div style={{ color: "green", marginBottom: 10 }}>{successMsg}</div>}
+      <BuscadorBase
+        placeholder="Buscar en ambas tablas..."
+        valor={busqueda}
+        onChange={(e) => setBusqueda(e.target.value)}
+        modoOscuro={modoOscuro}
+      />
 
-      <form onSubmit={handleSubmit} style={{ marginBottom: 30 }}>
-        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-          <input
-            type="text"
-            name="nombre"
-            placeholder="Nombre *"
-            value={form.nombre}
-            onChange={handleChange}
-            required
-          />
-          <textarea
-            name="descripcion"
-            placeholder="Descripción"
-            value={form.descripcion}
-            onChange={handleChange}
-            rows={3}
-          />
-        </div>
+      {/* Tabla de activos */}
+      <div className="mb-10">
+        <ContadoresBase
+          titulo="Tipos Activos"
+          activos={activos.length}
+          inactivos={0}
+          total={activos.length}
+          modoOscuro={modoOscuro}
+          onNuevo={() => abrirModal("activos")}
+        />
+        <TablaBase
+          datos={filtro(activos)}
+          columnas={columnas}
+          modoOscuro={modoOscuro}
+          loading={loadingActivos}
+          onEditar={(item) => editarModal(item, "activos")}
+        />
+      </div>
 
-        <div style={{ marginTop: 15 }}>
-          <button type="submit" style={{ marginRight: 10 }}>
-            {modoEdicion ? "Actualizar" : "Registrar"}
-          </button>
-          <button type="button" onClick={resetForm}>Limpiar</button>
-        </div>
-      </form>
+      {/* Tabla de personalizados */}
+      <div>
+        <ContadoresBase
+          titulo="Tipos Inactivos / Personalizados"
+          activos={0}
+          inactivos={personalizados.length}
+          total={personalizados.length}
+          modoOscuro={modoOscuro}
+          onNuevo={() => abrirModal("personalizados")}
+        />
+        <TablaBase
+          datos={filtro(personalizados)}
+          columnas={columnas}
+          modoOscuro={modoOscuro}
+          loading={loadingPersonalizados}
+          onEditar={(item) => editarModal(item, "personalizados")}
+        />
+      </div>
 
-      <h2>Tipos de Catálogo</h2>
-      {loading ? (
-        <p>Cargando...</p>
-      ) : errorMsg ? (
-        <p style={{ color: "red" }}>{errorMsg}</p>
-      ) : tipos.length === 0 ? (
-        <p>No hay tipos de catálogo registrados.</p>
-      ) : (
-        <table border="1" cellPadding="8" style={{ width: "100%", borderCollapse: "collapse" }}>
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>Nombre</th>
-              <th>Descripción</th>
-              <th>Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            {tipos.map((tipo) => (
-              <tr key={tipo.idTipoCatalogo || tipo.IdTipoCatalogo}>
-                <td>{tipo.idTipoCatalogo || tipo.IdTipoCatalogo}</td>
-                <td>{tipo.nombre || tipo.Nombre}</td>
-                <td>{tipo.descripcion || tipo.Descripcion}</td>
-                <td>
-                  <button onClick={() => cargarParaEditar(tipo)}>Editar</button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
+      {/* Modal */}
+      <ModalBase
+        isOpen={modalOpen}
+        onClose={() => setModalOpen(false)}
+        titulo={modoEdicion ? "Editar Tipo de Catálogo" : "Nuevo Tipo de Catálogo"}
+        modoOscuro={modoOscuro}
+      >
+        <FormularioBase
+          onSubmit={handleGuardar}
+          onCancel={() => setModalOpen(false)}
+          modoOscuro={modoOscuro}
+          formError={formError}
+          formLoading={formLoading}
+          titulo="Tipo de Catálogo"
+        >
+          <div className="space-y-4">
+            <input
+              type="text"
+              name="nombre"
+              placeholder="Nombre"
+              value={form.nombre}
+              onChange={handleInputChange}
+              className="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white dark:border-gray-600"
+            />
+            <select
+              name="descripcion"
+              value={form.descripcion}
+              onChange={handleInputChange}
+              className="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white dark:border-gray-600"
+            >
+              <option value="">Seleccione estado</option>
+              <option value="Activo">Activo</option>
+              <option value="Inactivo">Inactivo</option>
+            </select>
+          </div>
+        </FormularioBase>
+      </ModalBase>
     </div>
   );
 };

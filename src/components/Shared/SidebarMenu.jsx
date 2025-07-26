@@ -3,7 +3,7 @@ import { useLocation, useNavigate, matchPath } from "react-router-dom";
 import {
   Home, Users, Flag, List, User, Phone, Shield, Key,
   Calendar, Book, Edit, Award, MapPin, Clock, Clipboard,
-  Percent, Activity, Settings, FileText,
+  Percent, Activity, Settings, FileText, FileCheck2
 } from "lucide-react";
 import { getMenu } from "../../services/menuService";
 
@@ -27,6 +27,7 @@ const iconMap = {
   activity: Activity,
   settings: Settings,
   filetext: FileText,
+   fileCheck2: FileCheck2,
 };
 
 const SidebarMenu = ({ isSidebarOpen }) => {
