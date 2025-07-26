@@ -11,8 +11,13 @@ const insertarTransaccionPorRol = async (datos) => {
 
     return res.data;
   } catch (error) {
-    console.error('Error al insertar transacción por rol:', error.message);
-    throw error;
+    
+    if (error.response && error.response.data) {
+      throw error.response.data;  
+    } else {
+      console.error('Error al insertar transacción por rol:', error.message);
+      throw error;
+    }
   }
 };
 
@@ -27,8 +32,12 @@ const actualizarTransaccionPorRol = async (datos) => {
 
     return res.data;
   } catch (error) {
-    console.error('Error al actualizar transacción por rol:', error.message);
-    throw error;
+    if (error.response && error.response.data) {
+      throw error.response.data;
+    } else {
+      console.error('Error al actualizar transacción por rol:', error.message);
+      throw error;
+    }
   }
 };
 

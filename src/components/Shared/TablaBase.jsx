@@ -38,7 +38,7 @@ const TablaBase = ({
               <th
                 key={key}
                 className={`py-2 text-sm font-semibold whitespace-nowrap select-none ${
-                  key === "activo" ? "w-20 text-center px-0" : "text-left px-4"
+                  key === "activo" ? "w-24 text-center px-2" : "text-left px-4"
                 }`}
                 scope="col"
               >
@@ -47,7 +47,7 @@ const TablaBase = ({
             ))}
             {onEditar && (
               <th
-                className="py-2 w-20 text-center whitespace-nowrap select-none"
+                className="py-2 w-24 text-center whitespace-nowrap select-none"
                 scope="col"
               >
                 Acciones
@@ -68,7 +68,7 @@ const TablaBase = ({
                   return (
                     <td
                       key={key}
-                      className="py-2 w-20 text-center px-0 align-middle"
+                      className="py-2 w-24 text-center px-2 align-middle"
                     >
                       {item[key] ? (
                         <FaCheckCircle
@@ -97,7 +97,7 @@ const TablaBase = ({
                 );
               })}
               {onEditar && (
-                <td className="py-2 w-20 text-center whitespace-nowrap align-middle">
+                <td className="py-2 w-24 text-center whitespace-nowrap align-middle pl-2">
                   <button
                     className="text-blue-600 hover:text-blue-800 text-xl flex justify-center items-center w-full"
                     onClick={() => onEditar(item)}

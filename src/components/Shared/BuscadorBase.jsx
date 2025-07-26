@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect, useMemo } from "react";
 
 const BuscadorBase = ({
   valor = "",
@@ -7,8 +7,14 @@ const BuscadorBase = ({
   modoOscuro = false,
   texto = "text-black",
 }) => {
-  const baseColor = modoOscuro ? "#444" : "#ccc";
-  const [borderColor, setBorderColor] = React.useState(baseColor);
+  // recalcular baseColor solo cuando cambia modoOscuro
+  const baseColor = useMemo(() => (modoOscuro ? "#444" : "#ccc"), [modoOscuro]);
+  const [borderColor, setBorderColor] = useState(baseColor);
+
+  // actualizar borderColor cuando cambia modoOscuro
+  useEffect(() => {
+    setBorderColor(baseColor);
+  }, [baseColor]);
 
   return (
     <div style={{ maxWidth: 600, margin: "20px auto 30px", width: "90%" }}>
@@ -17,9 +23,9 @@ const BuscadorBase = ({
         placeholder={placeholder}
         value={valor}
         onChange={onChange}
-        className={`${texto}`}
+        className={texto}
         style={{
-          width: "50%",
+          width: "100%",       // ancho completo para mejor responsividad
           padding: "8px 16px",
           fontSize: 16,
           borderRadius: "9999px",
@@ -32,6 +38,7 @@ const BuscadorBase = ({
           transition: "border-color 0.3s ease",
           display: "block",
           margin: "0 auto",
+          backgroundColor: modoOscuro ? "#2a2a2a" : "#fff",
         }}
         onFocus={() => setBorderColor(modoOscuro ? "#90caf9" : "#1976d2")}
         onBlur={() => setBorderColor(baseColor)}
