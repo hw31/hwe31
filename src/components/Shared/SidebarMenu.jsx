@@ -1,32 +1,32 @@
 import React, { useState, useEffect } from "react";
 import { useLocation, useNavigate, matchPath } from "react-router-dom";
 import {
-  Home, Users, Flag, List, User, Phone, Shield, Key,
-  Calendar, Book, Edit, Award, MapPin, Clock, Clipboard,
-  Percent, Activity, Settings, FileText,
+  Home,
+  Users,
+  Repeat2,
+  BookOpen,
+  GraduationCap,
+  ListChecks,
+  FileText,
+  Shield,
+  Key,
+  ToggleRight,
+  FileCheck2,
 } from "lucide-react";
 import { getMenu } from "../../services/menuService";
 
 const iconMap = {
   home: Home,
   users: Users,
-  flag: Flag,
-  list: List,
-  user: User,
-  phone: Phone,
+  repeat2: Repeat2,
+  bookopen: BookOpen,
+  graduationcap: GraduationCap,
+  listcheck: ListChecks,
+  filetext: FileText,
   shield: Shield,
   key: Key,
-  calendar: Calendar,
-  book: Book,
-  edit: Edit,
-  award: Award,
-  "map-pin": MapPin,
-  clock: Clock,
-  clipboard: Clipboard,
-  percent: Percent,
-  activity: Activity,
-  settings: Settings,
-  filetext: FileText,
+  toggleright: ToggleRight,
+  "file-check2": FileCheck2,
 };
 
 const SidebarMenu = ({ isSidebarOpen }) => {
@@ -39,9 +39,11 @@ const SidebarMenu = ({ isSidebarOpen }) => {
     const fetchMenu = async () => {
       try {
         const menus = await getMenu();
-        const visibles = menus.filter(item => item.visible === true && item.disponible === true);
+        const visibles = menus.filter(
+          (item) => item.visible === true && item.disponible === true
+        );
 
-        // Ordenar para que Dashboard quede primero
+        // Dashboard primero
         const ordenados = visibles.sort((a, b) => {
           if (a.nombre === "Dashboard") return -1;
           if (b.nombre === "Dashboard") return 1;
@@ -68,12 +70,16 @@ const SidebarMenu = ({ isSidebarOpen }) => {
         )}
         {!loading &&
           menuItems.map(({ id, nombre, formulario, icono }) => {
-            const IconComponent = iconMap[icono?.toLowerCase()] || null;
+            const iconKey = icono?.toLowerCase();
+            const IconComponent = iconMap[iconKey] || null;
             const route = formulario?.replace("Frm", "").toLowerCase();
             if (!route || !nombre) return null;
 
             const routePath = `/dashboard/${route}`;
-            const isActive = !!matchPath({ path: routePath, end: false }, location.pathname);
+            const isActive = !!matchPath(
+              { path: routePath, end: false },
+              location.pathname
+            );
 
             return (
               <li
@@ -87,7 +93,9 @@ const SidebarMenu = ({ isSidebarOpen }) => {
                   onClick={() => navigate(routePath)}
                   aria-label={`Ir a ${nombre}`}
                 >
-                  {IconComponent && <IconComponent className="menu-icon w-5 h-5" />}
+                  {IconComponent && (
+                    <IconComponent className="menu-icon w-5 h-5" />
+                  )}
                   {isSidebarOpen && <span className="text-sm">{nombre}</span>}
                 </button>
               </li>
