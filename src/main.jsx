@@ -32,7 +32,7 @@ import FrmGrupos from './components/pages/FrmGrupos';
 import FrmHorarios from './components/pages/FrmHorarios';
 import FrmTipoCalificaciones from './components/pages/FrmTipoCalificacion';
 import FrmTransacciones from './components/pages/FrmTransacciones';
-import FrmTipoTransacciones from './components/pages/FrmTiposTransaccion';
+
 
 const router = createBrowserRouter([
   {
@@ -126,10 +126,6 @@ const router = createBrowserRouter([
           {
             path: 'transacciones',
             element: <FrmTransacciones />,
-          },
-          {
-            path: 'tipotransacciones',
-            element: <FrmTipoTransacciones />,
           },
           {
             path: '*',

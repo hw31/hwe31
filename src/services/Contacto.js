@@ -1,37 +1,35 @@
 import api from './api';
 
-/* INSERTAR CONTACTOS */
-const insertarContacto= async (datosContacto) => {
+const insertarContacto = async (datosContacto) => {
   try {
     const res = await api.post('Contacto/insertar', datosContacto);
-
-    if (res.data.success) {
-      console.log('Contacto asignado correctamente');
-    }
-
-    return res.data;
+    return {
+      success: res.data.numero >= 0,
+      message: res.data.mensaje,
+      numero: res.data.numero,
+      ...res.data
+    };
   } catch (error) {
     console.error('Error al insertar Contacto:', error.message);
     throw error;
   }
 };
 
-/* ACTUALIZAR AULAS */
 const actualizarContacto = async (datosContacto) => {
   try {
-    // Cambia a api.put si tu backend espera PUT para actualizar
     const res = await api.put('Contacto/actualizar', datosContacto);
-
-    if (res.data.success) {
-      console.log('Contacto actualizado correctamente');
-    }
-
-    return res.data;
+    return {
+      success: res.data.numero >= 0,
+      message: res.data.mensaje,
+      numero: res.data.numero,
+      ...res.data
+    };
   } catch (error) {
     console.error('Error al actualizar Contacto:', error.message);
     throw error;
   }
 };
+
 
 
 /* FILTRAR AULAS POR ID */

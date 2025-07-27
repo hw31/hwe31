@@ -1,354 +1,267 @@
-import React, { useEffect, useState } from 'react';
-import { useSelector } from 'react-redux';
-import EstadoService from '../../services/Estado'; 
-import Swal from 'sweetalert2';
-import {
-  FaPlus,
-  FaEdit,
-  FaUser,
-  FaUserCheck,
-  FaUserTimes,
-} from 'react-icons/fa';
+import React, { useState, useEffect } from "react";
+import { useSelector } from "react-redux";
+import Swal from "sweetalert2";
+import estadoService from "../../services/Estado";
+import usuarioService from "../../services/Usuario";
+import TablaBase from "../Shared/TablaBase";
+import BuscadorBase from "../Shared/BuscadorBase";
+import ContadoresBase from "../Shared/Contadores";
+import ModalBase from "../Shared/ModalBase";
+import FormularioBase from "../Shared/FormularioBase";
 
 const FrmEstados = () => {
   const modoOscuro = useSelector((state) => state.theme.modoOscuro);
+  const fondo = modoOscuro ? "bg-gray-900" : "bg-white";
+  const texto = modoOscuro ? "text-gray-200" : "text-gray-800";
+  const encabezado = modoOscuro ? "bg-gray-700 text-gray-200" : "bg-gray-100 text-gray-700";
 
   const [estados, setEstados] = useState([]);
-  const [busqueda, setBusqueda] = useState('');
-  const [form, setForm] = useState({
-    idEstado: null,
-    nombreEstado: '',
-    descripcion: '',
-    activo: true,
-  });
-  const [modoEdicion, setModoEdicion] = useState(false);
+  const [busqueda, setBusqueda] = useState("");
   const [modalOpen, setModalOpen] = useState(false);
-  const [error, setError] = useState('');
+  const [modoEdicion, setModoEdicion] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [formLoading, setFormLoading] = useState(false);
+  const [formError, setFormError] = useState("");
+  const [form, setForm] = useState({
+    idEstado: 0,
+    nombre: "",
+    descripcion: "", // Activo / Inactivo
+  });
 
-  // Filtrado y conteos
-  const total = estados.length;
-  const activos = estados.filter(e => e.activo).length;
-  const inactivos = total - activos;
+  const formatearFecha = (fecha) => {
+    if (!fecha) return "-";
+    const d = new Date(fecha);
+    return d.toLocaleDateString("es-NI", {
+      year: "numeric",
+      month: "short",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
+
+  // Adaptar datos uniendo nombres de usuario por ID, manejando null y 0
+  const adaptarDatosEstados = (estadosData, usuarios) =>
+    estadosData.map((e) => {
+      // Validar y obtener creador
+      const creador =
+        e.iD_Creador && e.iD_Creador !== 0
+          ? usuarios.find((u) => u.id_Usuario === e.iD_Creador)
+          : null;
+      // Validar y obtener modificador
+      const modificador =
+        e.iD_Modificador && e.iD_Modificador !== 0
+          ? usuarios.find((u) => u.id_Usuario === e.iD_Modificador)
+          : null;
+
+      return {
+        idEstado: e.iD_Estado,
+        nombre: e.nombre_Estado,
+        activo: e.activo,
+        fechaCreacion: formatearFecha(e.fecha_Creacion),
+        fechaModificacion: formatearFecha(e.fecha_Modificacion),
+        nombreCreador: creador ? creador.persona.trim() : "ND",
+        nombreModificador: modificador ? modificador.persona.trim() : "ND",
+      };
+    });
 
   useEffect(() => {
-    cargarEstados();
+    cargarDatos();
   }, []);
 
-  const cargarEstados = async () => {
-    setLoading(true);
+  const cargarDatos = async () => {
     try {
-      const res = await EstadoService.listarEstados();
-      if (res.success) setEstados(res.data);
-      else throw new Error(res.message);
-    } catch (err) {
-      console.error('Error al cargar estados:', err);
-      Swal.fire('Error', err.message, 'error');
+      setLoading(true);
+      const [resEstados, resUsuarios] = await Promise.all([
+        estadoService.listarEstados(),
+        usuarioService.listarUsuario(),
+      ]);
+
+      if (resEstados.success && resUsuarios.success) {
+        setEstados(adaptarDatosEstados(resEstados.data, resUsuarios.data));
+      } else {
+        setEstados([]);
+      }
+    } catch (error) {
+      Swal.fire("Error", "No se pudieron cargar los datos", "error");
     } finally {
       setLoading(false);
     }
   };
 
-  const handleChange = (e) => {
-    const { name, value, type, checked } = e.target;
-    setForm(prev => ({
-      ...prev,
-      [name]: type === 'checkbox' ? checked : value,
-    }));
-    setError('');
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setForm({ ...form, [name]: value });
+    setFormError("");
   };
 
-  const abrirAgregar = () => {
+  const abrirModalNuevo = () => {
+    setForm({ idEstado: 0, nombre: "", descripcion: "" });
+    setFormError("");
     setModoEdicion(false);
-    setForm({ idEstado: null, nombreEstado: '', descripcion: '', activo: true });
     setModalOpen(true);
-    setError('');
   };
 
-  const abrirEditar = (estado) => {
-    setModoEdicion(true);
+  const cerrarModal = () => {
+    setModalOpen(false);
+    setFormLoading(false);
+    setFormError("");
+  };
+
+  const handleEditar = (estado) => {
     setForm({
-      idEstado: estado.iD_Estado,
-      nombreEstado: estado.nombre_Estado,
-      descripcion: estado.descripcion,
-      activo: estado.activo,
+      idEstado: estado.idEstado,
+      nombre: estado.nombre,
+      descripcion: estado.activo ? "Activo" : "Inactivo",
     });
+    setModoEdicion(true);
     setModalOpen(true);
-    setError('');
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!form.nombreEstado.trim()) {
-      setError('Ingrese un nombre válido.');
-      return;
+  const handleGuardar = async () => {
+  if (!form.nombre.trim()) return setFormError("El nombre es obligatorio");
+  if (!form.descripcion) return setFormError("Debe seleccionar un estado");
+
+  try {
+    setFormLoading(true);
+
+    const datos = {
+      id_Estado: form.idEstado,
+      nombre_Estado: form.nombre.trim(),
+      activo: form.descripcion === "Activo",
+    };
+
+    let res;
+    if (modoEdicion) {
+      res = await estadoService.actualizarEstado(datos);
+    } else {
+      res = await estadoService.insertarEstado({
+        nombreEstado: datos.nombre_Estado,
+        activo: datos.activo,
+      });
     }
 
-    try {
-      let res;
-      const payload = {
-        iD_Estado: form.idEstado,
-        nombre_Estado: form.nombreEstado.trim(),
-        descripcion: form.descripcion.trim(),
-        activo: form.activo,
-      };
+    // Validar que el mensaje contenga "correctamente" o "exitosamente" (case insensitive)
+    const mensaje = res?.mensaje || "";
+    const exitoRegex = /(correctamente|exitosamente)/i;
+    const success = res?.numero > 0 || res?.success || exitoRegex.test(mensaje);
 
-      if (modoEdicion) {
-        res = await EstadoService.actualizarEstado(payload);
-      } else {
-        // para inserción, no enviamos id
-        const { iD_Estado, ...insertPayload } = payload;
-        res = await EstadoService.insertarEstado(insertPayload);
-      }
-
-      if (res.success || (res.mensaje && res.mensaje.toLowerCase().includes('correctamente'))) {
-        Swal.fire({
-          icon: 'success',
-          title: modoEdicion ? 'Estado actualizado' : 'Estado registrado',
-          text: res.mensaje || 'Operación exitosa',
-          timer: 2000,
-          showConfirmButton: false,
-        });
-
-        setModalOpen(false);
-        setForm({ idEstado: null, nombreEstado: '', descripcion: '', activo: true });
-        setModoEdicion(false);
-        cargarEstados();
-      } else {
-        throw new Error(res.mensaje || 'Ocurrió un error en el servidor.');
-      }
-    } catch (err) {
-      Swal.fire('Error', err.message, 'error');
+    if (success) {
+      cerrarModal();
+      await Swal.fire(
+        modoEdicion ? "Actualizado" : "Agregado",
+        mensaje || "Operación exitosa",
+        "success"
+      );
+      cargarDatos();
+    } else {
+      cerrarModal();
+      await Swal.fire("Error", mensaje || "Error desconocido", "error");
     }
-  };
+  } catch (error) {
+    cerrarModal();
+    const msg = error.response?.data?.mensaje || error.message || "Error al guardar el estado";
+    await Swal.fire("Error", msg, "error");
+  } finally {
+    setFormLoading(false);
+  }
+};
 
-  // Filtrado con búsqueda (nombre, descripción y activo/inactivo)
-  const estadosFiltrados = estados.filter((e) => {
-    const txt = busqueda.toLowerCase();
-    return (
-      e.nombre_Estado?.toLowerCase().includes(txt) ||
-      e.descripcion?.toLowerCase().includes(txt) ||
-      (txt === 'activo' && e.activo) ||
-      (txt === 'inactivo' && !e.activo)
-    );
-  });
+  const datosFiltrados = estados.filter((e) =>
+    e.nombre.toLowerCase().includes(busqueda.toLowerCase())
+  );
+
+  const columnas = [
+    { key: "nombre", label: "Nombre" },
+    {
+      key: "activo",
+      label: "Estado",
+      render: (item) =>
+        item.activo ? (
+          <span className="text-green-500 font-semibold flex items-center gap-1">✔ Activo</span>
+        ) : (
+          <span className="text-red-500 font-semibold flex items-center gap-1">✘ Inactivo</span>
+        ),
+    },
+    { key: "nombreCreador", label: "Creador" },
+    { key: "nombreModificador", label: "Modificador" },
+    { key: "fechaCreacion", label: "Fecha Creación" },
+    { key: "fechaModificacion", label: "Fecha Modificación" },
+  ];
 
   return (
-    <div className={`p-6 rounded-lg ${modoOscuro ? 'bg-gray-900 text-gray-100' : 'bg-white text-gray-900'}`}>
-      <h2 className="text-3xl font-semibold mb-6">Gestión de Estados</h2>
-
-      {/* Buscador */}
-      <input
-        type="text"
-        placeholder="Buscar por nombre, descripción o estado (activo/inactivo)..."
-        value={busqueda}
-        onChange={(e) => setBusqueda(e.target.value)}
-        className={`w-full max-w-lg p-3 mb-6 rounded border focus:outline-none focus:ring-2 ${
-          modoOscuro
-            ? 'bg-gray-800 border-gray-700 text-gray-200 focus:ring-blue-400'
-            : 'bg-gray-100 border-gray-300 text-gray-900 focus:ring-blue-600'
-        }`}
-      />
-
-      {/* Contadores y Botón */}
-      <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-6 gap-4">
-        <div className="flex gap-6 flex-wrap justify-center md:justify-start">
-          {/* Activos */}
-          <div
-            className="flex items-center gap-2 rounded-lg px-5 py-3 font-semibold shadow-md cursor-default
-              bg-gradient-to-br from-green-600 to-green-800 text-white
-              hover:brightness-110 transition"
-            title="Estados activos"
-          >
-            <FaUserCheck size={20} />
-            Activos:
-            <span className="ml-1 text-xl">{activos}</span>
-          </div>
-          {/* Inactivos */}
-          <div
-            className="flex items-center gap-2 rounded-lg px-5 py-3 font-semibold shadow-md cursor-default
-              bg-gradient-to-br from-red-600 to-red-800 text-white
-              hover:brightness-110 transition"
-            title="Estados inactivos"
-          >
-            <FaUserTimes size={20} />
-            Inactivos:
-            <span className="ml-1 text-xl">{inactivos}</span>
-          </div>
-          {/* Total */}
-          <div
-            className="flex items-center gap-2 rounded-lg px-5 py-3 font-semibold shadow-md cursor-default
-              bg-gradient-to-br from-blue-600 to-blue-800 text-white
-              hover:brightness-110 transition"
-            title="Total de estados"
-          >
-            <FaUser size={20} />
-            Total:
-            <span className="ml-1 text-xl">{total}</span>
-          </div>
+    <div className={`p-4 ${modoOscuro ? "bg-gray-800 min-h-screen" : "bg-gray-50"}`}>
+      <div className={`shadow-md rounded-xl p-6 ${fondo}`}>
+        <div className="flex justify-between items-center mb-4">
+          <h2 className={`text-2xl md:text-3xl font-extrabold tracking-wide ${texto}`}>
+            Gestión de Estados
+          </h2>
         </div>
 
-        <button
-          onClick={abrirAgregar}
-          className="mt-2 md:mt-0 bg-blue-700 hover:bg-blue-800 transition text-white px-6 py-3 rounded-lg flex items-center gap-2 font-semibold shadow"
-          aria-label="Agregar nuevo estado"
+        <BuscadorBase
+          placeholder="Buscar..."
+          valor={busqueda}
+          onChange={(e) => setBusqueda(e.target.value)}
+          modoOscuro={modoOscuro}
+        />
+
+        <ContadoresBase
+          activos={estados.filter((e) => e.activo).length}
+          inactivos={estados.filter((e) => !e.activo).length}
+          total={estados.length}
+          onNuevo={abrirModalNuevo}
+          modoOscuro={modoOscuro}
+        />
+
+        <TablaBase
+          datos={datosFiltrados}
+          columnas={columnas}
+          modoOscuro={modoOscuro}
+          onEditar={handleEditar}
+          loading={loading}
+          texto={texto}
+          encabezadoClase={encabezado}
+        />
+
+        <ModalBase
+          isOpen={modalOpen}
+          onClose={cerrarModal}
+          titulo={modoEdicion ? "Editar Estado" : "Nuevo Estado"}
+          modoOscuro={modoOscuro}
         >
-          <FaPlus /> Nuevo
-        </button>
-      </div>
-
-      {/* Tabla */}
-      <div className="overflow-x-auto rounded-lg border border-gray-300 dark:border-gray-700 shadow">
-        <table className="min-w-full text-left text-sm">
-          <thead
-            className={`${
-              modoOscuro
-                ? 'bg-gray-800 text-gray-200'
-                : 'bg-gray-200 text-gray-700'
-            }`}
+          <FormularioBase
+            onSubmit={handleGuardar}
+            onCancel={cerrarModal}
+            modoOscuro={modoOscuro}
+            formError={formError}
+            formLoading={formLoading}
+            modoEdicion={modoEdicion}
+            titulo="Estado"
           >
-            <tr>
-              <th className="p-3">#</th>
-              <th className="p-3">Nombre</th>
-              <th className="p-3">Descripción</th>
-              <th className="p-3">Activo</th>
-              <th className="p-3">Fecha creación</th>
-              <th className="p-3">Fecha modificación</th>
-              <th className="p-3 text-center">Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            {loading ? (
-              <tr>
-                <td colSpan={7} className="p-6 text-center text-gray-500">
-                  Cargando...
-                </td>
-              </tr>
-            ) : estadosFiltrados.length === 0 ? (
-              <tr>
-                <td colSpan={7} className="p-6 text-center text-gray-500">
-                  No se encontraron estados.
-                </td>
-              </tr>
-            ) : (
-              estadosFiltrados.map((e, i) => (
-                <tr
-                  key={e.iD_Estado}
-                  className={`border-t border-gray-300 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700 transition`}
-                >
-                  <td className="p-3 align-middle">{i + 1}</td>
-                  <td className="p-3 align-middle">{e.nombre_Estado}</td>
-                  <td className="p-3 align-middle">{e.descripcion || '-'}</td>
-                  <td className="p-3 align-middle">
-                    {e.activo ? (
-                      <span className="inline-block px-2 py-1 bg-green-600 text-white rounded-full text-xs font-semibold">
-                        Sí
-                      </span>
-                    ) : (
-                      <span className="inline-block px-2 py-1 bg-red-600 text-white rounded-full text-xs font-semibold">
-                        No
-                      </span>
-                    )}
-                  </td>
-                  <td className="p-3 align-middle">
-                    {new Date(e.fecha_Creacion).toLocaleDateString()}
-                  </td>
-                  <td className="p-3 align-middle">
-                    {new Date(e.fecha_Modificacion).toLocaleDateString()}
-                  </td>
-                  <td className="p-3 text-center align-middle">
-                    <button
-                      onClick={() => abrirEditar(e)}
-                      className="text-blue-600 hover:underline flex items-center justify-center gap-1 mx-auto"
-                      aria-label={`Editar estado ${e.nombre_Estado}`}
-                    >
-                      <FaEdit />
-                      Editar
-                    </button>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
-
-      {/* Modal */}
-      {modalOpen && (
-        <div
-          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
-          role="dialog"
-          aria-modal="true"
-        >
-          <form
-            onSubmit={handleSubmit}
-            className={`w-full max-w-md bg-white dark:bg-gray-800 rounded-lg p-6 shadow-lg`}
-          >
-            <h3 className="text-xl font-semibold mb-4">
-              {modoEdicion ? 'Editar Estado' : 'Nuevo Estado'}
-            </h3>
-
-            <label htmlFor="nombreEstado" className="block font-semibold mb-1">
-              Nombre del estado <span className="text-red-600">*</span>
-            </label>
-            <input
-              id="nombreEstado"
-              name="nombreEstado"
-              type="text"
-              value={form.nombreEstado}
-              onChange={handleChange}
-              className={`w-full p-2 rounded border
-                ${modoOscuro ? 'bg-gray-700 border-gray-600 text-gray-200' : 'bg-gray-100 border-gray-300 text-gray-900'}
-                focus:outline-none focus:ring-2 focus:ring-blue-500 mb-4`}
-              required
-              autoFocus
-            />
-
-            <label htmlFor="descripcion" className="block font-semibold mb-1">
-              Descripción
-            </label>
-            <textarea
-              id="descripcion"
-              name="descripcion"
-              value={form.descripcion}
-              onChange={handleChange}
-              className={`w-full p-2 rounded border resize-none
-                ${modoOscuro ? 'bg-gray-700 border-gray-600 text-gray-200' : 'bg-gray-100 border-gray-300 text-gray-900'}
-                focus:outline-none focus:ring-2 focus:ring-blue-500 mb-4`}
-              rows={3}
-            />
-
-            <label className="inline-flex items-center gap-2 mb-4">
+            <div className="space-y-4">
               <input
-                type="checkbox"
-                name="activo"
-                checked={form.activo}
-                onChange={handleChange}
-                className="form-checkbox h-5 w-5 text-blue-600"
+                type="text"
+                name="nombre"
+                placeholder="Nombre del estado"
+                value={form.nombre}
+                onChange={handleInputChange}
+                className="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white dark:border-gray-600"
+                autoFocus
               />
-              <span>Activo</span>
-            </label>
-
-            {error && <p className="text-red-600 mb-4">{error}</p>}
-
-            <div className="flex justify-end gap-4">
-              <button
-                type="button"
-                onClick={() => setModalOpen(false)}
-                className="px-4 py-2 rounded border border-gray-400 dark:border-gray-600 hover:bg-gray-200 dark:hover:bg-gray-700 transition"
+              <select
+                name="descripcion"
+                value={form.descripcion}
+                onChange={handleInputChange}
+                className="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white dark:border-gray-600"
               >
-                Cancelar
-              </button>
-              <button
-                type="submit"
-                className="px-4 py-2 rounded bg-green-600 hover:bg-green-700 text-white font-semibold transition"
-              >
-                {modoEdicion ? 'Actualizar' : 'Registrar'}
-              </button>
+                <option value="">Seleccione estado</option>
+                <option value="Activo">Activo</option>
+                <option value="Inactivo">Inactivo</option>
+              </select>
             </div>
-          </form>
-        </div>
-      )}
+          </FormularioBase>
+        </ModalBase>
+      </div>
     </div>
   );
 };
