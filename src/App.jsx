@@ -32,6 +32,7 @@ import FrmHorarios from "./pages/FrmHorarios";
 import FrmTipoCalificaciones from "./pages/FrmTipoCalificaciones";
 import FrmTransacciones from "./pages/FrmTransacciones";
 import FrmTipoTransacciones from "./pages/FrmTipoTransacciones";
+import FrmRescateEvaculacion from "./pages/FrmRescateEvaculacion";
 
 
 function App() {
@@ -111,6 +112,7 @@ function App() {
           <Route path="tipocalificaciones" element={<FrmTipoCalificaciones />} />
           <Route path="transacciones" element={<FrmTransacciones />} />
           <Route path="tipotransacciones" element={<FrmTipoTransacciones />} />
+          <Route path="rescate" element={<FrmRescateEvaculacion />} />
           
 
           { <Route path="aulas" element={<FrmAulas />} />/* Ruta catch-all para cualquier subruta inválida dentro de /dashboard
