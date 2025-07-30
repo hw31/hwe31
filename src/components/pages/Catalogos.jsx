@@ -201,18 +201,18 @@ const Catalogos = ({ busqueda }) => {
       label: "Tipo",
       render: (item) => tipos.find((t) => t.idTipoCatalogo === item.idTipoCatalogo)?.nombre ?? "ND",
     },
+    { key: "creador", label: "Creador" },
     {
       key: "fechaCreacion",
       label: "Fecha Creación",
       render: (item) => formatearFecha(item.fechaCreacion),
     },
+    { key: "modificador", label: "Modificador" },
     {
       key: "fechaModificacion",
       label: "Fecha Modificación",
       render: (item) => formatearFecha(item.fechaModificacion),
     },
-    { key: "creador", label: "Creador" },
-    { key: "modificador", label: "Modificador" },
     {
       key: "activo",
       label: "Estado",

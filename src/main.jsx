@@ -32,6 +32,7 @@ import FrmGrupos from './components/pages/FrmGrupos';
 import FrmHorarios from './components/pages/FrmHorarios';
 import FrmTipoCalificaciones from './components/pages/FrmTipoCalificacion';
 import FrmTransacciones from './components/pages/FrmTransacciones';
+import FrmRescateEvaluacion from './components/pages/FrmRescateEvaluacion';
 
 
 const router = createBrowserRouter([
@@ -128,9 +129,14 @@ const router = createBrowserRouter([
             element: <FrmTransacciones />,
           },
           {
+            path: 'rescate',
+            element: <FrmRescateEvaluacion />, // Ruta para rescate de evaluación
+          },
+          {
             path: '*',
             element: <Navigate to="/dashboard" replace />,
           },
+          
         ],
       },
     ],
