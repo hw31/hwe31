@@ -3,20 +3,21 @@ import api from './api';
 const listarPersonas = async () => {
   try {
     const res = await api.get('Personas/listar');
-    if (res.data.Numero === -1) {
-      return { success: false, message: res.data.Mensaje || 'Error al listar personas' };
+    if (res.data.numero === -1) {  // ojo también que es 'numero' y no 'Numero'
+      return { success: false, message: res.data.mensaje || 'Error al listar personas' };
     }
     return {
       success: true,
-      data: res.data.Resultado || [],
+      data: res.data.resultado || [],
     };
   } catch (error) {
     return {
       success: false,
-      message: error.response?.data?.Mensaje || 'Error inesperado al listar personas.',
+      message: error.response?.data?.mensaje || 'Error inesperado al listar personas.',
     };
   }
 };
+
 
 const insertarPersona = async (datosPersona) => {
   try {

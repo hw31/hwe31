@@ -5,26 +5,37 @@ import Swal from "sweetalert2";
 import personaService from "../../services/Persona";
 import catalogoService from "../../services/Catalogos";
 import TablaBase from "../Shared/TablaBase";
-import BuscadorBase from "../Shared/BuscadorBase";
+
 import ContadoresBase from "../Shared/Contadores";
 import ModalBase from "../Shared/ModalBase";
 import FormularioBase from "../Shared/FormularioBase";
 import estadoService from "../../services/Estado";
+import { FaCheckCircle, FaTimesCircle } from "react-icons/fa";
 
-const FrmPersonas = () => {
+
+const FrmPersonas = ({ busqueda }) => {
   const modoOscuro = useSelector((state) => state.theme.modoOscuro);
   const fondo = modoOscuro ? "bg-gray-900" : "bg-white";
   const texto = modoOscuro ? "text-gray-200" : "text-gray-800";
   const encabezado = modoOscuro ? "bg-gray-700 text-gray-200" : "bg-gray-100 text-gray-700";
 
   const [personas, setPersonas] = useState([]);
-  const [busqueda, setBusqueda] = useState("");
+  
   const [modalOpen, setModalOpen] = useState(false);
   const [modoEdicion, setModoEdicion] = useState(false);
   const [loading, setLoading] = useState(false);
   const [formLoading, setFormLoading] = useState(false);
   const [formError, setFormError] = useState("");
   const [estados, setEstados] = useState([]);
+  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [filtros, setFiltros] = useState({
+    texto: "",
+    genero: "",
+    tipoDocumento: "",
+    nacionalidad: "",
+    carrera: "",
+    estado: "",
+  });
 
   const [generos, setGeneros] = useState([]);
   const [tiposDocumento, setTiposDocumento] = useState([]);
@@ -96,25 +107,22 @@ const FrmPersonas = () => {
     }
   };
 
-const cargarCatalogos = async () => {
-  try {
-    const res = await catalogoService.listarCatalogo();
-    if (res.numero === 0 && Array.isArray(res.resultado)) {
-      const catalogo = res.resultado;
-
-      // Filtrar por idTipoCatalogo
-      setGeneros(catalogo.filter(c => c.idTipoCatalogo === 1));
-      setTiposDocumento(catalogo.filter(c => c.idTipoCatalogo === 3));
-      setNacionalidades(catalogo.filter(c => c.idTipoCatalogo === 2));
-      setCarreras(catalogo.filter(c => c.idTipoCatalogo === 6));
-    } else {
-      Swal.fire("Error", "No se pudo cargar el catálogo", "error");
+  const cargarCatalogos = async () => {
+    try {
+      const res = await catalogoService.listarCatalogo();
+      if (res.numero === 0 && Array.isArray(res.resultado)) {
+        const catalogo = res.resultado;
+        setGeneros(catalogo.filter(c => c.idTipoCatalogo === 1));
+        setTiposDocumento(catalogo.filter(c => c.idTipoCatalogo === 3));
+        setNacionalidades(catalogo.filter(c => c.idTipoCatalogo === 2));
+        setCarreras(catalogo.filter(c => c.idTipoCatalogo === 6));
+      } else {
+        Swal.fire("Error", "No se pudo cargar el catálogo", "error");
+      }
+    } catch (error) {
+      Swal.fire("Error", "Error al cargar el catálogo", "error");
     }
-  } catch (error) {
-    Swal.fire("Error", "Error al cargar el catálogo", "error");
-  }
-};
-
+  };
 
   const cargarPersonas = async () => {
     setLoading(true);
@@ -193,20 +201,19 @@ const cargarCatalogos = async () => {
 
     setFormLoading(true);
 
-  const datosEnviar = {
-  IdPersona: modoEdicion ? form.idPersona : 0, 
-  PrimerNombre: form.primerNombre.trim(),
-  SegundoNombre: form.segundoNombre.trim() || null,
-  PrimerApellido: form.primerApellido.trim(),
-  SegundoApellido: form.segundoApellido.trim() || null,
-  GeneroId: Number(form.idGenero) || null,
-  TipoDocumentoId: Number(form.idTipoDocumento) || null,
-  NumeroDocumento: form.numeroDocumento.trim() || null,
-  NacionalidadId: Number(form.idNacionalidad) || null,
-  CarreraId: Number(form.idCarrera) || null,
-  IdEstado: Number(form.estado),
-};
-
+    const datosEnviar = {
+      IdPersona: modoEdicion ? form.idPersona : 0,
+      PrimerNombre: form.primerNombre.trim(),
+      SegundoNombre: form.segundoNombre.trim() || null,
+      PrimerApellido: form.primerApellido.trim(),
+      SegundoApellido: form.segundoApellido.trim() || null,
+      GeneroId: Number(form.idGenero) || null,
+      TipoDocumentoId: Number(form.idTipoDocumento) || null,
+      NumeroDocumento: form.numeroDocumento.trim() || null,
+      NacionalidadId: Number(form.idNacionalidad) || null,
+      CarreraId: Number(form.idCarrera) || null,
+      IdEstado: Number(form.estado),
+    };
 
     const res = modoEdicion
       ? await personaService.actualizarPersona(datosEnviar)
@@ -223,14 +230,24 @@ const cargarCatalogos = async () => {
     }
   };
 
-  const datosFiltrados = personas.filter((p) =>
-    `${p.primerNombre} ${p.segundoNombre} ${p.primerApellido} ${p.segundoApellido}`
-      .toLowerCase()
-      .includes(busqueda.toLowerCase())
-  );
+   const textoBusqueda = (busqueda || "").trim().toLowerCase();
+
+  const datosFiltrados = personas.filter((p) => {
+    const coincideTexto =
+      `${p.primerNombre} ${p.segundoNombre} ${p.primerApellido} ${p.segundoApellido} ${p.numeroDocumento}`
+        .toLowerCase()
+        .includes(textoBusqueda);
+
+    const coincideTipoDoc = !filtros?.tipoDocumento || p.nombreTipoDocumento === filtros.tipoDocumento;
+    const coincideGenero = !filtros?.genero || p.nombreGenero === filtros.genero;
+    const coincideNacionalidad = !filtros?.nacionalidad || p.nombreNacionalidad === filtros.nacionalidad;
+    const coincideCarrera = !filtros?.carrera || p.nombreCarrera === filtros.carrera;
+    const coincideEstado = !filtros?.estado || (filtros.estado === "Activo" ? p.activo : !p.activo);
+
+    return coincideTexto && coincideTipoDoc && coincideGenero && coincideNacionalidad && coincideCarrera && coincideEstado;
+  });
 
   const columnas = [
-    { key: "idPersona", label: "ID" },
     { key: "primerNombre", label: "Primer Nombre" },
     { key: "segundoNombre", label: "Segundo Nombre" },
     { key: "primerApellido", label: "Primer Apellido" },
@@ -243,12 +260,20 @@ const cargarCatalogos = async () => {
     {
       key: "activo",
       label: "Estado",
-      render: (item) =>
-        item.activo ? (
-          <span className="text-green-500 font-semibold flex items-center gap-1">✔ Activo</span>
-        ) : (
-          <span className="text-red-500 font-semibold flex items-center gap-1">✖ Inactivo</span>
-        ),
+     render: (item) =>
+  item.activo ? (
+<span className="text-green-500 font-semibold flex items-center gap-1">
+  <FaCheckCircle size={20} />
+</span>
+
+
+  ) : (
+    <span className="text-green-500 font-semibold flex items-center gap-1 text-lg">
+  <FaCheckCircle />
+</span>
+
+  ),
+
     },
     { key: "nombreCreador", label: "Creador" },
     { key: "nombreModificador", label: "Modificador" },
@@ -257,54 +282,119 @@ const cargarCatalogos = async () => {
   ];
 
   return (
-    <div className={`p-4 ${modoOscuro ? "bg-gray-800 min-h-screen" : "bg-gray-50"}`} style={{ paddingTop: 1 }}>
-      <div className={`shadow-md rounded-xl p-6 ${fondo}`}>
-        <div className="flex justify-between items-center mb-4">
-          <h2 className={`text-2xl md:text-3xl font-extrabold tracking-wide ${modoOscuro ? "text-white" : "text-gray-800"}`}>
-            Gestión de Personas
-          </h2>
-        </div>
-
-        <BuscadorBase
-          placeholder="Buscar por nombre..."
-          valor={busqueda}
-          onChange={(e) => setBusqueda(e.target.value)}
-          modoOscuro={modoOscuro}
-        />
-
-        <ContadoresBase
-          activos={personas.filter((p) => p.activo).length}
-          inactivos={personas.filter((p) => !p.activo).length}
-          total={personas.length}
-          onNuevo={() => abrirModalNuevo()}
-          modoOscuro={modoOscuro}
-        />
-
-        <TablaBase
-          datos={datosFiltrados}
-          columnas={columnas}
-          modoOscuro={modoOscuro}
-          onEditar={abrirModalEditar}
-          loading={loading}
-          texto={texto}
-          encabezadoClase={encabezado}
-        />
-
-        <ModalBase
-          isOpen={modalOpen}
-          onClose={cerrarModal}
-          titulo={modoEdicion ? "Editar Persona" : "Nueva Persona"}
-          modoOscuro={modoOscuro}
+    <div className="p-4">
+      <div className={`shadow-lg rounded-xl p-6 ${fondo}`}>
+        <h2
+          className={`text-2xl md:text-3xl font-extrabold tracking-wide cursor-pointer select-none ${texto}`}
+          onClick={() => setIsCollapsed(!isCollapsed)}
         >
-          <FormularioBase
-            onSubmit={handleGuardar}
-            onCancel={cerrarModal}
+          {isCollapsed ? "►" : "▼"} Gestión de Personas
+        </h2>
+
+      {!isCollapsed && (
+        <div id="personasContent" className="mt-4">
+          {/* FILTROS */}
+          <div className="grid grid-cols-1 md:grid-cols-6 gap-4 mb-4">
+            
+            <select
+              value={filtros.tipoDocumento}
+              onChange={(e) => setFiltros({ ...filtros, tipoDocumento: e.target.value })}
+              className="px-3 py-2 border rounded dark:bg-gray-700 dark:text-white dark:border-gray-600"
+            >
+              <option value="">Tipo Doc.</option>
+              {tiposDocumento.map((td) => (
+                <option key={td.idCatalogo} value={td.descripcionCatalogo}>
+                  {td.descripcionCatalogo}
+                </option>
+              ))}
+            </select>
+            <select
+              value={filtros.genero}
+              onChange={(e) => setFiltros({ ...filtros, genero: e.target.value })}
+              className="px-3 py-2 border rounded dark:bg-gray-700 dark:text-white dark:border-gray-600"
+            >
+              <option value="">Género</option>
+              {generos.map((g) => (
+                <option key={g.idCatalogo} value={g.descripcionCatalogo}>
+                  {g.descripcionCatalogo}
+                </option>
+              ))}
+            </select>
+            <select
+              value={filtros.nacionalidad}
+              onChange={(e) => setFiltros({ ...filtros, nacionalidad: e.target.value })}
+              className="px-3 py-2 border rounded dark:bg-gray-700 dark:text-white dark:border-gray-600"
+            >
+              <option value="">Nacionalidad</option>
+              {nacionalidades.map((n) => (
+                <option key={n.idCatalogo} value={n.descripcionCatalogo}>
+                  {n.descripcionCatalogo}
+                </option>
+              ))}
+            </select>
+            <select
+              value={filtros.carrera}
+              onChange={(e) => setFiltros({ ...filtros, carrera: e.target.value })}
+              className="px-3 py-2 border rounded dark:bg-gray-700 dark:text-white dark:border-gray-600"
+            >
+              <option value="">Carrera</option>
+              {carreras.map((c) => (
+                <option key={c.idCatalogo} value={c.descripcionCatalogo}>
+                  {c.descripcionCatalogo}
+                </option>
+              ))}
+            </select>
+            <select
+              value={filtros.estado}
+              onChange={(e) => setFiltros({ ...filtros, estado: e.target.value })}
+              className="px-3 py-2 border rounded dark:bg-gray-700 dark:text-white dark:border-gray-600"
+            >
+              <option value="">Estado</option>
+              <option value="Activo">Activo</option>
+              <option value="Inactivo">Inactivo</option>
+            </select>
+          </div>
+
+          {/* CONTADORES */}
+          <ContadoresBase
+            activos={personas.filter((p) => p.activo).length}
+            inactivos={personas.filter((p) => !p.activo).length}
+            total={personas.length}
+            onNuevo={abrirModalNuevo}
             modoOscuro={modoOscuro}
-            formError={formError}
-            formLoading={formLoading}
-            modoEdicion={modoEdicion}
-            titulo="Persona"
-          >
+          />
+
+          {/* TABLA */}
+          <TablaBase
+            datos={datosFiltrados}
+            columnas={columnas}
+            modoOscuro={modoOscuro}
+            onEditar={abrirModalEditar}
+            loading={loading}
+            texto={texto}
+            encabezadoClase={encabezado}
+          />
+        </div>
+      )}
+
+      {/* MODAL */}
+      <ModalBase
+        isOpen={modalOpen}
+        onClose={cerrarModal}
+        titulo={modoEdicion ? "Editar Persona" : "Nueva Persona"}
+        modoOscuro={modoOscuro}
+      >
+        <FormularioBase
+          onSubmit={handleGuardar}
+          onCancel={cerrarModal}
+          modoOscuro={modoOscuro}
+          formError={formError}
+          formLoading={formLoading}
+          modoEdicion={modoEdicion}
+          titulo="Persona"
+        >
+         
+
             <div className="space-y-4">
               <input type="text" name="primerNombre" placeholder="Primer Nombre" value={form.primerNombre} onChange={handleInputChange} className="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white dark:border-gray-600" autoFocus />
               <input type="text" name="segundoNombre" placeholder="Segundo Nombre" value={form.segundoNombre} onChange={handleInputChange} className="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white dark:border-gray-600" />
@@ -398,4 +488,4 @@ const cargarCatalogos = async () => {
   );
 };
 
-export default FrmPersonas; 
+export default FrmPersonas;

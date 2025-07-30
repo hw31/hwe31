@@ -5,11 +5,12 @@ const insertarUsuarioPermiso = async (datos) => {
   try {
     const res = await api.post('UsuariosPermiso/INSERTAR', datos);
 
+    // El backend devuelve success:true y data, pero puede devolver mensajes
     if (res.data.success) {
       console.log('Permiso asignado al usuario correctamente');
     }
 
-    return res.data;
+    return res.data; // { success, data, mensaje? }
   } catch (error) {
     console.error('Error al insertar permiso de usuario:', error.message);
     throw error;
@@ -58,8 +59,7 @@ const filtrarPorIdUsuario = async (idUsuario) => {
   }
 };
 
-
-/* LISTAR PERMISOS POR USUARIO */
+/* LISTAR TODOS LOS PERMISOS POR USUARIO */
 const listarUsuariosPermiso = async () => {
   try {
     const res = await api.get('UsuariosPermiso/Listar');
