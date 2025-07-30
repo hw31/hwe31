@@ -258,7 +258,7 @@ const AsignacionDocenteList = () => {
               modoOscuro ? "text-white" : "text-gray-800"
             }`}
           >
-            Gestión de Tipos de Calificación
+            ASIGNACIONES
           </h2>
         </div>
           
