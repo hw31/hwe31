@@ -5,6 +5,8 @@ import inscripcionService from "../../services/Inscripcion";
 import materiaService from "../../services/Materias";
 import estadoService from "../../services/Estado";
 import usuarioService from "../../services/Usuario";
+import grupoService from "../../services/Grupos";
+
 import periodoService from "../../services/PeriodoAcademico"; // <-- Importa tu servicio
 import Swal from "sweetalert2";
 import { FaEdit, FaPlus, FaUserCheck, FaUserTimes, FaUser, FaCheckCircle, FaTimesCircle } from "react-icons/fa";
@@ -14,10 +16,11 @@ const FrmInscripcionesMaterias = () => {
 
   const [inscripcionesMaterias, setInscripcionesMaterias] = useState([]);
   const [listas, setListas] = useState({
+    grupos: [],
     materias: [],
-    estados: [],
-    usuarios: [],
     inscripciones: [],
+    estados: [],
+    usuarios: [], // Añadido para consistencia
   });
 
   const [periodosAcademicos, setPeriodosAcademicos] = useState([]); // Estado para periodos
@@ -29,6 +32,7 @@ const FrmInscripcionesMaterias = () => {
   const [formData, setFormData] = useState({
     idInscripcion: "",
     idMateria: "",
+    idGrupo: "",    // Homogenizado nombre a "idGrupo"
     idEstado: "",
   });
   const [inscripcionSeleccionada, setInscripcionSeleccionada] = useState(null);
@@ -37,35 +41,68 @@ const FrmInscripcionesMaterias = () => {
   const [loading, setLoading] = useState(false);
   const [formLoading, setFormLoading] = useState(false);
   const [error, setError] = useState("");
+  
 
   // Cargar listas maestras (materias, estados, usuarios)
-  const cargarListas = async () => {
-    setLoadingListas(true);
-    try {
-      const [materiasResp, estadosResp, usuariosResp] = await Promise.all([
-        materiaService.listarMaterias(),
-        estadoService.listarEstados(),
-        usuarioService.listarUsuario(),
-      ]);
+const cargarListas = async () => {
+  setLoadingListas(true);
+  try {
+  const [materiasResp, estadosResp, grupoResp, usuariosResp] = await Promise.all([
+  materiaService.listarMaterias(),
+  estadoService.listarEstados(),
+  grupoService.listarGrupos(),
+  usuarioService.listarUsuario(),
+]);
 
-      const materias = materiasResp?.resultado ?? materiasResp ?? [];
-      const estados = estadosResp.success ? estadosResp.data : [];
-      const usuarios = usuariosResp.success ? usuariosResp.data : [];
+const grupos = grupoResp ?? []; // ✅ ya es un array directamente
 
-      setListas((prev) => ({
-        ...prev,
-        materias,
-        estados,
-        usuarios,
-      }));
-    } catch (err) {
-      console.error("Error al cargar listas:", err);
-      setError("Error al cargar listas.");
-    } finally {
-      setLoadingListas(false);
-    }
+    const materias = materiasResp?.resultado ?? materiasResp ?? [];
+    const estados = estadosResp.success ? estadosResp.data : [];
+
+    const usuarios = usuariosResp.success ? usuariosResp.data : [];
+
+    setListas((prev) => ({
+      ...prev,
+      materias,
+      estados,
+      grupos,
+      usuarios,
+    }));
+  } catch (err) {
+    console.error("Error al cargar listas:", err);
+    setError("Error al cargar listas.");
+  } finally {
+    setLoadingListas(false);
+  }
+};
+
+ // Funciones para obtener nombres según IDs
+  const buscarNombreEstudiante = (idInscripcion) =>
+    listas.inscripciones.find((i) => Number(i.iD_Inscripcion) === Number(idInscripcion))
+      ?.nombreEstudiante ?? "N/A";
+
+const buscarNombreGrupo = (idGrupo) =>
+  listas.grupos.find((g) => Number(g.idGrupo) === Number(idGrupo))?.codigoGrupo ?? "N/A";
+
+  const buscarNombrePeriodo = (idPeriodo) => {
+    const periodo = periodosAcademicos.find(
+      (p) => p.idPeriodoAcademico === Number(idPeriodo)
+    );
+    return periodo ? periodo.nombrePeriodo : "";
   };
 
+  const buscarNombreMateria = (id) =>
+    listas.materias.find((m) => Number(m.idMateria) === Number(id))?.nombreMateria ?? "";
+
+  const buscarNombreEstado = (id) => {
+    const e = listas.estados.find((e) => Number(e.iD_Estado ?? e.idEstado) === Number(id));
+    return e?.nombre_Estado ?? e?.nombreEstado ?? "";
+  };
+
+  const buscarNombreUsuario = (id) => {
+    const usuario = listas.usuarios.find((u) => Number(u.id_Usuario) === Number(id));
+    return usuario?.usuario ?? `ID: ${id}`;
+  };
   // Cargar inscripciones para obtener nombres de estudiantes y el idPeriodoAcademico
   const cargarInscripciones = async () => {
     try {
@@ -90,68 +127,53 @@ const FrmInscripcionesMaterias = () => {
     }
   };
 
-  // Cargar inscripciones materias (detalle materias)
-  const cargarInscripcionesMaterias = async () => {
-    try {
-      setLoading(true);
-      setError("");
-      const data = await inscripcionesmateriaService.listarInscripcionesMaterias();
-      setInscripcionesMaterias(data);
-    } catch (err) {
-      console.error(err);
-      setError("Error al listar inscripciones materias.");
-    } finally {
-      setLoading(false);
-    }
-  };
+const cargarInscripcionesMaterias = async () => {
+  try {
+    setLoading(true);
+    setError("");
+    const data = await inscripcionesmateriaService.listarInscripcionesMaterias();
+
+    // Transformamos el campo iD_Grupo a idGrupo para uniformidad
+    const dataTransformada = data.map((item) => ({
+      ...item,
+      idGrupo: item.iD_Grupo ?? 0,  // Asegura que idGrupo esté siempre definido
+    }));
+
+    setInscripcionesMaterias(dataTransformada);
+
+    console.log("Datos inscripciones materias transformados:", dataTransformada);
+  } catch (err) {
+    console.error(err);
+    setError("Error al listar inscripciones materias.");
+  } finally {
+    setLoading(false);
+  }
+};
 
   useEffect(() => {
     cargarListas();
     cargarInscripciones();
     cargarPeriodosAcademicos();
+
+     console.log("📋 Listas.grupos en el estado:", listas.grupos);
     cargarInscripcionesMaterias();
   }, []);
 
-  // Funciones para obtener nombres según IDs
-  const buscarNombreEstudiante = (idInscripcion) =>
-    listas.inscripciones.find((i) => Number(i.iD_Inscripcion) === Number(idInscripcion))
-      ?.nombreEstudiante ?? "N/A";
-
-  const buscarNombrePeriodo = (idPeriodo) => {
-    const periodo = periodosAcademicos.find(
-      (p) => p.idPeriodoAcademico === Number(idPeriodo)
-    );
-    return periodo ? periodo.nombrePeriodo : "";
-  };
-
-  const buscarNombreMateria = (id) =>
-    listas.materias.find((m) => Number(m.idMateria) === Number(id))?.nombreMateria ?? "";
-
-  const buscarNombreEstado = (id) => {
-    const e = listas.estados.find((e) => Number(e.iD_Estado ?? e.idEstado) === Number(id));
-    return e?.nombre_Estado ?? e?.nombreEstado ?? "";
-  };
-
-  const buscarNombreUsuario = (id) => {
-    const usuario = listas.usuarios.find((u) => Number(u.id_Usuario) === Number(id));
-    return usuario?.usuario ?? `ID: ${id}`;
-  };
-
-  // Filtrado para búsqueda
-  const inscripcionesFiltradas = inscripcionesMaterias.filter((i) => {
+ 
+const inscripcionesFiltradas = inscripcionesMaterias.filter((i) => {
   const texto = busqueda.toLowerCase();
 
   const periodoId = listas.inscripciones.find(insc => insc.iD_Inscripcion === i.idInscripcion)?.iD_PeriodoAcademico || "";
   const periodoNombre = buscarNombrePeriodo(periodoId).toLowerCase();
 
   return (
+    buscarNombreGrupo(i.idGrupo).toLowerCase().includes(texto) ||
     buscarNombreMateria(i.idMateria).toLowerCase().includes(texto) ||
     buscarNombreEstado(i.idEstado).toLowerCase().includes(texto) ||
     buscarNombreEstudiante(i.idInscripcion).toLowerCase().includes(texto) ||
     periodoNombre.includes(texto)
   );
 });
-
 
   // Contadores para estado
   const activos = inscripcionesMaterias.filter((i) => Number(i.idEstado) === 1).length;
@@ -162,9 +184,9 @@ const FrmInscripcionesMaterias = () => {
   const handleBusquedaChange = (e) => setBusqueda(e.target.value);
 
   // Abrir modal nuevo
-  const abrirModalNuevo = () => {
+   const abrirModalNuevo = () => {
     setModoEdicion(false);
-    setFormData({ idInscripcion: "", idMateria: "", idEstado: "" });
+    setFormData({ idInscripcion: "", idMateria: "", idEstado: "", idGrupo: "" });
     setInscripcionSeleccionada(null);
     setFormError("");
     setModalOpen(true);
@@ -177,6 +199,7 @@ const FrmInscripcionesMaterias = () => {
       idInscripcion: inscripcion.idInscripcion,
       idMateria: inscripcion.idMateria,
       idEstado: inscripcion.idEstado,
+      idGrupo: inscripcion.idGrupo,  // corregido a idGrupo (minúscula)
     });
     setInscripcionSeleccionada(inscripcion);
     setFormError("");
@@ -194,7 +217,7 @@ const FrmInscripcionesMaterias = () => {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const validarFormulario = () => {
+const validarFormulario = () => {
     if (!formData.idInscripcion) {
       setFormError("Debe seleccionar una inscripción válida.");
       return false;
@@ -205,6 +228,10 @@ const FrmInscripcionesMaterias = () => {
     }
     if (!formData.idEstado) {
       setFormError("Debe seleccionar un estado.");
+      return false;
+    }
+    if (!formData.idGrupo) {
+      setFormError("Debe seleccionar un grupo.");
       return false;
     }
     setFormError("");
@@ -446,6 +473,7 @@ const FrmInscripcionesMaterias = () => {
                 <tr>
                   <th className="px-4 py-2 text-left text-sm font-semibold">Estudiante</th>
                   <th className="px-4 py-2 text-left text-sm font-semibold">Materia</th>
+                  <th className="px-4 py-2 text-left text-sm font-semibold">Grupo</th>
                   <th className="px-4 py-2 text-left text-sm font-semibold">Creador</th>
                   <th className="px-4 py-2 text-left text-sm font-semibold">Modificador</th>
                   <th className="px-4 py-2 text-left text-sm font-semibold">Creado</th>
@@ -473,7 +501,12 @@ const FrmInscripcionesMaterias = () => {
                         )}
                       </div>
                     </td>
+       
                     <td className={`px-4 py-2 text-sm ${texto}`}>{buscarNombreMateria(i.idMateria)}</td>
+<td className={`px-4 py-2 text-sm ${texto}`}>
+  {buscarNombreGrupo(i.idGrupo)}
+</td>
+
                     <td className={`px-4 py-2 text-sm ${texto}`}>{buscarNombreUsuario(i.idCreador)}</td>
                     <td className={`px-4 py-2 text-sm ${texto}`}>{buscarNombreUsuario(i.idModificador)}</td>
                     <td className={`px-4 py-2 text-sm ${texto}`}>{new Date(i.fechaCreacion).toLocaleString()}</td>
@@ -581,6 +614,27 @@ const FrmInscripcionesMaterias = () => {
                     </option>
                   ))}
                 </select>
+               <label className={`${texto} block mb-1 font-semibold`} htmlFor="idGrupo">
+                  Grupo
+                </label>
+                <select
+                  id="idGrupo"
+                  name="idGrupo"
+                  value={formData.idGrupo}
+                  onChange={handleChange}
+                  className={`w-full mb-3 p-2 rounded border ${
+                    modoOscuro ? "bg-gray-800 border-gray-600 text-gray-200" : "bg-white border-gray-300"
+                  }`}
+                  aria-required="true"
+                >
+                  <option value="">Seleccione un grupo</option>
+                  {listas.grupos.map((g) => (
+                    <option key={g.idGrupo} value={g.idGrupo}>
+                      {g.codigoGrupo}
+                    </option>
+                  ))}
+                </select>
+
 
                 <label className={`${texto} block mb-1 font-semibold`} htmlFor="idEstado">
                   Estado

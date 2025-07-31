@@ -1,7 +1,7 @@
 import api from './api';
 
 /* INSERTAR */
-const insertarInscripcion = async (datosInscripcion) => {
+const insertarInscripcionMateria = async (datosInscripcion) => {
   try {
     const res = await api.post('InscripcionesMaterias/insertar', datosInscripcion);
 
@@ -17,7 +17,7 @@ const insertarInscripcion = async (datosInscripcion) => {
 };
 
 /* ACTUALIZAR */
-const actualizarInscripcion = async (datosInscripcion) => {
+const actualizarInscripcionMateria = async (datosInscripcion) => {
   try {
     const res = await api.put('InscripcionesMaterias/actualizar', datosInscripcion);
 
@@ -61,20 +61,23 @@ const filtrarPorIdEstudiante = async (idEstudiante) => {
 
 
 /* LISTAR INSCRIPCIONES */
-const listarInscripciones = async () => {
+/* LISTAR INSCRIPCIONES */
+const listarInscripcionesMaterias = async () => {
   try {
     const res = await api.get('InscripcionesMaterias/listar');
-    return res.data;
+    return res.data.data; // <-- ✅ Esta es la clave
   } catch (error) {
     console.error('Error al listar inscripciones:', error.message);
     throw error;
   }
 };
 
+
+
 export default {
-  insertarInscripcion,
-  actualizarInscripcion,
+  insertarInscripcionMateria,
+  actualizarInscripcionMateria,
   filtrarPorIdInscripcion,
   filtrarPorIdEstudiante,
-  listarInscripciones
+  listarInscripcionesMaterias
 };
