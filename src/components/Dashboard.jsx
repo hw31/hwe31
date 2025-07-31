@@ -1,46 +1,44 @@
 import React, { useEffect, useState, useRef } from "react";
 import { useNavigate, Outlet, useLocation } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
-import { Moon, Sun, LogOut, User } from "lucide-react";
-import authService from "../../services/authService";
+import { Moon, Sun, LogOut, User, Search } from "lucide-react";
+import authService from "../services/authService";
 import styled from "styled-components";
-import { logout as logoutAction } from "../../features/Auth/authSlice";
-import { toggleModoOscuro, fetchModoOscuro, setModoOscuro } from "../../features/theme/themeSlice";
-import SidebarMenu from "../Shared/SidebarMenu";
-import DashboardMenuCards from "../Shared/DashboardMenuCards";
+import { logout as logoutAction } from "../features/Auth/authSlice";
+import { toggleModoOscuro, fetchModoOscuro, setModoOscuro } from "../features/theme/themeSlice";
+import SidebarMenu from "../components/SidebarMenu";
+
 const Dashboard = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const location = useLocation();
 
   const persona = useSelector((state) => state.auth.persona || "Usuario");
-  const rol = useSelector((state) => state.auth.rol || "Sin rol");
-    const rolLower = rol.toLowerCase();
   const idSesion = useSelector((state) => state.auth.idSesion);
   const modoOscuro = useSelector((state) => state.theme.modoOscuro);
 
   const [showDropdown, setShowDropdown] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(window.innerWidth > 768);
+  const [searchValue, setSearchValue] = useState("");
   const dropdownRef = useRef(null);
-  const sidebarRef = useRef(null);
 
   const mostrarBienvenida = location.pathname === "/dashboard";
 
+  // --- Aquí: obtener modo oscuro sincronizado desde backend al montar ---
   useEffect(() => {
     (async () => {
       const modoResponse = await dispatch(fetchModoOscuro());
       if (fetchModoOscuro.fulfilled.match(modoResponse)) {
         dispatch(setModoOscuro(modoResponse.payload));
       } else {
-        dispatch(setModoOscuro(false));
+        dispatch(setModoOscuro(false)); // fallback
       }
     })();
   }, [dispatch]);
 
   useEffect(() => {
     const root = document.documentElement;
-    if (modoOscuro) root.classList.add("dark");
-    else root.classList.remove("dark");
+    modoOscuro ? root.classList.add("dark") : root.classList.remove("dark");
   }, [modoOscuro]);
 
   const handleLogout = async () => {
@@ -57,58 +55,52 @@ const Dashboard = () => {
     dispatch(toggleModoOscuro(!modoOscuro));
   };
 
-  // Cerrar dropdown si clic fuera
   useEffect(() => {
-    const handleClickOutsideDropdown = (event) => {
+    const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
         setShowDropdown(false);
       }
     };
-    document.addEventListener("mousedown", handleClickOutsideDropdown);
-    return () => document.removeEventListener("mousedown", handleClickOutsideDropdown);
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
-
-  // Cerrar sidebar si clic fuera (solo en pantallas pequeñas)
-  useEffect(() => {
-    const handleClickOutsideSidebar = (event) => {
-      if (
-        sidebarOpen &&
-        sidebarRef.current &&
-        !sidebarRef.current.contains(event.target)
-      ) {
-        setSidebarOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutsideSidebar);
-    return () => document.removeEventListener("mousedown", handleClickOutsideSidebar);
-  }, [sidebarOpen]);
 
   useEffect(() => {
     const handleResize = () => setSidebarOpen(window.innerWidth > 768);
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
-console.log(`rol: ${rol} rolLower: ${rolLower}`);
 
+  const handleSearch = (e) => {
+    e.preventDefault();
+    const term = searchValue.trim().toLowerCase();
+    if (!term) return;
 
-   return (
+    // Ejemplo simple de búsqueda: redirige según palabra clave
+    if (term.includes("usuarios")) navigate("/usuarios");
+    else if (term.includes("perfil")) navigate("/perfil");
+    else if (term.includes("estadisticas")) navigate("/estadisticas");
+    else if (term.includes("reportes")) navigate("/reportes");
+    else alert("No se encontraron resultados para: " + term);
+
+    setSearchValue("");
+  };
+
+  return (
     <div className="dashboard-container">
-      <aside
-        ref={sidebarRef}
-        className={`dashboard-sidebar ${sidebarOpen ? "open" : "closed"}`}
-      >
+      <aside className={`dashboard-sidebar ${sidebarOpen ? "open" : "closed"}`}>
         <div className="logo-container">
           <img src="/images/iconologo.png" alt="CAL-I Logo" className="logo-img" />
-          {sidebarOpen && <h1 className="logo-title">CAL-I</h1>}
+          <h1 className="logo-title">CAL-I</h1>
         </div>
-        <SidebarMenu isSidebarOpen={sidebarOpen} />
+        <SidebarMenu />
         <div className="system-name">
           <p>Sistema de Gestión de Calificaciones</p>
         </div>
       </aside>
 
-      <StyledBurgerWrapper $sidebarOpen={sidebarOpen}>
-        <label className="menuButton" aria-label="Toggle sidebar menu">
+      <StyledBurgerWrapper>
+        <label className="menuButton">
           <input
             type="checkbox"
             checked={sidebarOpen}
@@ -121,46 +113,49 @@ console.log(`rol: ${rol} rolLower: ${rolLower}`);
       </StyledBurgerWrapper>
 
       <main className={`dashboard-main ${sidebarOpen ? "" : "sidebar-closed"}`}>
-        <div className="dashboard-header" style={{ justifyContent: "flex-end" }}>
+        <div className="dashboard-header">
+          <form
+            onSubmit={handleSearch}
+            style={{ display: "flex", alignItems: "center", flex: 1, justifyContent: "center" }}
+          >
+            <input
+              type="text"
+              value={searchValue}
+              onChange={(e) => setSearchValue(e.target.value)}
+              placeholder="Buscar usuarios, perfiles, reportes..."
+              className="search-input"
+            />
+            <button type="submit" className="ml-2" aria-label="Buscar">
+              <Search />
+            </button>
+          </form>
+
           <div className="dashboard-user-controls" ref={dropdownRef}>
             <button
-  onClick={handleToggleTheme}
-  className="dashboard-theme-toggle"
-  aria-label="Toggle theme"
-  title={modoOscuro ? "Cambiar a modo claro" : "Cambiar a modo oscuro"}
-  style={{
-    position: "relative",
-    zIndex: 1000, // asegúrate que esté encima
-    background: "transparent", // opcional
-  }}
->
-
-              {modoOscuro ? (
-                <Sun className="text-yellow-400" />
-              ) : (
-                <Moon className="text-purple-700" />
-              )}
+              onClick={handleToggleTheme}
+              className="dashboard-theme-toggle"
+              aria-label="Toggle theme"
+            >
+              {modoOscuro ? <Sun className="text-yellow-400" /> : <Moon className="text-purple-700" />}
             </button>
 
             <div>
               <button
                 className="dashboard-user-dropdown-button"
                 onClick={() => setShowDropdown((prev) => !prev)}
-                aria-haspopup="true"
-                aria-expanded={showDropdown}
               >
                 <User className="w-5 h-5" />
                 <span>{persona}</span>
               </button>
 
               {showDropdown && (
-                <div className="dashboard-user-dropdown" role="menu" aria-label="User menu">
+                <div className="dashboard-user-dropdown">
                   <div className="flex flex-col items-center mb-4">
-                    <div className="profile-pic-placeholder" aria-hidden="true" />
+                    <div className="profile-pic-placeholder"></div>
                     <p className="font-semibold text-lg text-center">{persona}</p>
-                    <p>{rol}</p>
+                    <p>Administrador</p>
                   </div>
-                  <button onClick={handleLogout} className="logout-btn" role="menuitem">
+                  <button onClick={handleLogout} className="logout-btn">
                     <LogOut className="inline mr-2" /> Cerrar sesión
                   </button>
                 </div>
@@ -169,35 +164,11 @@ console.log(`rol: ${rol} rolLower: ${rolLower}`);
           </div>
         </div>
 
-{mostrarBienvenida && (
- <div className="dashboard-welcome flex flex-col items-center" role="region" aria-live="polite">
-
- <h1
-  className="text-2xl sm:text-3xl font-bold mb-6 text-center sm:whitespace-nowrap sm:overflow-hidden sm:text-ellipsis sm:max-w-full"
->
-  ¡Bienvenido, {persona}!
-</h1>
-
-  {rolLower === "administrador" && <DashboardMenuCards />}
-</div>
-
-)}
-
-
-<style>{`
-   @media (max-width: 767px) {
-  .dashboard-welcome {
-    padding-top: 4rem; /* 64px */
-  }
-}
-@media (min-width: 768px) {
-  .dashboard-welcome {
-    padding-top: 1rem; /* 16px */
-  }
-}
-
-`}</style>
-
+        {mostrarBienvenida && (
+          <div className="dashboard-welcome">
+            <h1>¡Bienvenido a CAL-I, {persona}!</h1>
+          </div>
+        )}
 
         <Outlet />
       </main>
@@ -213,13 +184,12 @@ const StyledBurgerWrapper = styled.div`
 
   .menuButton {
     display: flex;
-    margin-left: ${(props) => (props.$sidebarOpen ? "16rem" : "4.5rem")};
     justify-content: center;
     align-items: center;
     flex-direction: column;
     gap: 13%;
-    width: 3em;
-    height: 3em;
+    width: 3.5em;
+    height: 3.5em;
     border-radius: 0.5em;
     background: #171717;
     border: 1px solid #171717;
@@ -233,7 +203,6 @@ const StyledBurgerWrapper = styled.div`
   }
 
   .menuButton:active {
-
     box-shadow: 6px 6px 12px #3a3a3a, -6px -6px 12px #000000;
   }
 
@@ -257,7 +226,6 @@ const StyledBurgerWrapper = styled.div`
   input:checked ~ span.bot {
     transform: translateY(-270%) rotate(-45deg);
     width: 40px;
-    
     box-shadow: 0 0 10px #495057;
   }
 
@@ -265,7 +233,6 @@ const StyledBurgerWrapper = styled.div`
     transform: translateX(-20px);
     opacity: 0;
   }
-  
 `;
 
 export default Dashboard;
