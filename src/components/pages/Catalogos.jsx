@@ -1,117 +1,90 @@
 import React, { useState, useEffect } from "react";
-import Swal from "sweetalert2";
 import { useSelector } from "react-redux";
-import catalogoService from "../../services/Catalogos";
-import tipoCatalogoService from "../../services/TipoCatalogo";
+import Swal from "sweetalert2";
+import periodoService from "../../services/PeriodoAcademico";
 import TablaBase from "../Shared/TablaBase";
 import BuscadorBase from "../Shared/BuscadorBase";
 import ContadoresBase from "../Shared/Contadores";
 import ModalBase from "../Shared/ModalBase";
 import FormularioBase from "../Shared/FormularioBase";
 
-const Catalogos = ({ busqueda }) => {
+const FrmPeriodoAcademico = () => {
   const modoOscuro = useSelector((state) => state.theme.modoOscuro);
 
-  const fondo = modoOscuro ? "bg-gray-800" : "bg-white";
+  const fondo = modoOscuro ? "bg-gray-900" : "bg-white";
   const texto = modoOscuro ? "text-gray-200" : "text-gray-800";
-  const encabezado = modoOscuro ? "bg-gray-700 text-gray-200" : "bg-gray-100 text-gray-700";
+  const encabezado = modoOscuro
+    ? "bg-gray-700 text-gray-200"
+    : "bg-gray-100 text-gray-700";
 
-  const [isCollapsed, setIsCollapsed] = useState(false);
-
-  const [catalogos, setCatalogos] = useState([]);
-  const [tipos, setTipos] = useState([]);
+  const [periodos, setPeriodos] = useState([]);
+  const [busqueda, setBusqueda] = useState("");
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modoEdicion, setModoEdicion] = useState(false);
   const [loading, setLoading] = useState(false);
   const [formLoading, setFormLoading] = useState(false);
   const [formError, setFormError] = useState("");
-  const [modalOpen, setModalOpen] = useState(false);
-  const [modoEdicion, setModoEdicion] = useState(false);
   const [form, setForm] = useState({
-    idCatalogo: 0,
-    descripcionCatalogo: "",
-    idTipoCatalogo: 0,
-    activo: true,
+    idPeriodoAcademico: 0,
+    nombre: "",
+    estado: "",
+    fechaInicio: "",
+    fechaFin: "",
   });
 
   const formatearFecha = (fecha) => {
     if (!fecha) return "-";
-    const d = new Date(fecha);
-    return d.toLocaleDateString("es-NI", {
+    return new Date(fecha).toLocaleDateString("es-NI", {
       year: "numeric",
       month: "short",
       day: "2-digit",
-      hour: "2-digit",
-      minute: "2-digit",
     });
   };
 
-  const adaptarTipos = (datos) =>
-    datos.map((t) => ({
-      idTipoCatalogo: t.idTipoCatalogo,
-      nombre: t.nombreTipoCatalogo,
-      activo: t.activo,
-    }));
-
-  const adaptarCatalogos = (datos) =>
-    datos.map((c) => ({
-      idCatalogo: c.idCatalogo || c.iD_Catalogo,
-      descripcionCatalogo: c.descripcionCatalogo || c.descripcion_Catalogo || "",
-      idTipoCatalogo: c.idTipoCatalogo || c.id_TipoCatalogo || 0,
-      activo: c.activo === undefined ? true : c.activo,
-      fechaCreacion: c.fechaCreacion || c.fecha_Creacion || null,
-      fechaModificacion: c.fechaModificacion || c.fecha_Modificacion || null,
-      creador: c.creador || c.nombre_Creador || "-",
-      modificador: c.modificador || c.nombre_Modificador || "-",
-    }));
-
-  useEffect(() => {
-    cargarTipos();
-    cargarCatalogos();
-  }, []);
-
-  const cargarTipos = async () => {
-    try {
-      const res = await tipoCatalogoService.listarTiposCatalogo();
-      if (res && res.success && Array.isArray(res.data)) {
-        setTipos(adaptarTipos(res.data));
-      } else {
-        setTipos([]);
-      }
-    } catch {
-      Swal.fire("Error", "No se pudieron cargar los tipos de catálogo", "error");
-    }
-  };
-
-  const cargarCatalogos = async () => {
+  const cargarPeriodos = async () => {
     try {
       setLoading(true);
-      const res = await catalogoService.listarCatalogo();
-      if (res && Array.isArray(res.resultado)) {
-        setCatalogos(adaptarCatalogos(res.resultado));
+      const res = await periodoService.listarPeriodosAcademicos();
+
+      if (Array.isArray(res.resultado)) {
+        setPeriodos(
+          res.resultado.map((p) => ({
+            idPeriodoAcademico: p.idPeriodoAcademico,
+            nombre: p.nombrePeriodo,
+            estado: p.activo ? "Activo" : "Inactivo",
+            activo: p.activo,
+            fechaInicio: p.fechaInicio,
+            fechaFin: p.fechaFin,
+            fechaInicioFormateada: formatearFecha(p.fechaInicio),
+            fechaFinFormateada: formatearFecha(p.fechaFin),
+          }))
+        );
       } else {
-        setCatalogos([]);
+        setPeriodos([]);
       }
-    } catch {
-      Swal.fire("Error", "No se pudieron cargar los catálogos", "error");
+    } catch (error) {
+      Swal.fire("Error", "No se pudieron cargar los periodos", "error");
     } finally {
       setLoading(false);
     }
   };
 
+  useEffect(() => {
+    cargarPeriodos();
+  }, []);
+
   const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setForm((prev) => ({
-      ...prev,
-      [name]:
-        name === "activo"
-          ? value === "Activo"
-          : name === "idTipoCatalogo"
-          ? Number(value)
-          : value,
-    }));
+    setForm({ ...form, [e.target.name]: e.target.value });
   };
 
   const abrirModalNuevo = () => {
-    setForm({ idCatalogo: 0, descripcionCatalogo: "", idTipoCatalogo: 0, activo: true });
+    setForm({
+      idPeriodoAcademico: 0,
+      nombre: "",
+      estado: "",
+      fechaInicio: "",
+      fechaFin: "",
+    });
     setFormError("");
     setModoEdicion(false);
     setModalOpen(true);
@@ -125,10 +98,11 @@ const Catalogos = ({ busqueda }) => {
 
   const handleEditar = (item) => {
     setForm({
-      idCatalogo: item.idCatalogo,
-      descripcionCatalogo: item.descripcionCatalogo,
-      idTipoCatalogo: item.idTipoCatalogo,
-      activo: item.activo,
+      idPeriodoAcademico: item.idPeriodoAcademico,
+      nombre: item.nombre,
+      estado: item.estado,
+      fechaInicio: item.fechaInicio?.split("T")[0] || "",
+      fechaFin: item.fechaFin?.split("T")[0] || "",
     });
     setModoEdicion(true);
     setModalOpen(true);
@@ -136,162 +110,145 @@ const Catalogos = ({ busqueda }) => {
 
   const handleGuardar = async () => {
     setFormError("");
-    if (!form.descripcionCatalogo.trim()) return setFormError("La descripción es obligatoria");
-    if (!form.idTipoCatalogo || form.idTipoCatalogo === 0)
-      return setFormError("Seleccione un tipo de catálogo");
+
+    if (!form.nombre.trim()) return setFormError("El nombre es obligatorio");
+    if (!form.estado) return setFormError("Seleccione un estado");
+    if (!form.fechaInicio || !form.fechaFin)
+      return setFormError("Debe seleccionar fechas de inicio y fin");
+    if (form.fechaFin < form.fechaInicio)
+      return setFormError("La fecha de fin no puede ser menor que la de inicio");
 
     try {
       setFormLoading(true);
-      let res;
-      if (modoEdicion) {
-        res = await catalogoService.actualizarCatalogo({
-          idCatalogo: form.idCatalogo,
-          descripcionCatalogo: form.descripcionCatalogo.trim(),
-          idTipoCatalogo: form.idTipoCatalogo,
-          activo: form.activo,
-        });
-      } else {
-        res = await catalogoService.insertarCatalogo({
-          descripcionCatalogo: form.descripcionCatalogo.trim(),
-          idTipoCatalogo: form.idTipoCatalogo,
-          activo: form.activo,
-        });
-      }
 
-      if ((res.numero === undefined && res.success) || (res.numero && res.numero > 0)) {
+      const datos = {
+        idPeriodoAcademico: form.idPeriodoAcademico,
+        nombrePeriodo: form.nombre.trim(),
+        activo: form.estado === "Activo",
+        fechaInicio: form.fechaInicio,
+        fechaFin: form.fechaFin,
+      };
+
+      const res = modoEdicion
+        ? await periodoService.actualizarPeriodoAcademico(datos)
+        : await periodoService.insertarPeriodoAcademico(datos);
+
+      if (res.numero && res.numero > 0) {
         cerrarModal();
         await Swal.fire(
           modoEdicion ? "Actualizado" : "Agregado",
-          modoEdicion
-            ? "Catálogo actualizado correctamente"
-            : "Catálogo insertado correctamente",
+          res.mensaje || `Periodo ${modoEdicion ? "actualizado" : "insertado"} correctamente`,
           "success"
         );
-        cargarCatalogos();
+        cargarPeriodos();
       } else {
         cerrarModal();
         await Swal.fire("Error", res.mensaje || "Error desconocido", "error");
-        setFormLoading(false);
       }
     } catch (error) {
       cerrarModal();
       const mensajeError =
-        error.response?.data?.mensaje || error.message || "Hubo un problema al guardar el catálogo";
+        error.response?.data?.mensaje || error.message || "Hubo un error";
       await Swal.fire("Error", mensajeError, "error");
+    } finally {
       setFormLoading(false);
     }
   };
 
-  const busquedaLower = busqueda.toLowerCase();
-  const catalogosFiltrados = catalogos.filter((c) => {
-    const descOk = c.descripcionCatalogo?.toLowerCase().includes(busquedaLower);
-    const tipo = tipos.find((t) => t.idTipoCatalogo === c.idTipoCatalogo);
-    const tipoOk = tipo?.nombre?.toLowerCase().includes(busquedaLower);
-    return descOk || tipoOk;
+  // Filtrar periodos según texto de búsqueda
+  const datosFiltrados = periodos.filter((p) => {
+    const texto = busqueda.toLowerCase();
+    return (
+      p.nombre.toLowerCase().includes(texto) ||
+      p.estado.toLowerCase().includes(texto) ||
+      p.fechaInicioFormateada.toLowerCase().includes(texto) ||
+      p.fechaFinFormateada.toLowerCase().includes(texto)
+    );
   });
 
-  const activos = catalogosFiltrados.filter((c) => c.activo).length;
-  const inactivos = catalogosFiltrados.filter((c) => !c.activo).length;
-
+  // Define columnas para TablaBase
   const columnas = [
-    { key: "idCatalogo", label: "ID", className: "text-center w-12" },
-    { key: "descripcionCatalogo", label: "Descripción" },
-    {
-      key: "idTipoCatalogo",
-      label: "Tipo",
-      render: (item) => tipos.find((t) => t.idTipoCatalogo === item.idTipoCatalogo)?.nombre ?? "ND",
-    },
-    { key: "creador", label: "Creador" },
-    {
-      key: "fechaCreacion",
-      label: "Fecha Creación",
-      render: (item) => formatearFecha(item.fechaCreacion),
-    },
-    { key: "modificador", label: "Modificador" },
-    {
-      key: "fechaModificacion",
-      label: "Fecha Modificación",
-      render: (item) => formatearFecha(item.fechaModificacion),
-    },
-    {
-      key: "activo",
-      label: "Estado",
-      render: (item) =>
-        item.activo ? (
-          <span className="text-green-500 font-semibold flex items-center gap-1">
-            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-              <path
-                fillRule="evenodd"
-                d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                clipRule="evenodd"
-              />
-            </svg>
-            Activo
-          </span>
-        ) : (
-          <span className="text-red-500 font-semibold flex items-center gap-1">
-            <svg
-              className="w-5 h-5"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              viewBox="0 0 24 24"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-            </svg>
-            Inactivo
-          </span>
-        ),
-    },
+    { key: "nombre", label: "Nombre del Periodo", style: { maxWidth: "180px", width: "180px" } },
+    { key: "activo", label: "Estado", style: { width: "80px" } },
+    { key: "fechaInicioFormateada", label: "Inicio", style: { width: "90px" } },
+    { key: "fechaFinFormateada", label: "Fin", style: { width: "90px" } },
   ];
 
   return (
-    <div className="p-4">
-      <div className={`shadow-lg rounded-xl p-6 ${fondo}`}>
+    <div className={`p-4 ${modoOscuro ? "bg-gray-800 min-h-screen" : "bg-gray-50"}`} style={{ paddingTop: 1 }}>
+      <div className={`shadow-md rounded-xl p-6 ${fondo}`}>
         <div className="flex justify-between items-center mb-4">
           <h2
-            className={`text-2xl md:text-3xl font-extrabold tracking-wide cursor-pointer select-none ${texto}`}
-            onClick={() => setIsCollapsed(!isCollapsed)}
-            aria-expanded={!isCollapsed}
-            aria-controls="catalogosContent"
-            role="button"
-            tabIndex={0}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" || e.key === " ") {
-                setIsCollapsed(!isCollapsed);
-              }
-            }}
+            className={`text-2xl md:text-3xl font-extrabold tracking-wide ${
+              modoOscuro ? "text-white" : "text-gray-800"
+            }`}
           >
-            {isCollapsed ? "►" : "▼"} Catálogos
+            Gestión de Periodos Académicos
           </h2>
         </div>
 
-        {!isCollapsed && (
-          <div id="catalogosContent">
-            <ContadoresBase
-              activos={activos}
-              inactivos={inactivos}
-              total={catalogosFiltrados.length}
-              onNuevo={abrirModalNuevo}
-              modoOscuro={modoOscuro}
-            />
+        <BuscadorBase
+          placeholder="Buscar por nombre, estado o fecha..."
+          valor={busqueda}
+          onChange={(e) => setBusqueda(e.target.value)}
+          modoOscuro={modoOscuro}
+        />
 
-            <TablaBase
-              datos={catalogosFiltrados}
-              columnas={columnas}
-              modoOscuro={modoOscuro}
-              onEditar={handleEditar}
-              loading={loading}
-              texto={texto}
-              encabezadoClase={encabezado}
-            />
-          </div>
-        )}
+        <ContadoresBase
+          activos={periodos.filter((p) => p.estado === "Activo").length}
+          inactivos={periodos.filter((p) => p.estado === "Inactivo").length}
+          total={periodos.length}
+          onNuevo={abrirModalNuevo}
+          modoOscuro={modoOscuro}
+        />
+
+        {/* Contenedor para aplicar estilos solo a esta tabla */}
+        <div className="periodos-table-container">
+          <style>{`
+            .periodos-table-container table th,
+            .periodos-table-container table td {
+              padding-left: 6px !important;
+              padding-right: 6px !important;
+              white-space: nowrap;
+            }
+            .periodos-table-container table th:nth-child(1),
+            .periodos-table-container table td:nth-child(1) {
+              max-width: 80px;
+              width: 50px;
+              overflow: hidden;
+              text-overflow: ellipsis;
+            }
+            .periodos-table-container table th:nth-child(2),
+            .periodos-table-container table td:nth-child(2) {
+              width: 80px;
+              max-width: 80px;
+              text-align: center;
+            }
+            .periodos-table-container table th:nth-child(3),
+            .periodos-table-container table td:nth-child(3),
+            .periodos-table-container table th:nth-child(4),
+            .periodos-table-container table td:nth-child(4) {
+              width: 90px;
+              max-width: 90px;
+              text-align: center;
+            }
+          `}</style>
+
+          <TablaBase
+            datos={datosFiltrados}
+            columnas={columnas}
+            modoOscuro={modoOscuro}
+            onEditar={handleEditar}
+            loading={loading}
+            texto={texto}
+            encabezadoClase={encabezado}
+          />
+        </div>
 
         <ModalBase
           isOpen={modalOpen}
           onClose={cerrarModal}
-          titulo={modoEdicion ? "Editar Catálogo" : "Nuevo Catálogo"}
+          titulo={modoEdicion ? "Editar Periodo" : "Nuevo Periodo"}
           modoOscuro={modoOscuro}
         >
           <FormularioBase
@@ -301,40 +258,42 @@ const Catalogos = ({ busqueda }) => {
             formError={formError}
             formLoading={formLoading}
             modoEdicion={modoEdicion}
-            titulo="Catálogo"
+            titulo="Periodo Académico"
           >
             <div className="space-y-4">
               <input
                 type="text"
-                name="descripcionCatalogo"
-                placeholder="Descripción"
-                value={form.descripcionCatalogo}
+                name="nombre"
+                placeholder="Nombre del periodo"
+                value={form.nombre}
                 onChange={handleInputChange}
                 className="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white dark:border-gray-600"
                 autoFocus
               />
               <select
-                name="idTipoCatalogo"
-                value={form.idTipoCatalogo}
+                name="estado"
+                value={form.estado}
                 onChange={handleInputChange}
                 className="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white dark:border-gray-600"
               >
-                <option value={0}>Seleccione un tipo</option>
-                {tipos.map((t) => (
-                  <option key={t.idTipoCatalogo} value={t.idTipoCatalogo}>
-                    {t.nombre}
-                  </option>
-                ))}
-              </select>
-              <select
-                name="activo"
-                value={form.activo ? "Activo" : "Inactivo"}
-                onChange={handleInputChange}
-                className="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white dark:border-gray-600"
-              >
+                <option value="">Seleccione estado</option>
                 <option value="Activo">Activo</option>
                 <option value="Inactivo">Inactivo</option>
               </select>
+              <input
+                type="date"
+                name="fechaInicio"
+                value={form.fechaInicio}
+                onChange={handleInputChange}
+                className="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white dark:border-gray-600"
+              />
+              <input
+                type="date"
+                name="fechaFin"
+                value={form.fechaFin}
+                onChange={handleInputChange}
+                className="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white dark:border-gray-600"
+              />
             </div>
           </FormularioBase>
         </ModalBase>
@@ -343,4 +302,4 @@ const Catalogos = ({ busqueda }) => {
   );
 };
 
-export default Catalogos;
+export default FrmPeriodoAcademico;

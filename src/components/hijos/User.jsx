@@ -41,7 +41,7 @@ const FrmUsuarios = ({ busqueda }) => {
 
   const [form, setForm] = useState({
     idUsuario: 0,
-    idPersona: "",          // <-- agregado
+    idPersona: "",          
     nombreUsuario: "",
     contrasena: "",
     idEstado: "",

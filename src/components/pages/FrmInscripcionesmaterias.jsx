@@ -688,3 +688,5 @@ const validarFormulario = () => {
 };
 
 export default FrmInscripcionesMaterias;
+
+

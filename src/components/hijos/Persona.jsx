@@ -41,6 +41,8 @@ const FrmPersonas = ({ busqueda }) => {
   const [tiposDocumento, setTiposDocumento] = useState([]);
   const [nacionalidades, setNacionalidades] = useState([]);
   const [carreras, setCarreras] = useState([]);
+  const [paginaActual, setPaginaActual] = useState(1);/*cantida */
+  const [itemsPorPagina, setItemsPorPagina] = useState(10);/*cantida */
 
   const [form, setForm] = useState({
     idPersona: 0,
@@ -246,6 +248,10 @@ const FrmPersonas = ({ busqueda }) => {
 
     return coincideTexto && coincideTipoDoc && coincideGenero && coincideNacionalidad && coincideCarrera && coincideEstado;
   });
+/*cantida */
+    const inicio = (paginaActual - 1) * itemsPorPagina;
+  const fin = inicio + itemsPorPagina;
+  const datosPaginados = datosFiltrados.slice(inicio, fin);
 
   const columnas = [
     { key: "primerNombre", label: "Primer Nombre" },
@@ -257,23 +263,20 @@ const FrmPersonas = ({ busqueda }) => {
     { key: "numeroDocumento", label: "Número Documento" },
     { key: "nombreNacionalidad", label: "Nacionalidad" },
     { key: "nombreCarrera", label: "Carrera" },
+    /*cantida */
     {
       key: "activo",
       label: "Estado",
-     render: (item) =>
-  item.activo ? (
-<span className="text-green-500 font-semibold flex items-center gap-1">
-  <FaCheckCircle size={20} />
-</span>
-
-
-  ) : (
-    <span className="text-green-500 font-semibold flex items-center gap-1 text-lg">
-  <FaCheckCircle />
-</span>
-
-  ),
-
+      render: (item) =>
+        item.activo ? (
+          <span className="text-green-500 font-semibold flex items-center gap-1">
+            <FaCheckCircle size={20} />
+          </span>
+        ) : (
+          <span className="text-red-500 font-semibold flex items-center gap-1">
+            <FaCheckCircle size={20} className="rotate-45" />
+          </span>
+        ),
     },
     { key: "nombreCreador", label: "Creador" },
     { key: "nombreModificador", label: "Modificador" },
@@ -281,9 +284,12 @@ const FrmPersonas = ({ busqueda }) => {
     { key: "fechaModificacion", label: "Fecha Modificación" },
   ];
 
+
   return (
+    /*cantida */
     <div className="p-4">
       <div className={`shadow-lg rounded-xl p-6 ${fondo}`}>
+               
         <h2
           className={`text-2xl md:text-3xl font-extrabold tracking-wide cursor-pointer select-none ${texto}`}
           onClick={() => setIsCollapsed(!isCollapsed)}
@@ -354,6 +360,23 @@ const FrmPersonas = ({ busqueda }) => {
               <option value="Inactivo">Inactivo</option>
             </select>
           </div>
+           <div className="mb-4">
+          <label className={`mr-2 ${texto}`}>Mostrar:</label>
+          <select
+            value={itemsPorPagina}
+            onChange={(e) => {
+              setItemsPorPagina(Number(e.target.value));
+              setPaginaActual(1);
+            }}
+            className="px-2 py-1 border rounded"
+          >
+            <option value={10}>10</option>
+            <option value={20}>20</option>
+            <option value={50}>50</option>
+            <option value={100}>100</option>
+          </select>
+        </div>
+
 
           {/* CONTADORES */}
           <ContadoresBase
@@ -364,9 +387,10 @@ const FrmPersonas = ({ busqueda }) => {
             modoOscuro={modoOscuro}
           />
 
-          {/* TABLA */}
+          {/*cantida *//* TABLA */}
           <TablaBase
-            datos={datosFiltrados}
+        
+            datos={datosPaginados}
             columnas={columnas}
             modoOscuro={modoOscuro}
             onEditar={abrirModalEditar}
@@ -374,6 +398,31 @@ const FrmPersonas = ({ busqueda }) => {
             texto={texto}
             encabezadoClase={encabezado}
           />
+                  {/* Paginación */}
+        <div className="mt-4 flex justify-between items-center">
+          <button
+            onClick={() => setPaginaActual((prev) => Math.max(prev - 1, 1))}
+            className="px-4 py-1 bg-gray-300 rounded disabled:opacity-50"
+            disabled={paginaActual === 1}
+          >
+            Anterior
+          </button>
+          <span className={texto}>
+            Página {paginaActual} de {Math.ceil(datosFiltrados.length / itemsPorPagina)}
+          </span>
+          <button
+            onClick={() =>
+              setPaginaActual((prev) =>
+                prev < Math.ceil(datosFiltrados.length / itemsPorPagina) ? prev + 1 : prev
+              )
+            }
+            className="px-4 py-1 bg-gray-300 rounded disabled:opacity-50"
+            disabled={paginaActual >= Math.ceil(datosFiltrados.length / itemsPorPagina)}
+          >
+            Siguiente
+          </button>
+        </div>
+
         </div>
       )}
 
