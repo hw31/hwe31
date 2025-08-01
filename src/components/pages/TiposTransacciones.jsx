@@ -9,7 +9,7 @@ import ContadoresBase from "../Shared/Contadores";
 import ModalBase from "../Shared/ModalBase";
 import FormularioBase from "../Shared/FormularioBase";
 
-const TipoTransacciones = ({ busqueda = "" }) => {
+const FrmTipoTransacciones = ({ busqueda = "" }) => {
   const modoOscuro = useSelector((state) => state.theme.modoOscuro);
 
   const fondo = modoOscuro ? "bg-gray-800" : "bg-white";
@@ -259,4 +259,4 @@ const TipoTransacciones = ({ busqueda = "" }) => {
   );
 };
 
-export default TipoTransacciones;
+export default FrmTipoTransacciones;

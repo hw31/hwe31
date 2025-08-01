@@ -10,6 +10,7 @@ import FormularioBase from "../Shared/FormularioBase";
 
 const FrmTipoCalificacion = () => {
   const modoOscuro = useSelector((state) => state.theme.modoOscuro);
+  const usuarioActual = useSelector((state) => state.auth.usuario);
 
   const fondo = modoOscuro ? "bg-gray-900" : "bg-white";
   const texto = modoOscuro ? "text-gray-200" : "text-gray-800";
@@ -22,11 +23,21 @@ const FrmTipoCalificacion = () => {
   const [loading, setLoading] = useState(false);
   const [formLoading, setFormLoading] = useState(false);
   const [formError, setFormError] = useState("");
+  const [formSuccess, setFormSuccess] = useState("");
+
+  // Paginación
+  const [paginaActual, setPaginaActual] = useState(1);
+  const [filasPorPagina, setFilasPorPagina] = useState(10);
+
   const [form, setForm] = useState({
     idTipoCalificacion: 0,
     nombre: "",
     valorMaximo: "",
     activo: true,
+    creadoPor: "",
+    modificadoPor: "",
+    fechaCreacion: null,
+    fechaModificacion: null,
   });
 
   const formatearFecha = (fecha) => {
@@ -42,17 +53,20 @@ const FrmTipoCalificacion = () => {
   };
 
   const adaptarDatos = (datos) =>
-  (datos || []).map((item) => ({
-    idTipoCalificacion: item.idTipoCalificacion ?? 0,
-    nombre: item.tipoCalificacionNombre ?? "",
-    valorMaximo: item.valorMaximo ?? 0,
-    activo: item.activo !== undefined ? item.activo : true,
-    fechaCreacion: formatearFecha(item.fechaCreacion),
-    fechaModificacion: formatearFecha(item.fechaModificacion),
-  }));
+    (datos || []).map((item) => ({
+      idTipoCalificacion: item.idTipoCalificacion ?? 0,
+      nombre: item.tipoCalificacionNombre ?? "",
+      valorMaximo: item.valorMaximo ?? 0,
+      activo: item.activo !== undefined ? item.activo : true,
+      creadoPor: item.creador || "N/D",
+      modificadoPor: item.modificador || "N/D",
+      fechaCreacion: formatearFecha(item.fechaCreacion),
+      fechaModificacion: formatearFecha(item.fechaModificacion),
+    }));
 
   useEffect(() => {
     cargarTiposCalificacion();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const cargarTiposCalificacion = async () => {
@@ -61,6 +75,7 @@ const FrmTipoCalificacion = () => {
       const res = await tipoCalificacionService.listarTiposCalificacion();
       const datos = res.resultado ?? [];
       setTipoCalificaciones(adaptarDatos(datos));
+      setPaginaActual(1); // Reinicia página al cargar
     } catch (error) {
       Swal.fire("Error", "No se pudieron cargar los tipos de calificación", "error");
     } finally {
@@ -78,8 +93,18 @@ const FrmTipoCalificacion = () => {
   };
 
   const abrirModalNuevo = () => {
-    setForm({ idTipoCalificacion: 0, nombre: "", valorMaximo: "", activo: true });
+    setForm({
+      idTipoCalificacion: 0,
+      nombre: "",
+      valorMaximo: "",
+      activo: true,
+      creadoPor: usuarioActual?.nombreUsuario || "UsuarioActual",
+      modificadoPor: "",
+      fechaCreacion: null,
+      fechaModificacion: null,
+    });
     setFormError("");
+    setFormSuccess("");
     setModoEdicion(false);
     setModalOpen(true);
   };
@@ -88,6 +113,7 @@ const FrmTipoCalificacion = () => {
     setModalOpen(false);
     setFormLoading(false);
     setFormError("");
+    setFormSuccess("");
   };
 
   const handleEditar = (item) => {
@@ -96,13 +122,20 @@ const FrmTipoCalificacion = () => {
       nombre: item.nombre,
       valorMaximo: item.valorMaximo.toString(),
       activo: item.activo,
+      creadoPor: item.creadoPor || "N/D",
+      modificadoPor: usuarioActual?.nombreUsuario || "UsuarioActual",
+      fechaCreacion: item.fechaCreacion,
+      fechaModificacion: item.fechaModificacion,
     });
+    setFormError("");
+    setFormSuccess("");
     setModoEdicion(true);
     setModalOpen(true);
   };
 
   const handleGuardar = async () => {
     setFormError("");
+    setFormSuccess("");
 
     if (!form.nombre.trim()) return setFormError("El nombre es obligatorio");
     if (!form.valorMaximo || isNaN(Number(form.valorMaximo)))
@@ -129,42 +162,72 @@ const FrmTipoCalificacion = () => {
         res = await tipoCalificacionService.insertarTipoCalificacion(datos);
       }
 
-      if (res.success || (res.numero !== undefined && res.numero > 0)) {
-        cerrarModal();
-        await Swal.fire(
-          modoEdicion ? "Actualizado" : "Agregado",
+      const mensajeLower = (res.mensaje || "").toLowerCase();
+      const esExito =
+        res.success === true ||
+        (res.numero !== undefined && res.numero > 0) ||
+        mensajeLower.includes("correctamente") ||
+        mensajeLower.includes("exitosamente");
+
+      if (esExito) {
+        setFormSuccess(
           modoEdicion
             ? "Tipo de calificación actualizado correctamente"
-            : "Tipo de calificación insertado correctamente",
-          "success"
+            : "Tipo de calificación insertado correctamente"
         );
+        setFormLoading(false);
+
+        cerrarModal(); // Cerrar modal ANTES de mostrar Swal
+
+        await Swal.fire({
+          icon: "success",
+          title: "Éxito",
+          text:
+            res.mensaje ||
+            (modoEdicion
+              ? "Tipo de calificación actualizado correctamente"
+              : "Tipo de calificación insertado correctamente"),
+          confirmButtonColor: "#3085d6",
+        });
+
         cargarTiposCalificacion();
       } else {
-        await Swal.fire("Error", res.mensaje || "Error desconocido", "error");
         setFormLoading(false);
+        await Swal.fire("Error", res.mensaje || "Error desconocido", "error");
       }
     } catch (error) {
       cerrarModal();
+      setFormLoading(false);
       const mensajeError =
         error.response?.data?.mensaje || error.message || "Hubo un problema al guardar";
       await Swal.fire("Error", mensajeError, "error");
     }
   };
 
+  // Filtrado
   const datosFiltrados = tipoCalificaciones.filter((item) =>
     (item.nombre ?? "").toLowerCase().includes(busqueda.toLowerCase())
   );
 
-const columnas = [
-  { key: "nombre", label: "Nombre" },
-  {
-    key: "valorMaximo",
-    label: "Valor Máximo",
-    render: (item) => (
-      <div className="text-center font-medium">{item.valorMaximo}</div>
-    ),
-  },
-  {
+  // Paginación: calcular datos a mostrar
+  const totalPaginas = Math.ceil(datosFiltrados.length / filasPorPagina);
+  const indiceInicio = (paginaActual - 1) * filasPorPagina;
+  const indiceFin = indiceInicio + filasPorPagina;
+  const datosPaginados = datosFiltrados.slice(indiceInicio, indiceFin);
+
+  // Columnas para tabla
+  const columnas = [
+    { key: "nombre", label: "Nombre" },
+    {
+      key: "valorMaximo",
+      label: "Valor Máximo",
+      render: (item) => <div className="text-center font-medium">{item.valorMaximo}</div>,
+    },
+    { key: "creadoPor", label: "Creado Por" },
+    { key: "modificadoPor", label: "Modificado Por" },
+    { key: "fechaCreacion", label: "Fecha Creación" },
+    { key: "fechaModificacion", label: "Fecha Modificación" },
+    {
       key: "activo",
       label: "Estado",
       render: (item) =>
@@ -194,28 +257,29 @@ const columnas = [
           </span>
         ),
     },
-    { key: "fechaCreacion", label: "Fecha Creación" },
-    { key: "fechaModificacion", label: "Fecha Modificación" },
   ];
 
   return (
-    <div className={`p-4 ${modoOscuro ? "bg-gray-800 min-h-screen" : "bg-gray-50"}`}
-     style={{ paddingTop: 1 }}  >
-      <div className={`shadow-md rounded-xl p-6 ${fondo}`}>
-        <div className="flex justify-between items-center mb-4">
-          <h2
-            className={`text-2xl md:text-3xl font-extrabold tracking-wide ${
-              modoOscuro ? "text-white" : "text-gray-800"
-            }`}
-          >
-            Gestión de Tipos de Calificación
-          </h2>
-        </div>
+  <div className={`mx-auto rounded-2xl p-6 max-w-[900px] w-full ${fondo} ${texto}`}>
+    <div
+      className={`w-full max-w-[900px] px-4 rounded-2xl shadow-md p-6 ${
+        modoOscuro
+          ? "bg-gray-900 text-white shadow-gray-700"
+          : "bg-white text-gray-900 shadow-gray-300"
+      }`}
+      style={{ minHeight: "80vh" }}
+    >
+      <h2 className="text-3xl font-bold mb-4 text-center sm:text-left">
+        Gestión de Tipos de Calificación
+      </h2>
 
         <BuscadorBase
           placeholder="Buscar..."
           valor={busqueda}
-          onChange={(e) => setBusqueda(e.target.value)}
+          onChange={(e) => {
+            setBusqueda(e.target.value);
+            setPaginaActual(1); // Reset página al cambiar búsqueda
+          }}
           modoOscuro={modoOscuro}
         />
 
@@ -226,41 +290,79 @@ const columnas = [
           onNuevo={abrirModalNuevo}
           modoOscuro={modoOscuro}
         />
- {/* Contenedor para aplicar estilos solo a esta tabla */}
-<div className="tipocalificacion-table-container">
-  <style>{`
-    .tipocalificacion-table-container table th,
-    .tipocalificacion-table-container table td {
-      padding-left: 6px !important;
-      padding-right: 6px !important;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-    .tipocalificacion-table-container table th:nth-child(1),
-    .tipocalificacion-table-container table td:nth-child(1) {
-      max-width: 150px;
-      width: 150px;
-    }
-    .tipocalificacion-table-container table th:nth-child(2),
-    .tipocalificacion-table-container table td:nth-child(2) {
-      text-align: center;
-      max-width: 150px;
-      width: 150px;
-    }
-  `}</style>
 
-  <TablaBase
-    datos={datosFiltrados}
-    columnas={columnas}
-    modoOscuro={modoOscuro}
-    onEditar={handleEditar}
-    loading={loading}
-    texto={texto}
-    encabezadoClase={encabezado}
-  />
-</div>
+        {/* Contenedor para select filas por página con margen inferior */}
+        <div className="mt-4 mb-4 flex items-center space-x-2">
+          <label
+            htmlFor="filasPorPagina"
+            className={modoOscuro ? "text-gray-200" : "text-gray-700"}
+          >
+            Filas por página:
+          </label>
+          <select
+            id="filasPorPagina"
+            className="border rounded px-2 py-1"
+            value={filasPorPagina}
+            onChange={(e) => {
+              setFilasPorPagina(Number(e.target.value));
+              setPaginaActual(1); // Reiniciar página al cambiar filas
+            }}
+          >
+            {[5, 10, 30, 50, 100].map((num) => (
+              <option key={num} value={num}>
+                {num}
+              </option>
+            ))}
+          </select>
+        </div>
 
+        {/* Tabla con margen inferior para separar de paginación */}
+        <div className="mb-6">
+          <TablaBase
+            datos={datosPaginados}
+            columnas={columnas}
+            modoOscuro={modoOscuro}
+            onEditar={handleEditar}
+            loading={loading}
+            texto={texto}
+            encabezadoClase={encabezado}
+          />
+        </div>
+
+        {/* Controles de paginación con margen arriba */}
+        <div className="flex items-center space-x-4">
+          <button
+            onClick={() => setPaginaActual((p) => Math.max(1, p - 1))}
+            disabled={paginaActual === 1}
+            className={`px-3 py-1 rounded ${
+              paginaActual === 1
+                ? "bg-gray-300 cursor-not-allowed"
+                : "bg-blue-600 hover:bg-blue-700 text-white"
+            }`}
+          >
+            Anterior
+          </button>
+
+          <span
+            className={`flex-grow text-center ${
+              modoOscuro ? "text-gray-200" : "text-gray-800"
+            }`}
+          >
+            Página {paginaActual} de {totalPaginas || 1}
+          </span>
+
+          <button
+            onClick={() => setPaginaActual((p) => Math.min(totalPaginas, p + 1))}
+            disabled={paginaActual === totalPaginas || totalPaginas === 0}
+            className={`px-3 py-1 rounded ${
+              paginaActual === totalPaginas || totalPaginas === 0
+                ? "bg-gray-300 cursor-not-allowed"
+                : "bg-blue-600 hover:bg-blue-700 text-white"
+            }`}
+          >
+            Siguiente
+          </button>
+        </div>
 
         <ModalBase
           isOpen={modalOpen}
@@ -274,6 +376,7 @@ const columnas = [
             modoOscuro={modoOscuro}
             formError={formError}
             formLoading={formLoading}
+            formSuccess={formSuccess}
             modoEdicion={modoEdicion}
             titulo="Tipo Calificación"
           >
@@ -285,6 +388,7 @@ const columnas = [
                 value={form.nombre}
                 onChange={handleInputChange}
                 className="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white dark:border-gray-600"
+                autoFocus
               />
               <input
                 type="number"
@@ -311,4 +415,4 @@ const columnas = [
   );
 };
 
-export default FrmTipoCalificacion;   
+export default FrmTipoCalificacion;

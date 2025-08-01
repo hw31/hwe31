@@ -2,8 +2,26 @@ import { getMenu } from "../../services/menuService";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  Home, Users, Repeat2, BookOpen, GraduationCap,
-  ListChecks, FileText, Shield, Key, ToggleRight, FileCheck2,
+
+  Home,
+  Users,
+  Repeat2,
+  BookOpen,
+  GraduationCap,
+  ListChecks,
+  FileText,
+  Shield,
+  Key,
+  ToggleRight,
+  FileCheck2,
+  User,
+  Book,
+  Calendar,
+  School,
+  Edit,
+  Award,
+  Settings,
+  Lock
 } from "lucide-react";
 import { useSelector } from "react-redux";
 
@@ -17,8 +35,17 @@ const iconMap = {
   filetext: FileText,
   shield: Shield,
   key: Key,
-  toggleright: ToggleRight,
-  "file-check2": FileCheck2,
+  user: User,
+  book: Book,
+ calendar: Calendar,
+ school: School,
+ edit: Edit,
+ award: Award,
+ settings: Settings,
+ lock: Lock,
+ toggleright: ToggleRight,
+ "file-check2": FileCheck2,
+
 };
 
 const DashboardMenuCards = () => {
