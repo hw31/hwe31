@@ -15,14 +15,23 @@ const AsignacionDocenteList = () => {
   const modoOscuro = useSelector((state) => state.theme.modoOscuro);
   const [busqueda, setBusqueda] = useState("");
   const [asignaciones, setAsignaciones] = useState([]);
-  const [loading, setLoading] = useState(false);
+
   const [error, setError] = useState("");
   const [modalOpen, setModalOpen] = useState(false);
   const [modoEdicion, setModoEdicion] = useState(false);
   const [asignacionSeleccionada, setAsignacionSeleccionada] = useState(null);
   const [formError, setFormError] = useState("");
   const [formLoading, setFormLoading] = useState(false);
-  
+  /*ocultar columna editar */
+ const rol = useSelector((state) => state.auth.rol);
+  const rolLower = rol ? rol.toLowerCase() : null;
+
+
+
+const [loading, setLoading] = useState(false);
+console.log("ROL:", rol, "ROL LOWER:", rolLower, "LOADING:", loading);
+/*hasta aqui */
+
 
   const [formData, setFormData] = useState({
     UsuarioDocente: "",
@@ -448,8 +457,9 @@ const AsignacionDocenteList = () => {
                   <th className="px-4 py-2 text-left text-sm font-semibold">Grupo</th>
                   <th className="px-4 py-2 text-left text-sm font-semibold">Aula</th>
                   <th className="px-4 py-2 text-left text-sm font-semibold">Horario</th>
-                  <th className="px-4 py-2 text-left text-sm font-semibold">Estado</th>
-                  <th className="px-4 py-2 text-left text-sm font-semibold">Acciones</th>
+  {rolLower === "administrador" &&  (  <th className="px-4 py-2 text-left text-sm font-semibold">Estado</th>)}
+    {rolLower === "administrador" &&  (
+      <th className="px-4 py-2 text-left text-sm font-semibold">Acciones</th>  )}
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
@@ -484,15 +494,15 @@ const AsignacionDocenteList = () => {
                         return horario ? horario.descripcionHorario : "N/D";
                       })()}
                     </td>
-
+ {rolLower === "administrador" &&  (
                     <td className="px-4 py-2 text-center">
                         {asig.nombreEstado?.toLowerCase() === "activo" ? (
                           <FaCheckCircle className="text-green-500 text-xl mx-auto" />
                         ) : (
                           <FaTimesCircle className="text-red-500 text-xl mx-auto" />
                         )}
-                    </td>
-
+                    </td>)}
+ {rolLower === "administrador" &&  (
                     <td className="px-4 py-2 text-sm">
                      <button
                       className="text-blue-600 hover:text-blue-800 text-xl flex justify-center items-center w-full"
@@ -502,7 +512,7 @@ const AsignacionDocenteList = () => {
                       <FaEdit />
                     </button>
 
-                    </td>
+                    </td>)}
                   </tr>
                 ))}
               </tbody>
