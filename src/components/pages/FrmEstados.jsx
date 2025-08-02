@@ -173,6 +173,10 @@ const FrmEstados = () => {
 
   const columnas = [
     { key: "nombre", label: "Nombre" },
+    { key: "nombreCreador", label: "Creador" },
+    { key: "nombreModificador", label: "Modificador" },
+    { key: "fechaCreacion", label: "Fecha Creación" },
+    { key: "fechaModificacion", label: "Fecha Modificación" },
     {
       key: "activo",
       label: "Estado",
@@ -183,10 +187,6 @@ const FrmEstados = () => {
           <span className="text-red-500 font-semibold flex items-center gap-1">✘ Inactivo</span>
         ),
     },
-    { key: "nombreCreador", label: "Creador" },
-    { key: "nombreModificador", label: "Modificador" },
-    { key: "fechaCreacion", label: "Fecha Creación" },
-    { key: "fechaModificacion", label: "Fecha Modificación" },
   ];
 
   return (

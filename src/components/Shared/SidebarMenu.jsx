@@ -13,7 +13,14 @@ import {
   Key,
   ToggleRight,
   FileCheck2,
-
+  User,
+  Book,
+  Calendar,
+  School,
+  Edit,
+  Award,
+  Settings,
+  Lock
 } from "lucide-react";
 import { getMenu } from "../../services/menuService";
 
@@ -27,9 +34,16 @@ const iconMap = {
   filetext: FileText,
   shield: Shield,
   key: Key,
-
-  toggleright: ToggleRight,
-  "file-check2": FileCheck2,
+  user: User,
+  book: Book,
+ calendar: Calendar,
+ school: School,
+ edit: Edit,
+ award: Award,
+ settings: Settings,
+ lock: Lock,
+ toggleright: ToggleRight,
+ "file-check2": FileCheck2,
 
 };
 

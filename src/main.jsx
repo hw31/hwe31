@@ -8,13 +8,20 @@ import { PersistGate } from 'redux-persist/integration/react';
 
 import { createBrowserRouter, RouterProvider, Navigate } from 'react-router-dom';
 
-import Main from './layout/Main';            // Layout principal para rutas públicas
-import Start from './components/Shared/Start';      // Página pública principal
-import Login from './components/Shared/Login';      // Login público
-import Loading from './components/Shared/Loading';  // Pantalla de carga
-import Dashboard from './components/Shared/Dashboard'; // Layout privado para rutas dentro del dashboard
-import PrivateRoute from './routes/PrivateRoute'; // Componente para proteger rutas privadas
-import FrmUsuarios from './components/pages/FrmUsuarios';   // Ejemplo formulario privado
+// Layouts
+import Main from './layout/Main';
+import Dashboard from './components/Shared/Dashboard';
+
+// Rutas públicas
+import Start from './components/Shared/Start';
+import Login from './components/Shared/Login';
+import Loading from './components/Shared/Loading';
+
+// Rutas privadas protegidas
+import PrivateRoute from './routes/PrivateRoute';
+
+// Componentes de páginas
+import FrmUsuarios from './components/pages/FrmUsuarios';
 import FrmAsignacion from "./components/pages/FrmAsignacion";
 import FrmAulas from './components/pages/FrmAulas';
 import FrmInscripcionesMaterias from './components/pages/FrmInscripcionesMaterias';
@@ -34,8 +41,8 @@ import FrmTipoCalificaciones from './components/pages/FrmTipoCalificacion';
 import FrmTransacciones from './components/pages/FrmTransacciones';
 import FrmRescateEvaluacion from './components/pages/FrmRescateEvaluacion';
 
-
 const router = createBrowserRouter([
+  // Rutas públicas
   {
     element: <Main />,
     children: [
@@ -44,103 +51,42 @@ const router = createBrowserRouter([
       { path: '/loading', element: <Loading /> },
     ],
   },
+
+  // Rutas privadas
   {
     element: <PrivateRoute />,
     children: [
       {
         path: '/dashboard',
-        element: <Dashboard />,  // Dashboard debe tener <Outlet />
+        element: <Dashboard />, // Este debe contener <Outlet /> en su definición
         children: [
-          {
-            index: true,
-            element: <div></div>, // Página por defecto de /dashboard
-          },
-          {
-            path: 'usuarios',
-            element: <FrmUsuarios />, // Ruta privada /dashboard/usuarios
-          },
-           {
-            path: 'asignacion',
-            element: <FrmAsignacion />,
-          },
-           {
-            path: 'aulas',
-            element: <FrmAulas />,
-          },
-          { path: 'inscripcionesmaterias',
-             element: <FrmInscripcionesMaterias />,
-          },
-          {
-            path: 'estados',
-            element: <FrmEstados />,
-          },
-          {
-            path: 'catalogos',
-            element: <FrmCatalogos />,
-          },
-          {
-            path: 'personas',
-            element: <FrmPersonas />,
-          },
-          {
-            path: 'contactos',
-            element: <FrmContactos />,
-          },
-          {
-            path: 'roles',
-            element: <FrmRoles />,
-          },
-          {
-            path: 'permisos',
-            element: <FrmPermisos />,
-          },
-          {
-            path: 'periodos',
-            element: <FrmPeriodos />,
-          },
-          {
-            path: 'materias',
-            element: <FrmMaterias />,
-          },
-          {
-            path: 'inscripciones',
-            element: <FrmInscripciones />,
-          },
-          {
-            path: 'calificaciones',
-            element: <FrmCalificaciones />,
-          },
-          {
-            path: 'grupos',
-            element: <FrmGrupos />,
-          },
-         
-          {
-            path: 'horarios',
-            element: <FrmHorarios />,
-          },
-         
-          {
-            path: 'tipocalificaciones',
-            element: <FrmTipoCalificaciones />,
-          },
-          {
-            path: 'transacciones',
-            element: <FrmTransacciones />,
-          },
-          {
-            path: 'rescate',
-            element: <FrmRescateEvaluacion />, // Ruta para rescate de evaluación
-          },
-          {
-            path: '*',
-            element: <Navigate to="/dashboard" replace />,
-          },
-          
+          { index: true, element: <div></div> }, // Página por defecto (puedes cambiarla)
+          { path: 'usuarios', element: <FrmUsuarios /> },
+          { path: 'asignacion', element: <FrmAsignacion /> },
+          { path: 'aulas', element: <FrmAulas /> },
+          { path: 'inscripcionesmaterias', element: <FrmInscripcionesMaterias /> },
+          { path: 'estados', element: <FrmEstados /> },
+          { path: 'catalogos', element: <FrmCatalogos /> },
+          { path: 'personas', element: <FrmPersonas /> },
+          { path: 'contactos', element: <FrmContactos /> },
+          { path: 'roles', element: <FrmRoles /> },
+          { path: 'permisos', element: <FrmPermisos /> },
+          { path: 'periodos', element: <FrmPeriodos /> },
+          { path: 'materias', element: <FrmMaterias /> },
+          { path: 'inscripciones', element: <FrmInscripciones /> },
+          { path: 'calificaciones', element: <FrmCalificaciones /> },
+          { path: 'grupos', element: <FrmGrupos /> },
+          { path: 'horarios', element: <FrmHorarios /> },
+          { path: 'tipocalificacion', element: <FrmTipoCalificaciones /> },
+          { path: 'transacciones', element: <FrmTransacciones /> },
+          { path: 'rescate', element: <FrmRescateEvaluacion /> },
+          { path: '*', element: <Navigate to="/dashboard" replace /> },
         ],
       },
     ],
   },
+
+  // Catch-all para rutas no definidas
   {
     path: '*',
     element: <Navigate to="/" replace />,
