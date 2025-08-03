@@ -1,12 +1,24 @@
 import React, { useState } from "react";
 import { useSelector } from "react-redux";
 import FrmHorarios from "../pages/FrmHorarios";
+import FrmAulas from "../pages/FrmAulas";
+import FrmGrupos from "../pages/FrmGrupos";
+import FrmMaterias from "../pages/FrmMaterias"; // ← NUEVO
 import Asignacion from "../hijos/Asignacion";
-import { Clock, ArrowLeftCircle } from "lucide-react";
+import {
+  Clock,
+  ArrowLeftCircle,
+  School,
+  Users,
+  BookOpenCheck,
+} from "lucide-react"; // ← NUEVO ICONO
 
 const FrmAsignacion = () => {
   const modoOscuro = useSelector((state) => state.theme.modoOscuro);
-  const [soloHorario, setSoloHorario] = useState(false); // Controla si se ve FrmHorarios o Asignacion
+  const rol = useSelector((state) => state.auth.rol);
+  const rolLower = rol ? rol.toLowerCase() : null;
+
+  const [vista, setVista] = useState("asignacion"); // vista actual
 
   return (
     <div
@@ -19,26 +31,58 @@ const FrmAsignacion = () => {
           modoOscuro ? "bg-gray-900 shadow-gray-700" : "bg-white shadow-gray-300"
         }`}
       >
-        {/* Botón superior que alterna entre Horarios y Asignaciones */}
-        <div className="flex justify-end mb-4">
-          <button
-            onClick={() => setSoloHorario(!soloHorario)}
-            className="flex items-center gap-2 px-4 py-2 rounded bg-indigo-600 text-white hover:bg-indigo-700 transition"
-          >
-            {soloHorario ? (
-              <>
+        {/* Botones visibles solo para el administrador */}
+        {rolLower === "administrador" && (
+          <div className="flex flex-wrap gap-3 justify-end mb-4">
+            {vista !== "asignacion" && (
+              <button
+                onClick={() => setVista("asignacion")}
+                className="flex items-center gap-2 px-4 py-2 rounded bg-indigo-600 text-white hover:bg-indigo-700 transition"
+              >
                 <ArrowLeftCircle /> Volver a asignaciones
-              </>
-            ) : (
-              <>
-                <Clock /> Ver Horarios
-              </>
+              </button>
             )}
-          </button>
-        </div>
+            {vista !== "horarios" && (
+              <button
+                onClick={() => setVista("horarios")}
+                className="flex items-center gap-2 px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700 transition"
+              >
+                <Clock /> Ver Horarios
+              </button>
+            )}
+            {vista !== "aulas" && (
+              <button
+                onClick={() => setVista("aulas")}
+                className="flex items-center gap-2 px-4 py-2 rounded bg-green-600 text-white hover:bg-green-700 transition"
+              >
+                <School /> Ver Aulas
+              </button>
+            )}
+            {vista !== "grupos" && (
+              <button
+                onClick={() => setVista("grupos")}
+                className="flex items-center gap-2 px-4 py-2 rounded bg-rose-600 text-white hover:bg-rose-700 transition"
+              >
+                <Users /> Ver Grupos
+              </button>
+            )}
+            {vista !== "materias" && (
+              <button
+                onClick={() => setVista("materias")}
+                className="flex items-center gap-2 px-4 py-2 rounded bg-yellow-600 text-white hover:bg-yellow-700 transition"
+              >
+                <BookOpenCheck /> Ver Materias
+              </button>
+            )}
+          </div>
+        )}
 
-        {/* Contenido según estado */}
-        {soloHorario ? <FrmHorarios /> : <Asignacion />}
+        {/* Contenido según vista actual */}
+        {vista === "asignacion" && <Asignacion />}
+        {vista === "horarios" && <FrmHorarios />}
+        {vista === "aulas" && <FrmAulas />}
+        {vista === "grupos" && <FrmGrupos />}
+        {vista === "materias" && <FrmMaterias />}
       </div>
     </div>
   );

@@ -135,7 +135,7 @@ console.log("ROL:", rol, "ROL LOWER:", rolLower, "LOADING:", loading);
       IdEstado: "",
     });
   };
-
+ 
   const abrirModalNuevo = () => {
     setModoEdicion(false);
     setAsignacionSeleccionada(null);
@@ -406,6 +406,7 @@ console.log("ROL:", rol, "ROL LOWER:", rolLower, "LOADING:", loading);
   </div>
 
   {/* Botón "Nuevo" alineado a la derecha */}
+    {rolLower === "administrador" && (
   <button
     onClick={abrirModalNuevo}
     style={{
@@ -431,8 +432,9 @@ console.log("ROL:", rol, "ROL LOWER:", rolLower, "LOADING:", loading);
     aria-label="Agregar nueva asignación docente"
   >
     <FaPlus /> Nuevo
-  </button>
+  </button>)}
 </div>
+
 
         {/* Mensajes */}
         {loading && <p className="text-gray-400 italic">Cargando asignaciones...</p>}
