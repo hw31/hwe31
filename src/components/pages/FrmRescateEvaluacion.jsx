@@ -1,55 +1,66 @@
-import React, { useState, useEffect } from "react";
-import Swal from "sweetalert2";
+import React, { useEffect, useState, useRef } from "react";
 import { useSelector } from "react-redux";
+import Swal from "sweetalert2";
 
 import rescateEvaluacionService from "../../services/RescateEvaluacion";
 import estadoService from "../../services/Estado";
-import usuarioService from "../../services/Usuario";
+import usuarioService from "../../services/UsuariosRoles"; // Servicio UsuariosRoles
 import materiaService from "../../services/Materias";
 import periodoService from "../../services/PeriodoAcademico";
 
+import { FaCheckCircle, FaHourglassHalf } from "react-icons/fa";
+
+import TablaBase from "../Shared/TablaBase";
+import BuscadorBase from "../Shared/BuscadorBase";
+import ContadoresBase from "../Shared/ContadoresRescate";
 import ModalBase from "../Shared/ModalBase";
 import FormularioBase from "../Shared/FormularioBase";
-import BuscadorBase from "../Shared/BuscadorBase";
-
-import { FaCheckCircle, FaTimesCircle, FaClock, FaPlus, FaEdit, FaUser } from "react-icons/fa";
 
 const FrmRescateEvaluacion = () => {
   const modoOscuro = useSelector((state) => state.theme.modoOscuro);
-
   const fondo = modoOscuro ? "bg-gray-900" : "bg-white";
   const texto = modoOscuro ? "text-gray-200" : "text-gray-800";
   const encabezado = modoOscuro ? "bg-gray-700 text-gray-200" : "bg-gray-100 text-gray-700";
 
-  const [datos, setDatos] = useState([]);
+  const [rescates, setRescates] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [busqueda, setBusqueda] = useState("");
+  const [paginaActual, setPaginaActual] = useState(1);
+  const [filasPorPagina, setFilasPorPagina] = useState(10);
+
   const [modalOpen, setModalOpen] = useState(false);
   const [modoEdicion, setModoEdicion] = useState(false);
   const [formLoading, setFormLoading] = useState(false);
   const [formError, setFormError] = useState("");
-  const [form, setForm] = useState({
-    idRescate: 0,
-    observaciones: "",
-    idEstado: 8, // default primer estado válido
-    idUsuario: 0,
-    idMateria: 0,
-    idPeriodo: 0,
-    calificacionRescate: 0,
-  });
 
-  const [estados, setEstados] = useState([]); // Solo estados 8 y 9 para select
-  const [estadosCompleto, setEstadosCompleto] = useState([]); // Todos los estados para mostrar en tabla
-  const [usuarios, setUsuarios] = useState([]);
+  const [usuariosCompleto, setUsuariosCompleto] = useState([]); // TODOS los usuarios con roles
+  const [usuariosEstudiantes, setUsuariosEstudiantes] = useState([]); // Sólo estudiantes (rol 3)
   const [materias, setMaterias] = useState([]);
   const [periodos, setPeriodos] = useState([]);
+  const [estados, setEstados] = useState([]);
 
-  const [busqueda, setBusqueda] = useState("");
+  const [usuarioInput, setUsuarioInput] = useState("");
+  const [materiaInput, setMateriaInput] = useState("");
 
-  // Función para formatear fecha
+  const [mostrarMaterias, setMostrarMaterias] = useState(false);
+  const materiaRef = useRef(null);
+
+  const [mostrarEstudiantes, setMostrarEstudiantes] = useState(false);
+  const estudianteRef = useRef(null);
+
+  const [form, setForm] = useState({
+    idRescate: null,
+    idUsuarioEstudiante: "",
+    idMateria: "",
+    idPeriodoAcademico: "",
+    calificacionRescate: "",
+    observaciones: "",
+    idEstado: "",
+  });
+
   const formatearFecha = (fecha) => {
     if (!fecha) return "-";
-    const d = new Date(fecha);
-    return d.toLocaleString("es-NI", {
+    return new Date(fecha).toLocaleString("es-NI", {
       year: "numeric",
       month: "short",
       day: "2-digit",
@@ -58,508 +69,547 @@ const FrmRescateEvaluacion = () => {
     });
   };
 
-  // Cargar datos al inicio
   const cargarDatos = async () => {
-    setLoading(true);
-    try {
-      const [
-        resDatos,
-        resEstados,
-        resUsuarios,
-        resMaterias,
-        resPeriodos,
-      ] = await Promise.all([
-        rescateEvaluacionService.listarEvaluacionesRescatables(),
-        estadoService.listarEstados(),
-        usuarioService.listarUsuario(),
-        materiaService.listarMaterias(),
-        periodoService.listarPeriodosAcademicos(),
-      ]);
+  setLoading(true);
+  try {
+    const [
+      resRescates,
+      usuariosRoles,
+      resMaterias,
+      resPeriodos,
+      resEstados,
+    ] = await Promise.all([
+      rescateEvaluacionService.listarEvaluacionesRescatables(),
+      usuarioService.listarUsuariosRoles(),
+      materiaService.listarMaterias(),
+      periodoService.listarPeriodosAcademicos(),
+      estadoService.listarEstados(),
+    ]);
 
-      // Normalizar estados
-      const estadosRaw = resEstados?.datos || resEstados?.data || resEstados?.resultado || [];
-      const estadosCompletoRaw = estadosRaw.map((e) => ({
-        id: e.iD_Estado || e.idEstado || e.id || 0,
-        nombre: e.nombre_Estado || e.nombre || "",
-      }));
-      setEstadosCompleto(estadosCompletoRaw);
+    if (!resRescates?.resultado) throw new Error("Error en rescates");
+    if (!Array.isArray(usuariosRoles)) throw new Error("Error en usuariosRoles");
+    if (!Array.isArray(resMaterias)) throw new Error("Error en materias");
+    if (!resPeriodos?.resultado) throw new Error("Error en periodos");
+    if (!resEstados?.datos && !resEstados?.data) throw new Error("Error en estados");
 
-      // Solo 8 y 9 para selects
-      const estadosNormalizados = estadosCompletoRaw.filter((e) => [8, 9].includes(e.id));
-      setEstados(estadosNormalizados);
+    setUsuariosCompleto(usuariosRoles);
 
-      // Usuarios normalizados
-      const usuariosRaw = resUsuarios?.datos || resUsuarios?.data || resUsuarios?.resultado || [];
-      const usuariosNormalizados = usuariosRaw.map((u) => ({
-        id: u.id_Usuario || u.idUsuario || u.id || 0,
-        nombre: u.persona || u.usuario || u.nombre || "",
-      }));
-      setUsuarios(usuariosNormalizados);
+    // Filtrar estudiantes rol 3
+    const estudiantes = usuariosRoles.filter((u) => u.iD_Rol === 3);
+    setUsuariosEstudiantes(estudiantes);
 
-      // Materias normalizadas
-      const materiasRaw = resMaterias || [];
-      const materiasNormalizadas = materiasRaw.map((m) => ({
-        id: m.idMateria || m.id_Materia || m.id || 0,
-        nombre: m.nombreMateria || m.nombre_Materia || m.nombre || "",
-      }));
-      setMaterias(materiasNormalizadas);
+    setMaterias(resMaterias);
+    setPeriodos(resPeriodos.resultado);
 
-      // Periodos normalizados
-      const periodosRaw = resPeriodos?.resultado || resPeriodos?.datos || resPeriodos?.data || [];
-      const periodosNormalizados = periodosRaw.map((p) => ({
-        id: p.idPeriodoAcademico || p.idPeriodo || p.id || 0,
-        nombre: p.nombrePeriodo || p.nombre || "",
-      }));
-      setPeriodos(periodosNormalizados);
+    // Para estados: si resEstados.datos existe, usar eso; si data, usar data
+    const estadosLista = resEstados.datos || resEstados.data || [];
+    const estadosFiltrados = estadosLista.filter((e) => [8, 9].includes(e.iD_Estado));
+    setEstados(estadosFiltrados);
 
-      // Datos principales normalizados
-      const datosRaw = resDatos?.resultado || resDatos?.datos || resDatos?.data || [];
-      const datosNormalizados = datosRaw.map((item) => ({
-        idRescate: item.idRescate,
-        idUsuario: item.idUsuario,
-        idMateria: item.idMateria,
-        idPeriodo: item.idPeriodo,
-        fechaSolicitud: item.fechaSolicitud,
-        calificacionRescate: item.calificacionRescate,
-        observaciones: item.observaciones,
-        fechaCreacion: item.fechaCreacion,
-        fechaModificacion: item.fechaModificacion,
-        idCreador: item.idCreador,
-        idModificador: item.idModificador,
-        idEstado: item.idEstado,
-      }));
-      setDatos(datosNormalizados);
-    } catch (error) {
-      Swal.fire("Error", "No se pudieron cargar los datos", "error");
-      console.error(error);
-    }
+    // Mapear rescates con datos correctos
+    const datos = resRescates.resultado.map((r) => ({
+      idRescate: r.idRescate,
+      estudiante: estudiantes.find((u) => u.iD_Usuario === r.idUsuario)?.nombre_Usuario || "Desconocido",
+      idUsuarioEstudiante: r.idUsuario,
+      materia: resMaterias.find((m) => m.idMateria === r.idMateria)?.nombreMateria || "Desconocido",
+      idMateria: r.idMateria,
+      periodo: resPeriodos.resultado.find((p) => p.idPeriodoAcademico === r.idPeriodo)?.nombrePeriodo || "Desconocido",
+      idPeriodoAcademico: r.idPeriodo,
+      calificacionRescate: r.calificacionRescate,
+      observaciones: r.observaciones,
+      estado: estadosFiltrados.find((e) => e.iD_Estado === r.idEstado)?.nombre_Estado || "Desconocido",
+      idEstado: r.idEstado,
+      fechaSolicitud: formatearFecha(r.fechaSolicitud),
+      fechaCreacion: formatearFecha(r.fechaCreacion),
+      fechaModificacion: formatearFecha(r.fechaModificacion),
+      creador: usuariosRoles.find((u) => u.iD_Usuario === (r.idCreador ?? r.id_Creador))?.nombre_Usuario || "N/D",
+      modificador: usuariosRoles.find((u) => u.iD_Usuario === (r.idModificador ?? r.id_Modificador))?.nombre_Usuario || "N/D",
+    }));
+
+    setRescates(datos);
+  } catch (error) {
+    console.error(error);
+    Swal.fire("Error", error.message, "error");
+  } finally {
     setLoading(false);
-  };
+  }
+};
 
-  // Abrir modal para nuevo
-  const abrirModalNuevo = () => {
-    if (usuarios.length === 0 || materias.length === 0 || periodos.length === 0) {
-      Swal.fire("Atención", "No hay usuarios, materias o periodos para seleccionar.", "warning");
-      return;
-    }
-    setForm({
-      idRescate: 0,
-      observaciones: "",
-      idEstado: 8, // Estado por defecto válido
-      idUsuario: usuarios[0].id,
-      idMateria: materias[0].id,
-      idPeriodo: periodos[0].id,
-      calificacionRescate: 0,
-    });
-    setModoEdicion(false);
-    setFormError("");
-    setModalOpen(true);
-  };
-
-  // Abrir modal para editar
-  const abrirModalEditar = (item) => {
-    setForm({
-      idRescate: item.idRescate,
-      observaciones: item.observaciones,
-      idEstado: item.idEstado,
-      idUsuario: item.idUsuario,
-      idMateria: item.idMateria,
-      idPeriodo: item.idPeriodo,
-      calificacionRescate: item.calificacionRescate,
-    });
-    setModoEdicion(true);
-    setFormError("");
-    setModalOpen(true);
-  };
-
-  // Guardar (insertar o actualizar)
-  const guardar = async () => {
-    if (!form.observaciones.trim()) {
-      setFormError("Las observaciones son obligatorias");
-      return;
-    }
-    if (!form.idUsuario || !form.idMateria || !form.idPeriodo) {
-      setFormError("Debe seleccionar usuario, materia y periodo");
-      return;
-    }
-    if (![8, 9].includes(form.idEstado)) {
-      setFormError("Estado inválido, debe ser uno de los permitidos (8 o 9)");
-      return;
-    }
-    setFormLoading(true);
-    try {
-      const payload = {
-        idRescate: form.idRescate,
-        observaciones: form.observaciones,
-        idEstado: form.idEstado,
-        idUsuario: form.idUsuario,
-        idMateria: form.idMateria,
-        idPeriodo: form.idPeriodo,
-        calificacionRescate: form.calificacionRescate,
-      };
-
-      const res = modoEdicion
-        ? await rescateEvaluacionService.actualizarEvaluacion(payload)
-        : await rescateEvaluacionService.insertarEvaluacion(payload);
-
-      if (res?.data?.ok || res?.ok || res?.exito) {
-        Swal.fire("Éxito", res?.data?.msg || res?.msg || "Guardado correctamente", "success");
-        setModalOpen(false);
-        cargarDatos();
-      } else {
-        throw new Error(res?.data?.msg || res?.msg || "Ocurrió un error");
-      }
-    } catch (error) {
-      Swal.fire("Error", error.message || "No se pudo guardar", "error");
-    } finally {
-      setFormLoading(false);
-    }
-  };
 
   useEffect(() => {
     cargarDatos();
   }, []);
 
-  // Función para obtener nombre por id en listas
-  const getNombrePorId = (lista, id) => {
-    return lista.find((e) => e.id === id)?.nombre || "Desconocido";
+  useEffect(() => {
+    setPaginaActual(1);
+  }, [busqueda, filasPorPagina]);
+
+  // Manejo de clic fuera para ocultar listado materias
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (materiaRef.current && !materiaRef.current.contains(event.target)) {
+        setMostrarMaterias(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
+  // Manejo de clic fuera para ocultar listado estudiantes
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (estudianteRef.current && !estudianteRef.current.contains(event.target)) {
+        setMostrarEstudiantes(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
+  // Filtrar estudiantes para autocompletado, sólo del array estudiantes (rol 3)
+  const estudiantesFiltrados = usuariosEstudiantes.filter((u) =>
+    u.nombre_Usuario?.toLowerCase().includes(usuarioInput.toLowerCase())
+  );
+
+  const materiasFiltradas = materias.filter((m) =>
+    m.nombreMateria.toLowerCase().includes(materiaInput.toLowerCase())
+  );
+
+  // Filtrar rescates por búsqueda
+  const rescatesFiltrados = rescates.filter((r) =>
+    r.estudiante.toLowerCase().includes(busqueda.toLowerCase()) ||
+    r.materia.toLowerCase().includes(busqueda.toLowerCase()) ||
+    r.periodo.toLowerCase().includes(busqueda.toLowerCase())
+  );
+
+  const totalPaginas = Math.ceil(rescatesFiltrados.length / filasPorPagina);
+  const rescatesPaginados = rescatesFiltrados.slice(
+    (paginaActual - 1) * filasPorPagina,
+    paginaActual * filasPorPagina
+  );
+
+  const completados = rescates.filter((r) => r.idEstado === 8).length;
+  const enProceso = rescates.filter((r) => r.idEstado === 9).length;
+  const total = rescates.length;
+
+  const renderEstadoIcono = (idEstado) => {
+    switch (idEstado) {
+      case 8:
+        return <FaCheckCircle className="text-green-500 mx-auto" />;
+      case 9:
+        return <FaHourglassHalf className="text-yellow-500 mx-auto" />;
+      default:
+        return <span className="mx-auto">-</span>;
+    }
   };
 
-  // Para mostrar nombre de usuario creador/modificador usando usuarios cargados
-  const getUsuarioNombrePorId = (id) => {
-    return usuarios.find((u) => u.id === id)?.nombre || id || "Desconocido";
-  };
+  const columnas = [
+    { key: "estudiante", label: "Estudiante" },
+    { key: "materia", label: "Materia" },
+    { key: "periodo", label: "Periodo" },
+    {
+      key: "observaciones",
+      label: "Observaciones",
+      render: (row) => (
+        <span title={row.observaciones}>
+          {row.observaciones?.length > 40
+            ? row.observaciones.slice(0, 40) + "..."
+            : row.observaciones || "-"}
+        </span>
+      ),
+    },
+    { key: "calificacionRescate", label: "Calificación" },
+    { key: "fechaSolicitud", label: "Fecha Solicitud" },
+    { key: "creador", label: "Creado por" },
+    { key: "fechaCreacion", label: "Fecha Creación" },
+    { key: "modificador", label: "Modificado por" },
+    { key: "fechaModificacion", label: "Fecha Modificación" },
+    { key: "estado", label: "Estado", render: (row) => renderEstadoIcono(row.idEstado) },
+  ];
 
-  // Filtrar datos para mostrar solo estados 8 y 9 y aplicar búsqueda
-  const filtrados = datos
-    .filter((item) => [8, 9].includes(item.idEstado))
-    .filter((item) => {
-      if (!busqueda.trim()) return true;
-      const texto = busqueda.toLowerCase();
-      const usuario = getNombrePorId(usuarios, item.idUsuario).toLowerCase();
-      const materia = getNombrePorId(materias, item.idMateria).toLowerCase();
-      const periodo = getNombrePorId(periodos, item.idPeriodo).toLowerCase();
-      const estado = getNombrePorId(estadosCompleto, item.idEstado).toLowerCase();
-      const observaciones = (item.observaciones || "").toLowerCase();
-      return (
-        usuario.includes(texto) ||
-        materia.includes(texto) ||
-        periodo.includes(texto) ||
-        estado.includes(texto) ||
-        observaciones.includes(texto)
-      );
+  const abrirModalNuevo = () => {
+    setForm({
+      idRescate: null,
+      idUsuarioEstudiante: "",
+      idMateria: "",
+      idPeriodoAcademico: "",
+      calificacionRescate: "",
+      observaciones: "",
+      idEstado: "",
     });
-
-  // Contar "En Proceso" (idEstado=9) e "Completado" (idEstado=8)
-  const enProceso = filtrados.filter((d) => d.idEstado === 9).length;
-  const completados = filtrados.filter((d) => d.idEstado === 8).length;
-
-  // --- Estilos en línea para contadores ---
-  const contenedorEstilo = {
-    padding: "14px 24px",
-    borderRadius: 10,
-    fontWeight: "700",
-    fontSize: 18,
-    minWidth: 140,
-    textAlign: "center",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    userSelect: "none",
-    cursor: "pointer",
-    transition: "background 0.3s ease",
+    setUsuarioInput("");
+    setMateriaInput("");
+    setModoEdicion(false);
+    setFormError("");
+    setModalOpen(true);
   };
 
-  // Colores para botón "Nuevo"
-  const colorNuevo = "#1976d2";
-  const colorNuevoHover = "#115293";
+  const abrirModalEditar = (resc) => {
+    setForm({ ...resc });
+    setUsuarioInput(resc.estudiante || "");
+    setMateriaInput(resc.materia || "");
+    setModoEdicion(true);
+    setFormError("");
+    setModalOpen(true);
+  };
+
+  const cerrarModal = () => {
+    setModalOpen(false);
+    setFormError("");
+    setFormLoading(false);
+    setMostrarMaterias(false);
+    setMostrarEstudiantes(false);
+  };
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setForm({ ...form, [name]: value });
+    setFormError("");
+  };
+
+  const validarFormulario = () => {
+    const { idUsuarioEstudiante, idMateria, idPeriodoAcademico, calificacionRescate, idEstado } = form;
+    if (!idUsuarioEstudiante || !idMateria || !idPeriodoAcademico || calificacionRescate === "" || idEstado === "") {
+      setFormError("Todos los campos son obligatorios.");
+      return false;
+    }
+    const calif = parseFloat(calificacionRescate);
+    if (isNaN(calif) || calif < 0 || calif > 100) {
+      setFormError("La calificación debe estar entre 0 y 100.");
+      return false;
+    }
+    return true;
+  };
+
+  const handleGuardar = async () => {
+    if (!validarFormulario()) return;
+    setFormLoading(true);
+    try {
+      const payload = {
+        idUsuarioEstudiante: parseInt(form.idUsuarioEstudiante),
+        idMateria: parseInt(form.idMateria),
+        idPeriodoAcademico: parseInt(form.idPeriodoAcademico),
+        calificacionRescate: parseFloat(form.calificacionRescate),
+        observaciones: form.observaciones,
+        idEstado: parseInt(form.idEstado),
+      };
+      let res;
+      if (modoEdicion) {
+        res = await rescateEvaluacionService.actualizarEvaluacion({
+          idRescate: form.idRescate,
+          ...payload,
+        });
+      } else {
+        res = await rescateEvaluacionService.insertarEvaluacion(payload);
+      }
+
+      if (res?.numero === -1) {
+        setFormError(res.mensaje);
+        Swal.fire("Error", res.mensaje, "error");
+      } else {
+        Swal.fire("Éxito", res?.mensaje || "Guardado exitosamente", "success");
+        cargarDatos();
+        cerrarModal();
+      }
+    } catch (err) {
+      cerrarModal();
+      const mensajeError =
+        err.response?.data?.mensaje || err.message || "Error al guardar";
+      Swal.fire("Error", mensajeError, "error");
+    } finally {
+      setFormLoading(false);
+    }
+  };
+
+  const seleccionarEstudiante = (id, nombre) => {
+    setForm({ ...form, idUsuarioEstudiante: id });
+    setUsuarioInput(nombre);
+  };
+
+  const seleccionarMateria = (id, nombre) => {
+    setForm({ ...form, idMateria: id });
+    setMateriaInput(nombre);
+    setMostrarMaterias(false);
+  };
 
   return (
-    <div className={`p-4 rounded-xl shadow-md ${fondo}`}>
-      <h2 className={`text-2xl font-bold mb-4 ${texto}`}>Rescate y Evaluación</h2>
+    <div className={`mx-auto rounded-2xl p-6 max-w-[900px] w-full ${fondo} ${texto}`}>
+      <div
+        className={`w-full px-4 rounded-2xl shadow-md p-6 ${
+          modoOscuro
+            ? "bg-gray-900 text-white shadow-gray-700"
+            : "bg-white text-gray-900 shadow-gray-300"
+        }`}
+      >
+        <h2 className="text-3xl font-bold mb-4 text-center sm:text-left">
+          Solicitudes de Rescate de Evaluación
+        </h2>
 
-      <BuscadorBase
-        valor={busqueda}
-        onChange={(e) => setBusqueda(e.target.value)}
-        placeholder="Buscar..."
-        modoOscuro={modoOscuro}
-        texto={texto}
-      />
-
-      {/* CONTADORES */}
-      <div className="flex flex-wrap justify-between items-center gap-6 mb-6">
-        <div className="flex flex-wrap justify-center gap-6 flex-grow min-w-[250px]">
-          {/* En Proceso */}
-          <div
-            style={{
-              ...contenedorEstilo,
-              background: "linear-gradient(135deg, #f0ad4e, #d48806)", // amarillo
-              color: "white",
-              boxShadow: "0 3px 8px rgba(212, 143, 0, 0.4)",
-            }}
-            onMouseEnter={(e) =>
-              (e.currentTarget.style.background =
-                "linear-gradient(135deg, #d48806, #a35f00)")
-            }
-            onMouseLeave={(e) =>
-              (e.currentTarget.style.background =
-                "linear-gradient(135deg, #f0ad4e, #d48806)")
-            }
-          >
-            <FaClock /> En Proceso
-            <div style={{ fontSize: 26, marginLeft: 8 }}>{enProceso}</div>
-          </div>
-
-          {/* Completado */}
-          <div
-            style={{
-              ...contenedorEstilo,
-              background: "linear-gradient(135deg, #4caf50, #087f23)", // verde
-              color: "white",
-              boxShadow: "0 3px 8px rgba(46, 125, 50, 0.4)",
-            }}
-            onMouseEnter={(e) =>
-              (e.currentTarget.style.background =
-                "linear-gradient(135deg, #087f23, #045a12)")
-            }
-            onMouseLeave={(e) =>
-              (e.currentTarget.style.background =
-                "linear-gradient(135deg, #4caf50, #087f23)")
-            }
-          >
-            <FaCheckCircle /> Completado
-            <div style={{ fontSize: 26, marginLeft: 8 }}>{completados}</div>
-          </div>
-
-          {/* Total */}
-          <div
-            style={{
-              ...contenedorEstilo,
-              background: "linear-gradient(135deg, #0960a8ff, #20262dff)",
-              color: "white",
-              boxShadow: "0 3px 8px rgba(25,118,210,0.4)",
-            }}
-            onMouseEnter={(e) =>
-              (e.currentTarget.style.background =
-                "linear-gradient(135deg, #20262dff, #0d47a1)")
-            }
-            onMouseLeave={(e) =>
-              (e.currentTarget.style.background =
-                "linear-gradient(135deg, #0960a8ff, #20262dff)")
-            }
-          >
-            <FaUser /> Total
-            <div style={{ fontSize: 26, marginLeft: 8 }}>{filtrados.length}</div>
-          </div>
+        <div className="flex justify-between items-center mb-4 flex-wrap gap-4">
+          <BuscadorBase
+            placeholder="Buscar por estudiante, materia o periodo..."
+            valor={busqueda}
+            onChange={(e) => setBusqueda(e.target.value)}
+            modoOscuro={modoOscuro}
+          />
         </div>
 
-        {/* Botón "Nuevo" */}
-        <button
-          onClick={abrirModalNuevo}
-          style={{
-            backgroundColor: colorNuevo,
-            border: "none",
-            color: "#fff",
-            padding: "12px 22px",
-            borderRadius: 8,
-            cursor: "pointer",
-            fontWeight: "600",
-            fontSize: 20,
-            display: "flex",
-            alignItems: "center",
-            gap: 10,
-            userSelect: "none",
-            transition: "background-color 0.3s ease",
-            whiteSpace: "nowrap",
-            marginTop: "8px",
-          }}
-          onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = colorNuevoHover)}
-          onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = colorNuevo)}
-          type="button"
-        >
-          <FaPlus /> Nuevo
-        </button>
-      </div>
+        <ContadoresBase
+          completados={completados}
+          enProceso={enProceso}
+          total={total}
+          modoOscuro={modoOscuro}
+          onNuevo={abrirModalNuevo}
+        />
 
-      {/* TABLA */}
-      {loading ? (
-        <p className="text-gray-400 italic p-4">Cargando datos...</p>
-      ) : filtrados.length === 0 ? (
-        <p className="text-gray-400 p-4">No hay datos para mostrar.</p>
-      ) : (
-        <div className="w-full overflow-x-auto rounded-lg shadow-md">
-          <table className="table-auto min-w-full border-collapse">
-            <thead className={encabezado}>
-              <tr>
-                <th className="py-2 text-sm font-semibold whitespace-nowrap select-none text-left px-4">ID</th>
-                <th className="py-2 text-sm font-semibold whitespace-nowrap select-none text-left px-4">Persona</th>
-                <th className="py-2 text-sm font-semibold whitespace-nowrap select-none text-left px-4">Materia</th>
-                <th className="py-2 text-sm font-semibold whitespace-nowrap select-none text-left px-4">Periodo</th>
-                <th className="py-2 text-sm font-semibold whitespace-nowrap select-none text-left px-4">Observaciones</th>
-                <th className="py-2 text-sm font-semibold whitespace-nowrap select-none text-left px-4">Calificación Rescate</th>
-                <th className="py-2 text-sm font-semibold whitespace-nowrap select-none text-left px-4">Fecha Solicitud</th>
-                <th className="py-2 text-sm font-semibold whitespace-nowrap select-none text-left px-4">Creador</th>
-                <th className="py-2 text-sm font-semibold whitespace-nowrap select-none text-left px-4">Fecha Creación</th>
-                <th className="py-2 text-sm font-semibold whitespace-nowrap select-none text-left px-4">Fecha Modificación</th>
-                <th className="py-2 text-sm font-semibold whitespace-nowrap select-none text-left px-4">Modificador</th>
-                <th className="py-2 px-4 text-sm font-semibold whitespace-nowrap select-none text-left">Estado</th>
-                <th className="py-2 w-24 text-center whitespace-nowrap select-none">Acciones</th>
-              </tr>
-            </thead>
-            <tbody className={`divide-y divide-gray-200 dark:divide-gray-700`}>
-              {filtrados.map((item) => (
-                <tr
-                  key={item.idRescate}
-                  className={`transition-colors ${
-                    modoOscuro ? "hover:bg-gray-700" : "hover:bg-blue-50"
+        <div className="mt-2 mb-4 flex flex-wrap items-center justify-center sm:justify-start gap-2 text-sm">
+          <label htmlFor="filasPorPagina" className="font-semibold">
+            Filas por página:
+          </label>
+          <select
+            id="filasPorPagina"
+            value={filasPorPagina}
+            onChange={(e) => setFilasPorPagina(parseInt(e.target.value, 10))}
+            className={`w-[5rem] px-3 py-1 rounded border ${
+              modoOscuro
+                ? "bg-gray-800 text-white border-gray-600"
+                : "bg-white text-gray-900 border-gray-300"
+            }`}
+          >
+            {[10, 20, 50, 100].map((num) => (
+              <option key={num} value={num}>
+                {num}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <TablaBase
+          datos={rescatesPaginados}
+          columnas={columnas}
+          modoOscuro={modoOscuro}
+          loading={loading}
+          texto={texto}
+          encabezadoClase={encabezado}
+          onEditar={abrirModalEditar}
+        />
+
+        <div className="flex flex-wrap items-center justify-between mt-6 gap-4">
+          <button
+            disabled={paginaActual === 1}
+            onClick={() => setPaginaActual((p) => Math.max(p - 1, 1))}
+            className={`rounded px-4 py-2 text-white ${
+              paginaActual === 1
+                ? "bg-gray-400 cursor-not-allowed"
+                : "bg-blue-600 hover:bg-blue-700"
+            } transition-colors`}
+          >
+            Anterior
+          </button>
+          <span className="font-semibold">
+            Página {paginaActual} de {totalPaginas}
+          </span>
+          <button
+            disabled={paginaActual === totalPaginas || totalPaginas === 0}
+            onClick={() =>
+              setPaginaActual((p) => (p < totalPaginas ? p + 1 : totalPaginas))
+            }
+            className={`rounded px-4 py-2 text-white ${
+              paginaActual === totalPaginas || totalPaginas === 0
+                ? "bg-gray-400 cursor-not-allowed"
+                : "bg-blue-600 hover:bg-blue-700"
+            } transition-colors`}
+          >
+            Siguiente
+          </button>
+        </div>
+
+        <ModalBase isOpen={modalOpen} onClose={cerrarModal} modoOscuro={modoOscuro}>
+          <FormularioBase
+            onSubmit={handleGuardar}
+            onCancel={cerrarModal}
+            modoOscuro={modoOscuro}
+            formError={formError}
+            formLoading={formLoading}
+            modoEdicion={modoEdicion}
+            titulo={modoEdicion ? "Editar Rescate" : "Nuevo Rescate"}
+          >
+            <div className="flex flex-col gap-4 relative">
+              {/* Estudiante con autocompletado */}
+              <label className="relative" ref={estudianteRef}>
+                Estudiante:
+                <input
+                  type="text"
+                  value={usuarioInput}
+                  onChange={(e) => {
+                    setUsuarioInput(e.target.value);
+                    setForm({ ...form, idUsuarioEstudiante: "" });
+                    setMostrarEstudiantes(true);
+                  }}
+                  placeholder="Escriba para buscar estudiante"
+                  className={`w-full px-3 py-2 rounded border ${
+                    modoOscuro
+                      ? "bg-gray-800 text-white border-gray-600"
+                      : "bg-white text-gray-900 border-gray-300"
+                  }`}
+                  autoComplete="off"
+                  required
+                />
+                {mostrarEstudiantes && usuarioInput && estudiantesFiltrados.length > 0 && (
+                  <ul
+                    className={`absolute z-50 max-h-40 w-full overflow-auto rounded border ${
+                      modoOscuro
+                        ? "bg-gray-800 border-gray-600 text-white"
+                        : "bg-white border-gray-300 text-gray-900"
+                    }`}
+                  >
+                    {estudiantesFiltrados.map((u) => (
+                      <li
+                        key={u.iD_Usuario}
+                        onClick={() => {
+                          seleccionarEstudiante(u.iD_Usuario, u.nombre_Usuario);
+                          setMostrarEstudiantes(false);
+                        }}
+                        className="cursor-pointer px-3 py-1 hover:bg-blue-600 hover:text-white"
+                      >
+                        {u.nombre_Usuario}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </label>
+              {/* Materia con autocompletado */}
+              <label htmlFor="idMateria" className="text-sm">
+                Materia
+              </label>
+              <div className="relative" ref={materiaRef}>
+                <input
+                  type="text"
+                  id="idMateria"
+                  value={materiaInput}
+                  onChange={(e) => {
+                    setMateriaInput(e.target.value);
+                    setMostrarMaterias(true);
+                    setForm({ ...form, idMateria: "" });
+                  }}
+                  placeholder="Escriba para buscar materia"
+                  className={`w-full px-3 py-2 rounded border ${
+                    modoOscuro
+                      ? "bg-gray-800 text-white border-gray-600"
+                      : "bg-white text-gray-900 border-gray-300"
+                  }`}
+                  autoComplete="off"
+                  required
+                />
+                {mostrarMaterias && materiaInput.length > 0 && materiasFiltradas.length > 0 && (
+                  <ul
+                    className={`absolute z-50 max-h-40 w-full overflow-auto rounded border ${
+                      modoOscuro
+                        ? "bg-gray-800 border-gray-600 text-white"
+                        : "bg-white border-gray-300 text-gray-900"
+                    }`}
+                  >
+                    {materiasFiltradas.map((m) => (
+                      <li
+                        key={m.idMateria}
+                        onClick={() => seleccionarMateria(m.idMateria, m.nombreMateria)}
+                        className="cursor-pointer px-3 py-1 hover:bg-blue-600 hover:text-white"
+                      >
+                        {m.nombreMateria}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+
+              {/* Periodo */}
+              <label>
+                Periodo Académico:
+                <select
+                  name="idPeriodoAcademico"
+                  value={form.idPeriodoAcademico}
+                  onChange={handleInputChange}
+                  required
+                  className={`w-full px-3 py-2 rounded border ${
+                    modoOscuro
+                      ? "bg-gray-800 text-white border-gray-600"
+                      : "bg-white text-gray-900 border-gray-300"
                   }`}
                 >
-                  <td className={`py-2 px-4 text-sm whitespace-nowrap align-middle ${texto}`}>{item.idRescate}</td>
-                  <td className={`py-2 px-4 text-sm whitespace-nowrap align-middle ${texto}`}>{getNombrePorId(usuarios, item.idUsuario)}</td>
-                  <td className={`py-2 px-4 text-sm whitespace-nowrap align-middle ${texto}`}>{getNombrePorId(materias, item.idMateria)}</td>
-                  <td className={`py-2 px-4 text-sm whitespace-nowrap align-middle ${texto}`}>{getNombrePorId(periodos, item.idPeriodo)}</td>
-                  <td className={`py-2 px-4 text-sm whitespace-nowrap align-middle ${texto}`}>{item.observaciones}</td>
-                  <td className={`py-2 px-4 text-sm whitespace-nowrap align-middle ${texto}`}>{item.calificacionRescate}</td>
-                  <td className={`py-2 px-4 text-sm whitespace-nowrap align-middle ${texto}`}>{formatearFecha(item.fechaSolicitud)}</td>
-                  <td className={`py-2 px-4 text-sm whitespace-nowrap align-middle ${texto}`}>{getUsuarioNombrePorId(item.idCreador)}</td>
-                  <td className={`py-2 px-4 text-sm whitespace-nowrap align-middle ${texto}`}>{formatearFecha(item.fechaCreacion)}</td>
-                  <td className={`py-2 px-4 text-sm whitespace-nowrap align-middle ${texto}`}>{formatearFecha(item.fechaModificacion)}</td>
-                  <td className={`py-2 px-4 text-sm whitespace-nowrap align-middle ${texto}`}>{getUsuarioNombrePorId(item.idModificador)}</td>
-                  <td className={`py-2 px-4 text-sm whitespace-nowrap align-middle ${texto}`}>
-                    {item.idEstado === 8 ? (
-                    <FaCheckCircle className="text-green-600" />
-                   ) : item.idEstado === 9 ? (
-                    <FaClock className="text-yellow-600" />
-                    ) : null}
-                  </td>
-                  <td className="py-2 px-2 text-center whitespace-nowrap">
-                    <button
-                      onClick={() => abrirModalEditar(item)}
-                      title="Editar"
-                      className="text-blue-600 hover:text-blue-900 transition-colors"
-                      type="button"
-                    >
-                      <FaEdit />
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+                  <option value="">Seleccione periodo</option>
+                  {periodos.map((p) => (
+                    <option key={p.idPeriodoAcademico} value={p.idPeriodoAcademico}>
+                      {p.nombrePeriodo}
+                    </option>
+                  ))}
+                </select>
+              </label>
 
-      {/* Modal para formulario */}
-      <ModalBase
-        isOpen={modalOpen}
-        onClose={() => setModalOpen(false)}
-        title={modoEdicion ? "Editar Rescate Evaluación" : "Nuevo Rescate Evaluación"}
-        modoOscuro={modoOscuro}
-      >
-        <FormularioBase
-          loading={formLoading}
-          error={formError}
-          onSubmit={guardar}     
-          modoOscuro={modoOscuro}
-          onCancel={() => setModalOpen(false)}
-          modoEdicion={modoEdicion}
-          titulo="Solicitud de Rescate"
-        >
-          <div className="mb-4">
-            <label className="block mb-1 font-semibold">Observaciones</label>
-            <textarea
-              className="w-full p-2 border rounded"
-              rows={3}
-              value={form.observaciones}
-              onChange={(e) => setForm({ ...form, observaciones: e.target.value })}
-              required
-              autoFocus
-            />
-          </div>
+              {/* Calificación */}
+              <label>
+                Calificación Rescate:
+                <input
+                  type="number"
+                  name="calificacionRescate"
+                  value={form.calificacionRescate}
+                  onChange={handleInputChange}
+                  min="0"
+                  max="100"
+                  required
+                  className={`w-full px-3 py-2 rounded border ${
+                    modoOscuro
+                      ? "bg-gray-800 text-white border-gray-600"
+                      : "bg-white text-gray-900 border-gray-300"
+                  }`}
+                />
+              </label>
 
-          <div className="mb-4">
-            <label className="block mb-1 font-semibold">Estado</label>
-            <select
-              className="w-full p-2 border rounded"
-              value={form.idEstado}
-              onChange={(e) => setForm({ ...form, idEstado: parseInt(e.target.value) })}
-              required
-            >
-              {estados.map((e) => (
-                <option key={e.id} value={e.id}>
-                  {e.nombre}
-                </option>
-              ))}
-            </select>
-          </div>
+              {/* Observaciones */}
+              <label>
+                Observaciones:
+                <textarea
+                  name="observaciones"
+                  value={form.observaciones}
+                  onChange={handleInputChange}
+                  className={`w-full px-3 py-2 rounded border ${
+                    modoOscuro
+                      ? "bg-gray-800 text-white border-gray-600"
+                      : "bg-white text-gray-900 border-gray-300"
+                  }`}
+                />
+              </label>
 
-          <div className="mb-4">
-            <label className="block mb-1 font-semibold">Usuario</label>
-            <select
-              className="w-full p-2 border rounded"
-              value={form.idUsuario}
-              onChange={(e) => setForm({ ...form, idUsuario: parseInt(e.target.value) })}
-              required
-            >
-              {usuarios.map((u) => (
-                <option key={u.id} value={u.id}>
-                  {u.nombre}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="mb-4">
-            <label className="block mb-1 font-semibold">Materia</label>
-            <select
-              className="w-full p-2 border rounded"
-              value={form.idMateria}
-              onChange={(e) => setForm({ ...form, idMateria: parseInt(e.target.value) })}
-              required
-            >
-              {materias.map((m) => (
-                <option key={m.id} value={m.id}>
-                  {m.nombre}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="mb-4">
-            <label className="block mb-1 font-semibold">Periodo</label>
-            <select
-              className="w-full p-2 border rounded"
-              value={form.idPeriodo}
-              onChange={(e) => setForm({ ...form, idPeriodo: parseInt(e.target.value) })}
-              required
-            >
-              {periodos.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.nombre}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="mb-4">
-            <label className="block mb-1 font-semibold">Calificación Rescate</label>
-            <input
-              type="number"
-              className="w-full p-2 border rounded"
-              value={form.calificacionRescate}
-              onChange={(e) =>
-                setForm({ ...form, calificacionRescate: parseFloat(e.target.value) || 0 })
-              }
-              min={0}
-              max={100}
-            />
-          </div>
-
-          <div className="flex justify-end gap-3">
-          </div>
-        </FormularioBase>
-      </ModalBase>
+              {/* Estado (solo 8 y 9) */}
+              <label>
+                Estado:
+                <select
+                  name="idEstado"
+                  value={form.idEstado}
+                  onChange={handleInputChange}
+                  required
+                  className={`w-full px-3 py-2 rounded border ${
+                    modoOscuro
+                      ? "bg-gray-800 text-white border-gray-600"
+                      : "bg-white text-gray-900 border-gray-300"
+                  }`}
+                >
+                  <option value="">Seleccione estado</option>
+                  {estados.map((e) => (
+                    <option key={e.iD_Estado} value={e.iD_Estado}>
+                      {e.nombre_Estado}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+          </FormularioBase>
+        </ModalBase>
+      </div>
     </div>
   );
 };

@@ -29,7 +29,7 @@ import FrmHorarios from "./components/pages/FrmHorarios";
 import FrmTipoCalificaciones from "./components/pages/FrmTipoCalificacion";
 import FrmTransacciones from "./components/pages/FrmTransacciones";
 import FrmTipoTransacciones from "./components/pages/FrmTipoTransacciones";
-import FrmTransaccionxRol from "./components/pages/FrmTransaccionxRol";
+import FrmTransaccionxRol from "./components/pages/FrmTransaccionRol";
 import FrmTransaccionPermiso from "./components/pages/FrmTransaccionPermiso";
 import FrmRescateEvaculacion from "./components/pages/FrmRescateEvaculacion";
 

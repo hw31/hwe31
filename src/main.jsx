@@ -38,6 +38,7 @@ import FrmCalificaciones from './components/pages/FrmCalificaciones';
 import FrmGrupos from './components/pages/FrmGrupos';
 import FrmHorarios from './components/pages/FrmHorarios';
 import FrmTipoCalificaciones from './components/pages/FrmTipoCalificacion';
+import FrmTransaccionRol from './components/pages/FrmTransaccionRol';
 import FrmTransacciones from './components/pages/FrmTransacciones';
 import FrmRescateEvaluacion from './components/pages/FrmRescateEvaluacion';
 
@@ -80,6 +81,7 @@ const router = createBrowserRouter([
           { path: 'tipocalificacion', element: <FrmTipoCalificaciones /> },
           { path: 'transacciones', element: <FrmTransacciones /> },
           { path: 'rescate', element: <FrmRescateEvaluacion /> },
+          {path:  'transaccionrol', element:<FrmTransaccionRol/>},
           { path: '*', element: <Navigate to="/dashboard" replace /> },
         ],
       },

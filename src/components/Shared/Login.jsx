@@ -6,6 +6,7 @@ import { motion } from "framer-motion";
 import { useDispatch } from "react-redux";
 import { loginSuccess } from "../../features/Auth/authSlice";
 import { setModoOscuro, fetchModoOscuro } from "../../features/theme/themeSlice"; // <-- Importa fetchModoOscuro
+import { FaEye, FaEyeSlash } from "react-icons/fa";
 
 const containerVariants = {
   hidden: { opacity: 0, scale: 0.95 },
@@ -24,6 +25,7 @@ const itemVariants = {
 const Form = () => {
   const [form, setForm] = useState({ usuario: "", contrasena: "" });
   const [loading, setLoading] = useState(false);
+  const [verPassword, setVerPassword] = useState(false);
   const navigate = useNavigate();
   const dispatch = useDispatch();
 
@@ -91,17 +93,25 @@ const Form = () => {
                   variants={itemVariants}
                 />
 
-                <motion.input
-                  type="password"
-                  className="input"
-                  name="contrasena"
-                  placeholder="Contraseña"
-                  value={form.contrasena}
-                  onChange={handleChange}
-                  autoComplete="current-password"
-                  disabled={loading}
-                  variants={itemVariants}
-                />
+                <motion.div className="input-wrapper" variants={itemVariants}>
+                  <input
+                    type={verPassword ? "text" : "password"}
+                    className="input"
+                    name="contrasena"
+                    placeholder="Contraseña"
+                    value={form.contrasena}
+                    onChange={handleChange}
+                    autoComplete="current-password"
+                    disabled={loading}
+                  />
+                  <span
+                    className="toggle-visibility"
+                    onClick={() => setVerPassword(!verPassword)}
+                    title={verPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+                  >
+                    {verPassword ? <FaEyeSlash /> : <FaEye />}
+                  </span>
+                </motion.div>
 
                 <motion.button
                   className="btn"
@@ -307,6 +317,31 @@ const StyledWrapper = styled.div`
       inset 2px 2px 10px rgba(0, 0, 0, 1),
       inset -1px -1px 5px rgba(255, 255, 255, 0.6);
   }
+      .input-wrapper {
+  position: relative;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.input-wrapper .input {
+  width: 100%;
+  padding-right: 40px; /* espacio para el icono */
+}
+
+.toggle-visibility {
+  position: absolute;
+  right: 15px;
+  color: #ccc;
+  font-size: 18px;
+  cursor: pointer;
+  transition: color 0.3s ease;
+}
+
+.toggle-visibility:hover {
+  color: white;
+}
 
 `;
 
