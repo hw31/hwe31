@@ -19,7 +19,7 @@ const FrmUsuarios = () => {
 
   return (
 <div
-  className={`mx-auto rounded-2xl p-6 max-w-[900px] w-full ${
+  className={`mx-auto rounded-2xl p-1 max-w-[900px] w-full ${
     modoOscuro ? "bg-gray-900 text-white" : "bg-white text-gray-900"
   }`}
 >
