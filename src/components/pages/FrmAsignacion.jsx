@@ -27,11 +27,9 @@ const AsignacionDocenteList = () => {
   const rolLower = rol ? rol.toLowerCase() : null;
 
 
-
 const [loading, setLoading] = useState(false);
 console.log("ROL:", rol, "ROL LOWER:", rolLower, "LOADING:", loading);
 /*hasta aqui */
-
 
   const [formData, setFormData] = useState({
     UsuarioDocente: "",
@@ -662,7 +660,6 @@ console.log("ROL:", rol, "ROL LOWER:", rolLower, "LOADING:", loading);
                   ))}
                 </select>
 
-
                 {/* Estado */}
                 <label className="block mb-2 font-semibold">
                   Estado:
@@ -723,3 +720,5 @@ console.log("ROL:", rol, "ROL LOWER:", rolLower, "LOADING:", loading);
 };
 
 export default AsignacionDocenteList;
+
+
