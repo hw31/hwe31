@@ -22,6 +22,9 @@ const FrmPermisos = () => {
   const [loading, setLoading] = useState(false);
   const [formLoading, setFormLoading] = useState(false);
   const [formError, setFormError] = useState("");
+  const [paginaActual, setPaginaActual] = useState(1);
+  const [filasPorPagina, setFilasPorPagina] = useState(10);
+
   const [form, setForm] = useState({
     idPermiso: null,
     nombrePermiso: "",
@@ -31,6 +34,10 @@ const FrmPermisos = () => {
   useEffect(() => {
     cargarPermisos();
   }, []);
+
+  useEffect(() => {
+    setPaginaActual(1); // Reiniciar página al cambiar filas o búsqueda
+  }, [filasPorPagina, busqueda]);
 
   const formatearFecha = (fecha) => {
     if (!fecha) return "-";
@@ -140,14 +147,24 @@ const FrmPermisos = () => {
     }
   };
 
+  // Filtrar permisos con búsqueda
   const permisosFiltrados = permisos.filter((p) =>
     p.nombrePermiso.toLowerCase().includes(busqueda.toLowerCase())
   );
+
+  // Paginación:
+  const totalPaginas = Math.ceil(permisosFiltrados.length / filasPorPagina);
+  const indexUltima = paginaActual * filasPorPagina;
+  const indexPrimera = indexUltima - filasPorPagina;
+  const permisosPaginados = permisosFiltrados.slice(indexPrimera, indexUltima);
 
   const columnas = [
     { key: "nombrePermiso", label: "Nombre" },
     { key: "creador", label: "Creador" },
     { key: "modificador", label: "Modificador" },
+    
+    { key: "fechaCreacion", label: "Fecha Creación" },
+    { key: "fechaModificacion", label: "Fecha Modificación" },
     {
       key: "activo",
       label: "Estado",
@@ -161,7 +178,7 @@ const FrmPermisos = () => {
                 clipRule="evenodd"
               />
             </svg>
-            Activo
+           
           </span>
         ) : (
           <span className="text-red-500 font-semibold flex items-center gap-1">
@@ -174,29 +191,33 @@ const FrmPermisos = () => {
             >
               <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
             </svg>
-            Inactivo
+           
           </span>
         ),
-    },
-    { key: "fechaCreacion", label: "Fecha Creación" },
-    { key: "fechaModificacion", label: "Fecha Modificación" },
+    }
   ];
 
   return (
-    <div className={`p-4 ${modoOscuro ? "bg-gray-800 min-h-screen" : "bg-gray-50"}`}>
-      <div className={`shadow-md rounded-xl p-6 ${fondo}`}>
-        <div className="flex justify-between items-center mb-4">
-          <h2 className={`text-2xl md:text-3xl font-extrabold tracking-wide ${modoOscuro ? "text-white" : "text-gray-800"}`}>
-            Gestión de Permisos
-          </h2>
-        </div>
+    <div className="mx-auto max-w-[900px] w-full rounded-2xl p-6">
+      <div
+        className={`w-full px-4 rounded-2xl shadow-md p-6 ${
+          modoOscuro
+            ? "bg-gray-900 text-white shadow-gray-700"
+            : "bg-white text-gray-900 shadow-gray-300"
+        }`}
+      >
+        <h2 className="text-3xl font-bold mb-4 text-center sm:text-left">
+          Gestión de Permisos
+        </h2>
 
-        <BuscadorBase
-          placeholder="Buscar permisos..."
-          valor={busqueda}
-          onChange={(e) => setBusqueda(e.target.value)}
-          modoOscuro={modoOscuro}
-        />
+        <div className="flex justify-between items-center mb-4 flex-wrap gap-4">
+          <BuscadorBase
+            placeholder="Buscar permisos..."
+            valor={busqueda}
+            onChange={(e) => setBusqueda(e.target.value)}
+            modoOscuro={modoOscuro}
+          />
+        </div>
 
         <ContadoresBase
           activos={permisos.filter((p) => p.activo).length}
@@ -206,8 +227,30 @@ const FrmPermisos = () => {
           modoOscuro={modoOscuro}
         />
 
+        <div className="mt-2 mb-4 flex flex-wrap items-center justify-center sm:justify-start gap-2 text-sm">
+          <label htmlFor="filasPorPagina" className="font-semibold">
+            Filas por página:
+          </label>
+          <select
+            id="filasPorPagina"
+            value={filasPorPagina}
+            onChange={(e) => setFilasPorPagina(parseInt(e.target.value))}
+            className={`w-[5rem] px-3 py-1 rounded border ${
+              modoOscuro
+                ? "bg-gray-800 text-white border-gray-600"
+                : "bg-white text-gray-900 border-gray-300"
+            }`}
+          >
+            {[10, 30, 45, 60, 100].map((num) => (
+              <option key={num} value={num}>
+                {num}
+              </option>
+            ))}
+          </select>
+        </div>
+
         <TablaBase
-          datos={permisosFiltrados}
+          datos={permisosPaginados}
           columnas={columnas}
           modoOscuro={modoOscuro}
           onEditar={handleEditar}
@@ -216,12 +259,39 @@ const FrmPermisos = () => {
           encabezadoClase={encabezado}
         />
 
-        <ModalBase
-          isOpen={modalOpen}
-          onClose={cerrarModal}
-          titulo={modoEdicion ? "Editar Permiso" : "Nuevo Permiso"}
-          modoOscuro={modoOscuro}
-        >
+        <div className="flex flex-wrap items-center justify-between mt-6 gap-4">
+          <button
+            disabled={paginaActual === 1}
+            onClick={() => setPaginaActual((p) => Math.max(p - 1, 1))}
+            className={`rounded px-4 py-2 text-white ${
+              paginaActual === 1
+                ? "bg-gray-400 cursor-not-allowed"
+                : "bg-blue-600 hover:bg-blue-700"
+            } transition-colors`}
+          >
+            Anterior
+          </button>
+          <span className="font-semibold">
+            Página {paginaActual} de {totalPaginas}
+          </span>
+          <button
+            disabled={paginaActual === totalPaginas || totalPaginas === 0}
+            onClick={() =>
+              setPaginaActual((p) =>
+                p < totalPaginas ? p + 1 : totalPaginas
+              )
+            }
+            className={`rounded px-4 py-2 text-white ${
+              paginaActual === totalPaginas || totalPaginas === 0
+                ? "bg-gray-400 cursor-not-allowed"
+                : "bg-blue-600 hover:bg-blue-700"
+            } transition-colors`}
+          >
+            Siguiente
+          </button>
+        </div>
+
+        <ModalBase isOpen={modalOpen} onClose={cerrarModal} modoOscuro={modoOscuro}>
           <FormularioBase
             onSubmit={handleGuardar}
             onCancel={cerrarModal}

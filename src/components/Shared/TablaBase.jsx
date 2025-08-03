@@ -9,6 +9,7 @@ const TablaBase = ({
   loading = false,
   error = null,
   onEditar = null,
+  puedeEditar = null,
   encabezadoClase = "",
 }) => {
   const textoColor = modoOscuro ? "text-gray-200" : "text-gray-800";
@@ -96,17 +97,17 @@ const TablaBase = ({
                   </td>
                 );
               })}
-              {onEditar && (
-                <td className="py-2 w-24 text-center whitespace-nowrap align-middle pl-2">
-                  <button
-                    className="text-blue-600 hover:text-blue-800 text-xl flex justify-center items-center w-full"
-                    onClick={() => onEditar(item)}
-                    aria-label="Editar"
-                  >
-                    <FaEdit />
-                  </button>
-                </td>
-              )}
+              {onEditar && (!puedeEditar || puedeEditar(item)) && (
+              <td className="py-2 w-24 text-center whitespace-nowrap align-middle pl-2">
+              <button
+              className="text-blue-600 hover:text-blue-800 text-xl flex justify-center items-center w-full"
+              onClick={() => onEditar(item)}
+              aria-label="Editar"
+            >
+                 <FaEdit />
+                </button>
+              </td>
+            )}
             </tr>
           ))}
         </tbody>

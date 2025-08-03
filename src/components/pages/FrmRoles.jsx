@@ -9,7 +9,6 @@ import ModalBase from "../Shared/ModalBase";
 import FormularioBase from "../Shared/FormularioBase";
 import { FaCheckCircle, FaTimesCircle } from "react-icons/fa";
 
-
 const FrmRoles = () => {
   const modoOscuro = useSelector((state) => state.theme.modoOscuro);
 
@@ -24,40 +23,47 @@ const FrmRoles = () => {
   const [loading, setLoading] = useState(false);
   const [formLoading, setFormLoading] = useState(false);
   const [formError, setFormError] = useState("");
+
+  const [paginaActual, setPaginaActual] = useState(1);
+  const [filasPorPagina, setFilasPorPagina] = useState(10);
+
   const [form, setForm] = useState({
     idRol: 0,
     nombre: "",
     descripcion: "",
   });
 
-  // Formatear fecha para mostrar en tabla
   const formatearFecha = (fecha) => {
-  if (!fecha) return "-";
-  const d = new Date(fecha);
-  return d.toLocaleDateString("es-NI", {
-    year: "numeric",
-    month: "short",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-};
+    if (!fecha) return "-";
+    const d = new Date(fecha);
+    return d.toLocaleDateString("es-NI", {
+      year: "numeric",
+      month: "short",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
 
-  // Adaptar datos para tabla con creador, modificador, fechas visibles
-const adaptarDatosRoles = (datos) =>
-  datos.map((r) => ({
-    idRol: r.iD_Rol,
-    nombre: r.nombre_Rol,
-    activo: r.activo,
-    fechaCreacion: formatearFecha(r.fecha_Creacion),
-    fechaModificacion: formatearFecha(r.fecha_Modificacion),
-    nombreCreador: r.nombre_Creador,
-    nombreModificador: r.nombre_Modificador,
-  }));
+  const adaptarDatosRoles = (datos) =>
+    datos.map((r) => ({
+      idRol: r.iD_Rol,
+      nombre: r.nombre_Rol,
+      descripcion: r.activo ? "Activo" : "Inactivo",
+      activo: r.activo,
+      fechaCreacion: formatearFecha(r.fecha_Creacion),
+      fechaModificacion: formatearFecha(r.fecha_Modificacion),
+      nombreCreador: r.nombre_Creador,
+      nombreModificador: r.nombre_Modificador,
+    }));
 
   useEffect(() => {
     cargarRoles();
   }, []);
+
+  useEffect(() => {
+    setPaginaActual(1); // Reiniciar al cambiar búsqueda o filas
+  }, [busqueda, filasPorPagina]);
 
   const cargarRoles = async () => {
     try {
@@ -92,50 +98,41 @@ const adaptarDatosRoles = (datos) =>
     setFormError("");
   };
 
- const handleEditar = (rol) => {
-  setForm({
-    idRol: rol.idRol,
-    nombre: rol.nombre,
-    descripcion: rol.descripcion, // Ya viene como "Activo" o "Inactivo"
-  });
-  setModoEdicion(true);
-  setModalOpen(true);
-};
+  const handleEditar = (rol) => {
+    setForm({
+      idRol: rol.idRol,
+      nombre: rol.nombre,
+      descripcion: rol.descripcion,
+    });
+    setModoEdicion(true);
+    setModalOpen(true);
+  };
 
- const handleGuardar = async () => {
-  setFormError("");
+  const handleGuardar = async () => {
+    setFormError("");
 
-  if (!form.nombre.trim()) {
-    return setFormError("El nombre es obligatorio");
-  }
-  if (!form.descripcion) {
-    return setFormError("Seleccione un estado");
-  }
+    if (!form.nombre.trim()) return setFormError("El nombre es obligatorio");
+    if (!form.descripcion) return setFormError("Seleccione un estado");
 
-  try {
-    setFormLoading(true);
+    try {
+      setFormLoading(true);
+      let res;
+      if (modoEdicion) {
+        res = await rolService.actualizarRol({
+          id_Rol: form.idRol,
+          nombre_Rol: form.nombre.trim(),
+          activo: form.descripcion === "Activo",
+        });
+      } else {
+        res = await rolService.insertarRol({
+          nombreRol: form.nombre.trim(),
+          activo: form.descripcion === "Activo",
+        });
+      }
 
-    let res;
-    if (modoEdicion) {
-      // Actualizar
-      const datos = {
-        id_Rol: form.idRol,
-        nombre_Rol: form.nombre.trim(),
-        activo: form.descripcion === "Activo",
-      };
-      res = await rolService.actualizarRol(datos);
-    } else {
-      // Insertar
-      const datos = {
-        nombreRol: form.nombre.trim(),
-        activo: form.descripcion === "Activo",
-      };
-      res = await rolService.insertarRol(datos);
-    }
+      const exitoso = res.numero > 0 || res.success;
 
-    // Validar respuesta exitosa según campo 'numero' o 'success'
-    if (res.numero === undefined) {
-      if (res.success) {
+      if (exitoso) {
         cerrarModal();
         await Swal.fire(
           modoEdicion ? "Actualizado" : "Agregado",
@@ -148,95 +145,99 @@ const adaptarDatosRoles = (datos) =>
         await Swal.fire("Error", res.mensaje || "Error desconocido", "error");
         setFormLoading(false);
       }
-    } else {
-      // Validar 'numero' que viene en la respuesta
-      if (res.numero > 0) {
-        cerrarModal();
-        await Swal.fire(
-          modoEdicion ? "Actualizado" : "Agregado",
-          modoEdicion ? "Rol actualizado correctamente" : "Rol insertado correctamente",
-          "success"
-        );
-        cargarRoles();
-      } else {
-        cerrarModal();
-        await Swal.fire("Error", res.mensaje || "Error desconocido", "error");
-        setFormLoading(false);
-      }
+    } catch (error) {
+      cerrarModal();
+      const mensajeError =
+        error.response?.data?.mensaje || error.message || "Hubo un problema al guardar el rol";
+      await Swal.fire("Error", mensajeError, "error");
+      setFormLoading(false);
     }
-  } catch (error) {
-    cerrarModal();
-    console.error(error);
+  };
 
-    // Obtener mensaje desde error.response.data (axios) 
-    const mensajeError =
-      error.response?.data?.mensaje ||
-      error.message ||
-      "Hubo un problema al guardar el rol";
-
-    await Swal.fire("Error", mensajeError, "error");
-    setFormLoading(false);
-  }
-};
+  // Filtrado y paginación
   const datosFiltrados = roles.filter((rol) =>
     rol.nombre.toLowerCase().includes(busqueda.toLowerCase())
   );
 
+  const totalPaginas = Math.ceil(datosFiltrados.length / filasPorPagina);
+  const indexUltima = paginaActual * filasPorPagina;
+  const indexPrimera = indexUltima - filasPorPagina;
+  const datosPaginados = datosFiltrados.slice(indexPrimera, indexUltima);
+
   const columnas = [
-    //{ key: "idRol", label: "ID" },
     { key: "nombre", label: "Nombre" },
     { key: "nombreCreador", label: "Creador" },
     { key: "nombreModificador", label: "Modificador" },
     { key: "fechaCreacion", label: "Fecha Creación" },
     { key: "fechaModificacion", label: "Fecha Modificación" },
-     {
-  key: "activo",
-  label: "Estado",
-  render: (item) =>
-    item.activo ? (
-      <span className="text-green-500 font-semibold flex items-center gap-2">
-        <FaCheckCircle className="text-xl" /> Activo
-      </span>
-    ) : (
-      <span className="text-red-500 font-semibold flex items-center gap-2">
-        <FaTimesCircle className="text-xl" /> Inactivo
-      </span>
-    ),
-}
+    {
+      key: "activo",
+      label: "Estado",
+      render: (item) =>
+        item.activo ? (
+          <span className="text-green-500 font-semibold flex items-center gap-2">
+            <FaCheckCircle className="text-xl" />
+          </span>
+        ) : (
+          <span className="text-red-500 font-semibold flex items-center gap-2">
+            <FaTimesCircle className="text-xl" />
+          </span>
+        ),
+    },
   ];
 
   return (
-    <div className={`p-4 ${modoOscuro ? "bg-gray-800 min-h-screen" : "bg-gray-50"}`}
-      style={{ paddingTop: 1 }}  >
-      <div className={`shadow-md rounded-xl p-6 ${fondo}`}>
-        <div className="flex justify-between items-center mb-4">
-          <h2
-            className={`text-2xl md:text-3xl font-extrabold tracking-wide ${
-              modoOscuro ? "text-white" : "text-gray-800"
-            }`}
-          >
-            Gestión de Roles
-          </h2>
+    <div className="mx-auto max-w-[900px] w-full rounded-2xl p-6">
+      <div
+        className={`w-full px-4 rounded-2xl shadow-md p-6 ${
+          modoOscuro
+            ? "bg-gray-900 text-white shadow-gray-700"
+            : "bg-white text-gray-900 shadow-gray-300"
+        }`}
+      >
+        <h2 className="text-3xl font-bold mb-4 text-center sm:text-left">Gestión de Roles</h2>
+
+        <div className="flex justify-between items-center mb-4 flex-wrap gap-4">
+          <BuscadorBase
+            placeholder="Buscar roles..."
+            valor={busqueda}
+            onChange={(e) => setBusqueda(e.target.value)}
+            modoOscuro={modoOscuro}
+          />
         </div>
 
-        <BuscadorBase
-          placeholder="Buscar..."
-          valor={busqueda}
-          onChange={(e) => setBusqueda(e.target.value)}
-          modoOscuro={modoOscuro}
-        />
-
         <ContadoresBase
-          activos={roles.filter((r) => r.activo === true).length}
-          inactivos={roles.filter((r) => r.activo === false).length}
+          activos={roles.filter((r) => r.activo).length}
+          inactivos={roles.filter((r) => !r.activo).length}
           total={roles.length}
           onNuevo={abrirModalNuevo}
           modoOscuro={modoOscuro}
         />
 
+        <div className="mt-2 mb-4 flex flex-wrap items-center justify-center sm:justify-start gap-2 text-sm">
+          <label htmlFor="filasPorPagina" className="font-semibold">
+            Filas por página:
+          </label>
+          <select
+            id="filasPorPagina"
+            value={filasPorPagina}
+            onChange={(e) => setFilasPorPagina(parseInt(e.target.value))}
+            className={`w-[5rem] px-3 py-1 rounded border ${
+              modoOscuro
+                ? "bg-gray-800 text-white border-gray-600"
+                : "bg-white text-gray-900 border-gray-300"
+            }`}
+          >
+            {[10, 30, 45, 60, 100].map((num) => (
+              <option key={num} value={num}>
+                {num}
+              </option>
+            ))}
+          </select>
+        </div>
 
         <TablaBase
-          datos={datosFiltrados}
+          datos={datosPaginados}
           columnas={columnas}
           modoOscuro={modoOscuro}
           onEditar={handleEditar}
@@ -245,12 +246,39 @@ const adaptarDatosRoles = (datos) =>
           encabezadoClase={encabezado}
         />
 
-        <ModalBase
-          isOpen={modalOpen}
-          onClose={cerrarModal}
-          titulo={modoEdicion ? "Editar Rol" : "Nuevo Rol"}
-          modoOscuro={modoOscuro}
-        >
+        <div className="flex flex-wrap items-center justify-between mt-6 gap-4">
+          <button
+            disabled={paginaActual === 1}
+            onClick={() => setPaginaActual((p) => Math.max(p - 1, 1))}
+            className={`rounded px-4 py-2 text-white ${
+              paginaActual === 1
+                ? "bg-gray-400 cursor-not-allowed"
+                : "bg-blue-600 hover:bg-blue-700"
+            } transition-colors`}
+          >
+            Anterior
+          </button>
+          <span className="font-semibold">
+            Página {paginaActual} de {totalPaginas}
+          </span>
+          <button
+            disabled={paginaActual === totalPaginas || totalPaginas === 0}
+            onClick={() =>
+              setPaginaActual((p) =>
+                p < totalPaginas ? p + 1 : totalPaginas
+              )
+            }
+            className={`rounded px-4 py-2 text-white ${
+              paginaActual === totalPaginas || totalPaginas === 0
+                ? "bg-gray-400 cursor-not-allowed"
+                : "bg-blue-600 hover:bg-blue-700"
+            } transition-colors`}
+          >
+            Siguiente
+          </button>
+        </div>
+
+        <ModalBase isOpen={modalOpen} onClose={cerrarModal} modoOscuro={modoOscuro}>
           <FormularioBase
             onSubmit={handleGuardar}
             onCancel={cerrarModal}

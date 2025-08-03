@@ -3,6 +3,7 @@ import { useSelector } from "react-redux";
 import Swal from "sweetalert2";
 import estadoService from "../../services/Estado";
 import usuarioService from "../../services/Usuario";
+
 import TablaBase from "../Shared/TablaBase";
 import BuscadorBase from "../Shared/BuscadorBase";
 import ContadoresBase from "../Shared/Contadores";
@@ -13,7 +14,9 @@ const FrmEstados = () => {
   const modoOscuro = useSelector((state) => state.theme.modoOscuro);
   const fondo = modoOscuro ? "bg-gray-900" : "bg-white";
   const texto = modoOscuro ? "text-gray-200" : "text-gray-800";
-  const encabezado = modoOscuro ? "bg-gray-700 text-gray-200" : "bg-gray-100 text-gray-700";
+  const encabezado = modoOscuro
+    ? "bg-gray-700 text-gray-200"
+    : "bg-gray-100 text-gray-700";
 
   const [estados, setEstados] = useState([]);
   const [busqueda, setBusqueda] = useState("");
@@ -22,11 +25,22 @@ const FrmEstados = () => {
   const [loading, setLoading] = useState(false);
   const [formLoading, setFormLoading] = useState(false);
   const [formError, setFormError] = useState("");
+  const [paginaActual, setPaginaActual] = useState(1);
+  const [filasPorPagina, setFilasPorPagina] = useState(10);
+
   const [form, setForm] = useState({
     idEstado: 0,
     nombre: "",
     descripcion: "", // Activo / Inactivo
   });
+
+  useEffect(() => {
+    cargarDatos();
+  }, []);
+
+  useEffect(() => {
+    setPaginaActual(1);
+  }, [filasPorPagina, busqueda]);
 
   const formatearFecha = (fecha) => {
     if (!fecha) return "-";
@@ -40,20 +54,10 @@ const FrmEstados = () => {
     });
   };
 
-  // Adaptar datos uniendo nombres de usuario por ID, manejando null y 0
   const adaptarDatosEstados = (estadosData, usuarios) =>
     estadosData.map((e) => {
-      // Validar y obtener creador
-      const creador =
-        e.iD_Creador && e.iD_Creador !== 0
-          ? usuarios.find((u) => u.id_Usuario === e.iD_Creador)
-          : null;
-      // Validar y obtener modificador
-      const modificador =
-        e.iD_Modificador && e.iD_Modificador !== 0
-          ? usuarios.find((u) => u.id_Usuario === e.iD_Modificador)
-          : null;
-
+      const creador = usuarios.find((u) => u.id_Usuario === e.iD_Creador);
+      const modificador = usuarios.find((u) => u.id_Usuario === e.iD_Modificador);
       return {
         idEstado: e.iD_Estado,
         nombre: e.nombre_Estado,
@@ -64,10 +68,6 @@ const FrmEstados = () => {
         nombreModificador: modificador ? modificador.persona.trim() : "ND",
       };
     });
-
-  useEffect(() => {
-    cargarDatos();
-  }, []);
 
   const cargarDatos = async () => {
     try {
@@ -87,12 +87,6 @@ const FrmEstados = () => {
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setForm({ ...form, [name]: value });
-    setFormError("");
   };
 
   const abrirModalNuevo = () => {
@@ -118,58 +112,71 @@ const FrmEstados = () => {
     setModalOpen(true);
   };
 
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setForm({ ...form, [name]: value });
+    setFormError("");
+  };
+
   const handleGuardar = async () => {
-  if (!form.nombre.trim()) return setFormError("El nombre es obligatorio");
-  if (!form.descripcion) return setFormError("Debe seleccionar un estado");
+    if (!form.nombre.trim()) return setFormError("El nombre es obligatorio");
+    if (!form.descripcion) return setFormError("Debe seleccionar un estado");
 
-  try {
-    setFormLoading(true);
+    try {
+      setFormLoading(true);
+      const datos = {
+        id_Estado: form.idEstado,
+        nombre_Estado: form.nombre.trim(),
+        activo: form.descripcion === "Activo",
+      };
 
-    const datos = {
-      id_Estado: form.idEstado,
-      nombre_Estado: form.nombre.trim(),
-      activo: form.descripcion === "Activo",
-    };
+      let res;
+      if (modoEdicion) {
+        res = await estadoService.actualizarEstado(datos);
+      } else {
+        res = await estadoService.insertarEstado({
+          nombreEstado: datos.nombre_Estado,
+          activo: datos.activo,
+        });
+      }
 
-    let res;
-    if (modoEdicion) {
-      res = await estadoService.actualizarEstado(datos);
-    } else {
-      res = await estadoService.insertarEstado({
-        nombreEstado: datos.nombre_Estado,
-        activo: datos.activo,
-      });
-    }
+      const mensaje = res?.mensaje || "";
+      const success =
+        res?.numero > 0 ||
+        res?.success ||
+        /(correctamente|exitosamente)/i.test(mensaje);
 
-    // Validar que el mensaje contenga "correctamente" o "exitosamente" (case insensitive)
-    const mensaje = res?.mensaje || "";
-    const exitoRegex = /(correctamente|exitosamente)/i;
-    const success = res?.numero > 0 || res?.success || exitoRegex.test(mensaje);
-
-    if (success) {
+      if (success) {
+        cerrarModal();
+        await Swal.fire(
+          modoEdicion ? "Actualizado" : "Agregado",
+          mensaje || "Operación exitosa",
+          "success"
+        );
+        cargarDatos();
+      } else {
+        cerrarModal();
+        await Swal.fire("Error", mensaje || "Error desconocido", "error");
+      }
+    } catch (error) {
       cerrarModal();
-      await Swal.fire(
-        modoEdicion ? "Actualizado" : "Agregado",
-        mensaje || "Operación exitosa",
-        "success"
-      );
-      cargarDatos();
-    } else {
-      cerrarModal();
-      await Swal.fire("Error", mensaje || "Error desconocido", "error");
+      const msg =
+        error.response?.data?.mensaje ||
+        error.message ||
+        "Error al guardar el estado";
+      await Swal.fire("Error", msg, "error");
+    } finally {
+      setFormLoading(false);
     }
-  } catch (error) {
-    cerrarModal();
-    const msg = error.response?.data?.mensaje || error.message || "Error al guardar el estado";
-    await Swal.fire("Error", msg, "error");
-  } finally {
-    setFormLoading(false);
-  }
-};
+  };
 
   const datosFiltrados = estados.filter((e) =>
     e.nombre.toLowerCase().includes(busqueda.toLowerCase())
   );
+  const totalPaginas = Math.ceil(datosFiltrados.length / filasPorPagina);
+  const indexUltima = paginaActual * filasPorPagina;
+  const indexPrimera = indexUltima - filasPorPagina;
+  const datosPaginados = datosFiltrados.slice(indexPrimera, indexUltima);
 
   const columnas = [
     { key: "nombre", label: "Nombre" },
@@ -182,21 +189,25 @@ const FrmEstados = () => {
       label: "Estado",
       render: (item) =>
         item.activo ? (
-          <span className="text-green-500 font-semibold flex items-center gap-1">✔ Activo</span>
+          <span className="text-green-500 font-semibold">✔ Activo</span>
         ) : (
-          <span className="text-red-500 font-semibold flex items-center gap-1">✘ Inactivo</span>
+          <span className="text-red-500 font-semibold">✘ Inactivo</span>
         ),
     },
   ];
 
   return (
-    <div className={`p-4 ${modoOscuro ? "bg-gray-800 min-h-screen" : "bg-gray-50"}`}>
-      <div className={`shadow-md rounded-xl p-6 ${fondo}`}>
-        <div className="flex justify-between items-center mb-4">
-          <h2 className={`text-2xl md:text-3xl font-extrabold tracking-wide ${texto}`}>
-            Gestión de Estados
-          </h2>
-        </div>
+    <div className="mx-auto max-w-[900px] w-full rounded-2xl p-6">
+      <div
+        className={`w-full px-4 rounded-2xl shadow-md p-6 ${
+          modoOscuro
+            ? "bg-gray-900 text-white shadow-gray-700"
+            : "bg-white text-gray-900 shadow-gray-300"
+        }`}
+      >
+        <h2 className="text-3xl font-bold mb-4 text-center sm:text-left">
+          Gestión de Estados
+        </h2>
 
         <BuscadorBase
           placeholder="Buscar..."
@@ -213,8 +224,30 @@ const FrmEstados = () => {
           modoOscuro={modoOscuro}
         />
 
+        <div className="mt-2 mb-4 flex flex-wrap items-center justify-center sm:justify-start gap-2 text-sm">
+          <label htmlFor="filasPorPagina" className="font-semibold">
+            Filas por página:
+          </label>
+          <select
+            id="filasPorPagina"
+            value={filasPorPagina}
+            onChange={(e) => setFilasPorPagina(parseInt(e.target.value))}
+            className={`w-[5rem] px-3 py-1 rounded border ${
+              modoOscuro
+                ? "bg-gray-800 text-white border-gray-600"
+                : "bg-white text-gray-900 border-gray-300"
+            }`}
+          >
+            {[10, 30, 45, 60, 100].map((num) => (
+              <option key={num} value={num}>
+                {num}
+              </option>
+            ))}
+          </select>
+        </div>
+
         <TablaBase
-          datos={datosFiltrados}
+          datos={datosPaginados}
           columnas={columnas}
           modoOscuro={modoOscuro}
           onEditar={handleEditar}
@@ -223,45 +256,83 @@ const FrmEstados = () => {
           encabezadoClase={encabezado}
         />
 
-        <ModalBase
-          isOpen={modalOpen}
-          onClose={cerrarModal}
-          titulo={modoEdicion ? "Editar Estado" : "Nuevo Estado"}
-          modoOscuro={modoOscuro}
-        >
-          <FormularioBase
-            onSubmit={handleGuardar}
-            onCancel={cerrarModal}
-            modoOscuro={modoOscuro}
-            formError={formError}
-            formLoading={formLoading}
-            modoEdicion={modoEdicion}
-            titulo="Estado"
+        <div className="flex flex-wrap items-center justify-between mt-6 gap-4">
+          <button
+            disabled={paginaActual === 1}
+            onClick={() => setPaginaActual((p) => Math.max(p - 1, 1))}
+            className={`rounded px-4 py-2 text-white ${
+              paginaActual === 1
+                ? "bg-gray-400 cursor-not-allowed"
+                : "bg-blue-600 hover:bg-blue-700"
+            }`}
           >
-            <div className="space-y-4">
-              <input
-                type="text"
-                name="nombre"
-                placeholder="Nombre del estado"
-                value={form.nombre}
-                onChange={handleInputChange}
-                className="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white dark:border-gray-600"
-                autoFocus
-              />
-              <select
-                name="descripcion"
-                value={form.descripcion}
-                onChange={handleInputChange}
-                className="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white dark:border-gray-600"
-              >
-                <option value="">Seleccione estado</option>
-                <option value="Activo">Activo</option>
-                <option value="Inactivo">Inactivo</option>
-              </select>
-            </div>
-          </FormularioBase>
-        </ModalBase>
+            Anterior
+          </button>
+          <span className="font-semibold">
+            Página {paginaActual} de {totalPaginas}
+          </span>
+          <button
+            disabled={paginaActual === totalPaginas || totalPaginas === 0}
+            onClick={() =>
+              setPaginaActual((p) =>
+                p < totalPaginas ? p + 1 : totalPaginas
+              )
+            }
+            className={`rounded px-4 py-2 text-white ${
+              paginaActual === totalPaginas || totalPaginas === 0
+                ? "bg-gray-400 cursor-not-allowed"
+                : "bg-blue-600 hover:bg-blue-700"
+            }`}
+          >
+            Siguiente
+          </button>
+        </div>
       </div>
+
+      <ModalBase isOpen={modalOpen} onClose={cerrarModal} modoOscuro={modoOscuro}>
+        <FormularioBase
+          onSubmit={handleGuardar}
+          onCancel={cerrarModal}
+          modoOscuro={modoOscuro}
+          formError={formError}
+          formLoading={formLoading}
+          modoEdicion={modoEdicion}
+          titulo="Estado"
+        >
+          <div className="mb-4">
+            <label className="block font-semibold mb-1">Nombre:</label>
+            <input
+              type="text"
+              name="nombre"
+              value={form.nombre}
+              onChange={handleInputChange}
+              className={`w-full px-3 py-2 rounded border ${
+                modoOscuro
+                  ? "bg-gray-800 text-white border-gray-600"
+                  : "bg-white text-gray-900 border-gray-300"
+              }`}
+              autoFocus
+            />
+          </div>
+          <div className="mb-4">
+            <label className="block font-semibold mb-1">Estado:</label>
+            <select
+              name="descripcion"
+              value={form.descripcion}
+              onChange={handleInputChange}
+              className={`w-full px-3 py-2 rounded border ${
+                modoOscuro
+                  ? "bg-gray-800 text-white border-gray-600"
+                  : "bg-white text-gray-900 border-gray-300"
+              }`}
+            >
+              <option value="">Seleccione</option>
+              <option value="Activo">Activo</option>
+              <option value="Inactivo">Inactivo</option>
+            </select>
+          </div>
+        </FormularioBase>
+      </ModalBase>
     </div>
   );
 };
