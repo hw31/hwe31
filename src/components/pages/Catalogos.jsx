@@ -1,89 +1,113 @@
 import React, { useState, useEffect } from "react";
 import { useSelector } from "react-redux";
 import Swal from "sweetalert2";
-import periodoService from "../../services/PeriodoAcademico";
+
+import catalogoService from "../../services/Catalogos";
+import tipoCatalogoService from "../../services/TipoCatalogo";
+
 import TablaBase from "../Shared/TablaBase";
-import BuscadorBase from "../Shared/BuscadorBase";
 import ContadoresBase from "../Shared/Contadores";
 import ModalBase from "../Shared/ModalBase";
 import FormularioBase from "../Shared/FormularioBase";
 
-const FrmPeriodoAcademico = () => {
+const Catalogo = ({busqueda=''}) => {
   const modoOscuro = useSelector((state) => state.theme.modoOscuro);
 
   const fondo = modoOscuro ? "bg-gray-900" : "bg-white";
   const texto = modoOscuro ? "text-gray-200" : "text-gray-800";
-  const encabezado = modoOscuro
-    ? "bg-gray-700 text-gray-200"
-    : "bg-gray-100 text-gray-700";
+  const encabezado = modoOscuro ? "bg-gray-700 text-gray-200" : "bg-gray-100 text-gray-700";
 
-  const [periodos, setPeriodos] = useState([]);
-  const [busqueda, setBusqueda] = useState("");
+  const [datos, setDatos] = useState([]);
+  const [tiposCatalogo, setTiposCatalogo] = useState([]);
+
+  const [loading, setLoading] = useState(false);
+
+ 
+  const [paginaActual, setPaginaActual] = useState(1);
+  const [filasPorPagina, setFilasPorPagina] = useState(10);
+
   const [modalOpen, setModalOpen] = useState(false);
   const [modoEdicion, setModoEdicion] = useState(false);
-  const [loading, setLoading] = useState(false);
   const [formLoading, setFormLoading] = useState(false);
   const [formError, setFormError] = useState("");
+
   const [form, setForm] = useState({
-    idPeriodoAcademico: 0,
-    nombre: "",
-    estado: "",
-    fechaInicio: "",
-    fechaFin: "",
+    idCatalogo: 0,
+    idTipoCatalogo: "",
+    descripcionCatalogo: "",
+    activo: true,
   });
 
   const formatearFecha = (fecha) => {
     if (!fecha) return "-";
-    return new Date(fecha).toLocaleDateString("es-NI", {
+    const d = new Date(fecha);
+    return d.toLocaleDateString("es-NI", {
       year: "numeric",
       month: "short",
       day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
     });
   };
 
-  const cargarPeriodos = async () => {
+  const cargarDatos = async () => {
+    setLoading(true);
     try {
-      setLoading(true);
-      const res = await periodoService.listarPeriodosAcademicos();
+      const [resCatalogo, resTipos] = await Promise.all([
+        catalogoService.listarCatalogo(),
+        tipoCatalogoService.listarTiposCatalogo(),
+      ]);
 
-      if (Array.isArray(res.resultado)) {
-        setPeriodos(
-          res.resultado.map((p) => ({
-            idPeriodoAcademico: p.idPeriodoAcademico,
-            nombre: p.nombrePeriodo,
-            estado: p.activo ? "Activo" : "Inactivo",
-            activo: p.activo,
-            fechaInicio: p.fechaInicio,
-            fechaFin: p.fechaFin,
-            fechaInicioFormateada: formatearFecha(p.fechaInicio),
-            fechaFinFormateada: formatearFecha(p.fechaFin),
-          }))
-        );
-      } else {
-        setPeriodos([]);
-      }
+      const tiposActivos = (resTipos?.data || []).filter((t) => t.activo);
+      setTiposCatalogo(tiposActivos);
+
+      const datosCatalogo = (resCatalogo?.resultado || []).map((c) => {
+        const tipo = tiposActivos.find((t) => t.idTipoCatalogo === c.idTipoCatalogo);
+        return {
+          ...c,
+          nombreTipoCatalogo: tipo?.nombreTipoCatalogo || "-",
+          fechaCreacionFormat: formatearFecha(c.fechaCreacion),
+          fechaModificacionFormat: formatearFecha(c.fechaModificacion),
+          activo: c.activo ?? true,
+        };
+      });
+
+      setDatos(datosCatalogo);
+      setFormError("");
     } catch (error) {
-      Swal.fire("Error", "No se pudieron cargar los periodos", "error");
+      console.error("Error al cargar datos:", error);
+      setDatos([]);
+      setFormError("Error al cargar los datos.");
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    cargarPeriodos();
+    cargarDatos();
   }, []);
 
-  const handleInputChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
-  };
+  const busquedaLower = busqueda.toLowerCase();
+  const filtrados = datos.filter(
+    (d) =>
+      (d.descripcionCatalogo || "").toLowerCase().includes(busquedaLower) ||
+      (d.nombreTipoCatalogo || "").toLowerCase().includes(busquedaLower)
+  );
+
+  const totalPaginas = Math.ceil(filtrados.length / filasPorPagina);
+  const indexUltima = paginaActual * filasPorPagina;
+  const indexPrimera = indexUltima - filasPorPagina;
+  const datosPaginados = filtrados.slice(indexPrimera, indexUltima);
+
+  const activos = filtrados.filter((d) => d.activo).length;
+  const inactivos = filtrados.length - activos;
 
   const abrirModalNuevo = () => {
     setForm({
-      idPeriodoAcademico: 0,
-      nombre: "",
-      estado: "",
-      fechaInicio: "",
-      fechaFin: "",
+      idCatalogo: 0,
+      idTipoCatalogo: "",
+      descripcionCatalogo: "",
+      activo: true,
     });
     setFormError("");
     setModoEdicion(false);
@@ -96,210 +120,243 @@ const FrmPeriodoAcademico = () => {
     setFormError("");
   };
 
-  const handleEditar = (item) => {
+  const cargarParaEditar = (item) => {
     setForm({
-      idPeriodoAcademico: item.idPeriodoAcademico,
-      nombre: item.nombre,
-      estado: item.estado,
-      fechaInicio: item.fechaInicio?.split("T")[0] || "",
-      fechaFin: item.fechaFin?.split("T")[0] || "",
+      idCatalogo: item.idCatalogo,
+      idTipoCatalogo: item.idTipoCatalogo,
+      descripcionCatalogo: item.descripcionCatalogo,
+      activo: item.activo,
     });
     setModoEdicion(true);
     setModalOpen(true);
   };
 
-  const handleGuardar = async () => {
-    setFormError("");
+  const handleInputChange = (e) => {
+    const { name, value, type, checked } = e.target;
 
-    if (!form.nombre.trim()) return setFormError("El nombre es obligatorio");
-    if (!form.estado) return setFormError("Seleccione un estado");
-    if (!form.fechaInicio || !form.fechaFin)
-      return setFormError("Debe seleccionar fechas de inicio y fin");
-    if (form.fechaFin < form.fechaInicio)
-      return setFormError("La fecha de fin no puede ser menor que la de inicio");
+    if (type === "checkbox") {
+      setForm((prev) => ({ ...prev, [name]: checked }));
+    } else {
+      setForm((prev) => ({ ...prev, [name]: value }));
+    }
+    setFormError("");
+  };
+
+  const handleGuardar = async () => {
+    if (!form.idTipoCatalogo || !form.descripcionCatalogo.trim()) {
+      setFormError("Debe completar los campos requeridos.");
+      return;
+    }
 
     try {
       setFormLoading(true);
-
-      const datos = {
-        idPeriodoAcademico: form.idPeriodoAcademico,
-        nombrePeriodo: form.nombre.trim(),
-        activo: form.estado === "Activo",
-        fechaInicio: form.fechaInicio,
-        fechaFin: form.fechaFin,
+      const payload = {
+        idCatalogo: form.idCatalogo,
+        idTipoCatalogo: parseInt(form.idTipoCatalogo),
+        descripcionCatalogo: form.descripcionCatalogo.trim(),
+        activo: form.activo,
       };
 
-      const res = modoEdicion
-        ? await periodoService.actualizarPeriodoAcademico(datos)
-        : await periodoService.insertarPeriodoAcademico(datos);
-
-      if (res.numero && res.numero > 0) {
-        cerrarModal();
-        await Swal.fire(
-          modoEdicion ? "Actualizado" : "Agregado",
-          res.mensaje || `Periodo ${modoEdicion ? "actualizado" : "insertado"} correctamente`,
-          "success"
-        );
-        cargarPeriodos();
+      let res;
+      if (modoEdicion) {
+        res = await catalogoService.actualizarCatalogo(payload);
       } else {
-        cerrarModal();
-        await Swal.fire("Error", res.mensaje || "Error desconocido", "error");
+        res = await catalogoService.insertarCatalogo(payload);
       }
+
+      cerrarModal();
+
+      const numero = res?.numero;
+      const mensaje = res?.mensaje || res?.message || "Operación realizada.";
+      const exito = typeof numero === "number" ? numero > 0 : (res?.success ?? true);
+
+      await Swal.fire({
+        icon: exito ? "success" : "error",
+        title: exito ? "Éxito" : "Error",
+        text: mensaje,
+        confirmButtonColor: exito ? "#3085d6" : "#d33",
+      });
+
+      if (exito) cargarDatos();
     } catch (error) {
       cerrarModal();
-      const mensajeError =
-        error.response?.data?.mensaje || error.message || "Hubo un error";
-      await Swal.fire("Error", mensajeError, "error");
+
+      let mensajeError = "Error inesperado";
+
+      if (error && typeof error === "object") {
+        if ("mensaje" in error) {
+          mensajeError = error.mensaje;
+        } else if ("message" in error) {
+          mensajeError = error.message;
+        }
+      } else if (typeof error === "string") {
+        mensajeError = error;
+      }
+
+      await Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: mensajeError,
+        confirmButtonColor: "#d33",
+      });
     } finally {
       setFormLoading(false);
     }
   };
 
-  // Filtrar periodos según texto de búsqueda
-  const datosFiltrados = periodos.filter((p) => {
-    const texto = busqueda.toLowerCase();
-    return (
-      p.nombre.toLowerCase().includes(texto) ||
-      p.estado.toLowerCase().includes(texto) ||
-      p.fechaInicioFormateada.toLowerCase().includes(texto) ||
-      p.fechaFinFormateada.toLowerCase().includes(texto)
-    );
-  });
-
-  // Define columnas para TablaBase
   const columnas = [
-    { key: "nombre", label: "Nombre del Periodo", style: { maxWidth: "180px", width: "180px" } },
-    { key: "activo", label: "Estado", style: { width: "80px" } },
-    { key: "fechaInicioFormateada", label: "Inicio", style: { width: "90px" } },
-    { key: "fechaFinFormateada", label: "Fin", style: { width: "90px" } },
+    { key: "idCatalogo", label: "ID", className: "text-center w-12" },
+    { key: "nombreTipoCatalogo", label: "Tipo de Catálogo" },
+    { key: "descripcionCatalogo", label: "Descripción" },
+    { key: "fechaCreacionFormat", label: "Fecha Creación" },
+    { key: "fechaModificacionFormat", label: "Fecha Modificación" },
+    { key: "creador", label: "Creador" },
+    { key: "modificador", label: "Modificador" },
+    {
+      key: "activo",
+      label: "Activo",
+      className: "text-center w-16",
+      render: (item) =>
+        item.activo ? (
+          <span className="text-green-500 font-semibold select-none">✔</span>
+        ) : (
+          <span className="text-red-500 font-semibold select-none">✘</span>
+        ),
+    },
   ];
 
   return (
-    <div className={`p-4 ${modoOscuro ? "bg-gray-800 min-h-screen" : "bg-gray-50"}`} style={{ paddingTop: 1 }}>
-      <div className={`shadow-md rounded-xl p-6 ${fondo}`}>
-        <div className="flex justify-between items-center mb-4">
-          <h2
-            className={`text-2xl md:text-3xl font-extrabold tracking-wide ${
-              modoOscuro ? "text-white" : "text-gray-800"
-            }`}
-          >
-            Gestión de Periodos Académicos
-          </h2>
-        </div>
-
-        <BuscadorBase
-          placeholder="Buscar por nombre, estado o fecha..."
-          valor={busqueda}
-          onChange={(e) => setBusqueda(e.target.value)}
-          modoOscuro={modoOscuro}
-        />
+      <div>
+        <h2 className="text-3xl font-bold mb-4 text-center sm:text-left select-none">
+        Catálogos
+        </h2>       
 
         <ContadoresBase
-          activos={periodos.filter((p) => p.estado === "Activo").length}
-          inactivos={periodos.filter((p) => p.estado === "Inactivo").length}
-          total={periodos.length}
+          activos={activos}
+          inactivos={inactivos}
+          total={filtrados.length}
           onNuevo={abrirModalNuevo}
           modoOscuro={modoOscuro}
         />
 
-        {/* Contenedor para aplicar estilos solo a esta tabla */}
-        <div className="periodos-table-container">
-          <style>{`
-            .periodos-table-container table th,
-            .periodos-table-container table td {
-              padding-left: 6px !important;
-              padding-right: 6px !important;
-              white-space: nowrap;
-            }
-            .periodos-table-container table th:nth-child(1),
-            .periodos-table-container table td:nth-child(1) {
-              max-width: 80px;
-              width: 50px;
-              overflow: hidden;
-              text-overflow: ellipsis;
-            }
-            .periodos-table-container table th:nth-child(2),
-            .periodos-table-container table td:nth-child(2) {
-              width: 80px;
-              max-width: 80px;
-              text-align: center;
-            }
-            .periodos-table-container table th:nth-child(3),
-            .periodos-table-container table td:nth-child(3),
-            .periodos-table-container table th:nth-child(4),
-            .periodos-table-container table td:nth-child(4) {
-              width: 90px;
-              max-width: 90px;
-              text-align: center;
-            }
-          `}</style>
-
-          <TablaBase
-            datos={datosFiltrados}
-            columnas={columnas}
-            modoOscuro={modoOscuro}
-            onEditar={handleEditar}
-            loading={loading}
-            texto={texto}
-            encabezadoClase={encabezado}
-          />
+        {/* Select filas */}
+        <div className="mb-2 flex justify-start items-center gap-2 text-sm">
+          <label htmlFor="filasPorPagina" className="font-semibold select-none">
+            Filas por página:
+          </label>
+          <select
+            id="filasPorPagina"
+            value={filasPorPagina}
+            onChange={(e) => {
+              setFilasPorPagina(parseInt(e.target.value));
+              setPaginaActual(1);
+            }}
+            className={`w-[5rem] px-3 py-1 rounded border ${
+              modoOscuro ? "bg-gray-800 text-white border-gray-600" : "bg-white text-gray-900 border-gray-300"
+            }`}
+          >
+            {[10, 30, 45, 60, 100].map((num) => (
+              <option key={num} value={num}>
+                {num}
+              </option>
+            ))}
+          </select>
         </div>
 
-        <ModalBase
-          isOpen={modalOpen}
-          onClose={cerrarModal}
-          titulo={modoEdicion ? "Editar Periodo" : "Nuevo Periodo"}
+        <TablaBase
+          datos={datosPaginados}
+          columnas={columnas}
           modoOscuro={modoOscuro}
-        >
+          onEditar={cargarParaEditar}
+          loading={loading}
+          texto={texto}
+          encabezadoClase={encabezado}
+        />
+
+        {/* Botones paginación */}
+        <div className="flex flex-wrap items-center justify-between mt-6 gap-4">
+          <button
+            disabled={paginaActual === 1}
+            onClick={() => setPaginaActual((p) => Math.max(p - 1, 1))}
+            className={`rounded px-4 py-2 text-white ${
+              paginaActual === 1 ? "bg-gray-400 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700"
+            } transition-colors`}
+          >
+            Anterior
+          </button>
+          <span className="font-semibold select-none">
+            Página {paginaActual} de {totalPaginas || 1}
+          </span>
+          <button
+            disabled={paginaActual === totalPaginas || totalPaginas === 0}
+            onClick={() => setPaginaActual((p) => (p < totalPaginas ? p + 1 : totalPaginas))}
+            className={`rounded px-4 py-2 text-white ${
+              paginaActual === totalPaginas || totalPaginas === 0
+                ? "bg-gray-400 cursor-not-allowed"
+                : "bg-blue-600 hover:bg-blue-700"
+            } transition-colors`}
+          >
+            Siguiente
+          </button>
+        </div>
+
+        <ModalBase isOpen={modalOpen} onClose={cerrarModal} modoOscuro={modoOscuro}>
           <FormularioBase
-            onSubmit={handleGuardar}
+            onSubmit={
+              handleGuardar
+            }
             onCancel={cerrarModal}
             modoOscuro={modoOscuro}
             formError={formError}
             formLoading={formLoading}
             modoEdicion={modoEdicion}
-            titulo="Periodo Académico"
+            titulo="Catálogo"
           >
             <div className="space-y-4">
+              <label className={`${texto} font-semibold`}>Tipo de Catálogo:</label>
+              <select
+                name="idTipoCatalogo"
+                value={form.idTipoCatalogo}
+                onChange={handleInputChange}
+                className={`w-full px-3 py-2 border rounded ${
+                  modoOscuro ? "bg-gray-700 text-white border-gray-600" : "bg-white text-gray-800 border-gray-300"
+                }`}
+              >
+                <option value="">-- Seleccione --</option>
+                {tiposCatalogo.map((t) => (
+                  <option key={t.idTipoCatalogo} value={t.idTipoCatalogo}>
+                    {t.nombreTipoCatalogo}
+                  </option>
+                ))}
+              </select>
+
+              <label className={`${texto} font-semibold`}>Descripción:</label>
               <input
                 type="text"
-                name="nombre"
-                placeholder="Nombre del periodo"
-                value={form.nombre}
+                name="descripcionCatalogo"
+                value={form.descripcionCatalogo}
                 onChange={handleInputChange}
-                className="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white dark:border-gray-600"
-                autoFocus
+                className={`w-full px-3 py-2 border rounded ${
+                  modoOscuro ? "bg-gray-700 text-white border-gray-600" : "bg-white text-gray-800 border-gray-300"
+                }`}
               />
-              <select
-                name="estado"
-                value={form.estado}
-                onChange={handleInputChange}
-                className="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white dark:border-gray-600"
-              >
-                <option value="">Seleccione estado</option>
-                <option value="Activo">Activo</option>
-                <option value="Inactivo">Inactivo</option>
-              </select>
-              <input
-                type="date"
-                name="fechaInicio"
-                value={form.fechaInicio}
-                onChange={handleInputChange}
-                className="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white dark:border-gray-600"
-              />
-              <input
-                type="date"
-                name="fechaFin"
-                value={form.fechaFin}
-                onChange={handleInputChange}
-                className="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white dark:border-gray-600"
-              />
+
+              <label className={`${texto} font-semibold flex items-center gap-2`}>
+                <input
+                  type="checkbox"
+                  name="activo"
+                  checked={form.activo}
+                  onChange={handleInputChange}
+                  className="mt-0"
+                />
+                Activo
+              </label>
             </div>
           </FormularioBase>
         </ModalBase>
       </div>
-    </div>
+    
   );
 };
 
-export default FrmPeriodoAcademico;
+export default Catalogo;

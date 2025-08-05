@@ -1,9 +1,9 @@
 import React, { useState } from "react";
 import { useSelector } from "react-redux";
-import FrmHorarios from "../pages/FrmHorarios";
+import FrmHorarios from "../hijos/Horarios";
 import FrmAulas from "../pages/FrmAulas";
 import FrmGrupos from "../pages/FrmGrupos";
-import FrmMaterias from "../pages/FrmMaterias"; // ← NUEVO
+import FrmMaterias from "../hijos/Materias"; // ← NUEVO
 import Asignacion from "../hijos/Asignacion";
 import {
   Clock,

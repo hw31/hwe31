@@ -21,7 +21,8 @@ import {
   Edit,
   Award,
   Settings,
-  Lock
+  Lock,
+  University
 } from "lucide-react";
 import { useSelector } from "react-redux";
 
@@ -45,6 +46,7 @@ const iconMap = {
  lock: Lock,
  toggleright: ToggleRight,
  "file-check2": FileCheck2,
+ university : University
 
 };
 

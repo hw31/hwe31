@@ -5,13 +5,11 @@ import Swal from "sweetalert2";
 import personaService from "../../services/Persona";
 import catalogoService from "../../services/Catalogos";
 import TablaBase from "../Shared/TablaBase";
-
 import ContadoresBase from "../Shared/Contadores";
 import ModalBase from "../Shared/ModalBase";
 import FormularioBase from "../Shared/FormularioBase";
 import estadoService from "../../services/Estado";
-import { FaCheckCircle, FaTimesCircle } from "react-icons/fa";
-
+import { FaCheckCircle } from "react-icons/fa";
 
 const FrmPersonas = ({ busqueda }) => {
   const modoOscuro = useSelector((state) => state.theme.modoOscuro);
@@ -20,29 +18,20 @@ const FrmPersonas = ({ busqueda }) => {
   const encabezado = modoOscuro ? "bg-gray-700 text-gray-200" : "bg-gray-100 text-gray-700";
 
   const [personas, setPersonas] = useState([]);
-  
   const [modalOpen, setModalOpen] = useState(false);
   const [modoEdicion, setModoEdicion] = useState(false);
   const [loading, setLoading] = useState(false);
   const [formLoading, setFormLoading] = useState(false);
   const [formError, setFormError] = useState("");
   const [estados, setEstados] = useState([]);
-  const [isCollapsed, setIsCollapsed] = useState(false);
-  const [filtros, setFiltros] = useState({
-    texto: "",
-    genero: "",
-    tipoDocumento: "",
-    nacionalidad: "",
-    carrera: "",
-    estado: "",
-  });
+  const [filtros, setFiltros] = useState({ texto: "", genero: "", tipoDocumento: "", nacionalidad: "", nivelAcademico: "", estado: "" });
 
   const [generos, setGeneros] = useState([]);
   const [tiposDocumento, setTiposDocumento] = useState([]);
   const [nacionalidades, setNacionalidades] = useState([]);
-  const [carreras, setCarreras] = useState([]);
-  const [paginaActual, setPaginaActual] = useState(1);/*cantida */
-  const [itemsPorPagina, setItemsPorPagina] = useState(10);/*cantida */
+  const [nivelAcademico, setNivelAcademico] = useState([]);
+  const [paginaActual, setPaginaActual] = useState(1);
+  const [itemsPorPagina, setItemsPorPagina] = useState(10);
 
   const [form, setForm] = useState({
     idPersona: 0,
@@ -54,20 +43,14 @@ const FrmPersonas = ({ busqueda }) => {
     idTipoDocumento: "",
     numeroDocumento: "",
     idNacionalidad: "",
-    idCarrera: "",
+    idNivelAcademico: "",
     estado: "",
   });
 
   const formatearFecha = (fecha) => {
     if (!fecha) return "-";
     const d = new Date(fecha);
-    return d.toLocaleDateString("es-NI", {
-      year: "numeric",
-      month: "short",
-      day: "2-digit",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
+    return d.toLocaleDateString("es-NI", { year: "numeric", month: "short", day: "2-digit", hour: "2-digit", minute: "2-digit" });
   };
 
   const adaptarDatosPersonas = (datos) =>
@@ -77,12 +60,17 @@ const FrmPersonas = ({ busqueda }) => {
       segundoNombre: p.segundoNombre,
       primerApellido: p.primerApellido,
       segundoApellido: p.segundoApellido,
+      idGenero: p.generoId || "",
+      idTipoDocumento: p.tipoDocumentoId || "",
+      idNacionalidad: p.nacionalidadId || "",
+      idNivelAcademico: p.nivelAcademicoId || "",
+      numeroDocumento: p.numeroDocumento || "-",
       nombreGenero: p.nombreGenero || "-",
       nombreTipoDocumento: p.nombreTipoDocumento || "-",
-      numeroDocumento: p.numeroDocumento || "-",
       nombreNacionalidad: p.nombreNacionalidad || "-",
-      nombreCarrera: p.nombreCarrera || "-",
+      nombreNivelAcademico: p.nombreNivelAcademico || "-",
       activo: p.estado === "Activo",
+      estado: p.idEstado || "",
       fechaCreacion: formatearFecha(p.fechaCreacion),
       fechaModificacion: formatearFecha(p.fechaModificacion),
       nombreCreador: p.creador || "-",
@@ -98,15 +86,8 @@ const FrmPersonas = ({ busqueda }) => {
   const cargarEstados = async () => {
     const res = await estadoService.listarEstados();
     if (res.success) {
-      setEstados(
-        res.data.filter(
-          (e, index, self) =>
-            index === self.findIndex((o) => o.iD_Estado === e.iD_Estado)
-        )
-      );
-    } else {
-      Swal.fire("Error", res.message, "error");
-    }
+      setEstados(res.data.filter((e, i, arr) => arr.findIndex(o => o.iD_Estado === e.iD_Estado) === i));
+    } else Swal.fire("Error", res.message, "error");
   };
 
   const cargarCatalogos = async () => {
@@ -117,11 +98,9 @@ const FrmPersonas = ({ busqueda }) => {
         setGeneros(catalogo.filter(c => c.idTipoCatalogo === 1));
         setTiposDocumento(catalogo.filter(c => c.idTipoCatalogo === 3));
         setNacionalidades(catalogo.filter(c => c.idTipoCatalogo === 2));
-        setCarreras(catalogo.filter(c => c.idTipoCatalogo === 6));
-      } else {
-        Swal.fire("Error", "No se pudo cargar el catálogo", "error");
-      }
-    } catch (error) {
+        setNivelAcademico(catalogo.filter(c => c.idTipoCatalogo === 6));
+      } else Swal.fire("Error", "No se pudo cargar el catálogo", "error");
+    } catch {
       Swal.fire("Error", "Error al cargar el catálogo", "error");
     }
   };
@@ -129,31 +108,14 @@ const FrmPersonas = ({ busqueda }) => {
   const cargarPersonas = async () => {
     setLoading(true);
     const res = await personaService.listarPersonas();
-    if (res.success && Array.isArray(res.data)) {
-      setPersonas(adaptarDatosPersonas(res.data));
-    } else {
-      Swal.fire("Error", res.message || "Error al cargar personas", "error");
-    }
+    if (res.success && Array.isArray(res.data)) setPersonas(adaptarDatosPersonas(res.data));
+    else Swal.fire("Error", res.message || "Error al cargar personas", "error");
     setLoading(false);
   };
 
   const abrirModalNuevo = () => {
-    setForm({
-      idPersona: 0,
-      primerNombre: "",
-      segundoNombre: "",
-      primerApellido: "",
-      segundoApellido: "",
-      idGenero: "",
-      idTipoDocumento: "",
-      numeroDocumento: "",
-      idNacionalidad: "",
-      idCarrera: "",
-      estado: "",
-    });
-    setFormError("");
-    setModoEdicion(false);
-    setModalOpen(true);
+    setForm({ idPersona: 0, primerNombre: "", segundoNombre: "", primerApellido: "", segundoApellido: "", idGenero: "", idTipoDocumento: "", numeroDocumento: "", idNacionalidad: "", idNivelAcademico: "", estado: "" });
+    setFormError(""); setModoEdicion(false); setModalOpen(true);
   };
 
   const abrirModalEditar = (persona) => {
@@ -163,58 +125,44 @@ const FrmPersonas = ({ busqueda }) => {
       segundoNombre: persona.segundoNombre,
       primerApellido: persona.primerApellido,
       segundoApellido: persona.segundoApellido,
-      idGenero: persona.idGenero || "",
-      idTipoDocumento: persona.idTipoDocumento || "",
-      numeroDocumento: persona.numeroDocumento || "",
-      idNacionalidad: persona.idNacionalidad || "",
-      idCarrera: persona.idCarrera || "",
-      estado: persona.iD_Estado || "",
+      idGenero: persona.idGenero,
+      idTipoDocumento: persona.idTipoDocumento,
+      numeroDocumento: persona.numeroDocumento,
+      idNacionalidad: persona.idNacionalidad,
+      idNivelAcademico: persona.idNivelAcademico,
+      estado: persona.estado,
     });
-    setFormError("");
-    setModoEdicion(true);
-    setModalOpen(true);
+    setFormError(""); setModoEdicion(true); setModalOpen(true);
   };
 
-  const cerrarModal = () => {
-    setModalOpen(false);
-    setFormError("");
-    setFormLoading(false);
-  };
+  const cerrarModal = () => { setModalOpen(false); setFormError(""); setFormLoading(false); };
 
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    const newValue = name === "estado" ? Number(value) : value;
-    setForm({ ...form, [name]: newValue });
-  };
+  const handleInputChange = (e) => { const { name, value } = e.target; const newValue = name === "estado" ? Number(value) : value; setForm({ ...form, [name]: newValue }); };
 
   const handleGuardar = async () => {
     if (!form.primerNombre.trim() || !form.primerApellido.trim()) {
-      setFormError("El primer nombre y primer apellido son obligatorios.");
-      return;
+      setFormError("El primer nombre y primer apellido son obligatorios."); return;
     }
-    if (!form.idGenero || !form.idTipoDocumento || !form.idNacionalidad || !form.idCarrera) {
-      setFormError("Debe seleccionar Género, Tipo Documento, Nacionalidad y Carrera.");
-      return;
+    if (!form.idGenero || !form.idTipoDocumento || !form.idNacionalidad || !form.idNivelAcademico) {
+      setFormError("Debe seleccionar Género, Tipo Documento, Nacionalidad y Nivel Acádemico."); return;
     }
     if (!form.numeroDocumento.trim()) {
-      setFormError("El número de documento es obligatorio.");
-      return;
+      setFormError("El número de documento es obligatorio."); return;
     }
 
     setFormLoading(true);
-
     const datosEnviar = {
-      IdPersona: modoEdicion ? form.idPersona : 0,
-      PrimerNombre: form.primerNombre.trim(),
-      SegundoNombre: form.segundoNombre.trim() || null,
-      PrimerApellido: form.primerApellido.trim(),
-      SegundoApellido: form.segundoApellido.trim() || null,
-      GeneroId: Number(form.idGenero) || null,
-      TipoDocumentoId: Number(form.idTipoDocumento) || null,
-      NumeroDocumento: form.numeroDocumento.trim() || null,
-      NacionalidadId: Number(form.idNacionalidad) || null,
-      CarreraId: Number(form.idCarrera) || null,
-      IdEstado: Number(form.estado),
+      idPersona: modoEdicion ? form.idPersona : 0,
+      primerNombre: form.primerNombre.trim(),
+      segundoNombre: form.segundoNombre.trim() || null,
+      primerApellido: form.primerApellido.trim(),
+      segundoApellido: form.segundoApellido.trim() || null,
+      generoId: Number(form.idGenero) || null,
+      tipoDocumentoId: Number(form.idTipoDocumento) || null,
+      numeroDocumento: form.numeroDocumento.trim() || null,
+      nacionalidadId: Number(form.idNacionalidad) || null,
+      nivelAcademicoId: Number(form.idNivelAcademico) || null,
+      idEstado: Number(form.estado),
     };
 
     const res = modoEdicion
@@ -222,34 +170,25 @@ const FrmPersonas = ({ busqueda }) => {
       : await personaService.insertarPersona(datosEnviar);
 
     setFormLoading(false);
-
     if (res.success) {
       cerrarModal();
       Swal.fire(modoEdicion ? "Actualizado" : "Agregado", res.message, "success");
       cargarPersonas();
-    } else {
-      Swal.fire("Error", res.message, "error");
-    }
+    } else Swal.fire("Error", res.message, "error");
   };
 
-   const textoBusqueda = (busqueda || "").trim().toLowerCase();
-
+  const textoBusqueda = (busqueda || "").trim().toLowerCase();
   const datosFiltrados = personas.filter((p) => {
-    const coincideTexto =
-      `${p.primerNombre} ${p.segundoNombre} ${p.primerApellido} ${p.segundoApellido} ${p.numeroDocumento}`
-        .toLowerCase()
-        .includes(textoBusqueda);
-
-    const coincideTipoDoc = !filtros?.tipoDocumento || p.nombreTipoDocumento === filtros.tipoDocumento;
-    const coincideGenero = !filtros?.genero || p.nombreGenero === filtros.genero;
-    const coincideNacionalidad = !filtros?.nacionalidad || p.nombreNacionalidad === filtros.nacionalidad;
-    const coincideCarrera = !filtros?.carrera || p.nombreCarrera === filtros.carrera;
-    const coincideEstado = !filtros?.estado || (filtros.estado === "Activo" ? p.activo : !p.activo);
-
-    return coincideTexto && coincideTipoDoc && coincideGenero && coincideNacionalidad && coincideCarrera && coincideEstado;
+    const coincideTexto = `${p.primerNombre} ${p.segundoNombre} ${p.primerApellido} ${p.segundoApellido} ${p.numeroDocumento}`.toLowerCase().includes(textoBusqueda);
+    const coincideTipoDoc = !filtros.tipoDocumento || p.nombreTipoDocumento === filtros.tipoDocumento;
+    const coincideGenero = !filtros.genero || p.nombreGenero === filtros.genero;
+    const coincideNacionalidad = !filtros.nacionalidad || p.nombreNacionalidad === filtros.nacionalidad;
+    const coincideNivelAca = !filtros.nivelAcademico || p.nombreNivelAcademico === filtros.nivelAcademico;
+    const coincideEstado = !filtros.estado || (filtros.estado === "Activo" ? p.activo : !p.activo);
+    return coincideTexto && coincideTipoDoc && coincideGenero && coincideNacionalidad && coincideNivelAca && coincideEstado;
   });
-/*cantida */
-    const inicio = (paginaActual - 1) * itemsPorPagina;
+
+  const inicio = (paginaActual - 1) * itemsPorPagina;
   const fin = inicio + itemsPorPagina;
   const datosPaginados = datosFiltrados.slice(inicio, fin);
 
@@ -262,12 +201,12 @@ const FrmPersonas = ({ busqueda }) => {
     { key: "nombreTipoDocumento", label: "Tipo Documento" },
     { key: "numeroDocumento", label: "Número Documento" },
     { key: "nombreNacionalidad", label: "Nacionalidad" },
-    { key: "nombreCarrera", label: "Carrera" },
-    /*cantida */
-    {
-      key: "activo",
-      label: "Estado",
-      render: (item) =>
+    { key: "nombreNivelAcademico", label: "Nivel Academico" },
+    { key: "nombreCreador", label: "Creador" },
+    { key: "nombreModificador", label: "Modificador" },
+    { key: "fechaCreacion", label: "Fecha Creación" },
+    { key: "fechaModificacion", label: "Fecha Modificación" },
+    { key: "activo", label: "Estado", render: (item) =>
         item.activo ? (
           <span className="text-green-500 font-semibold flex items-center gap-1">
             <FaCheckCircle size={20} />
@@ -278,15 +217,8 @@ const FrmPersonas = ({ busqueda }) => {
           </span>
         ),
     },
-    { key: "nombreCreador", label: "Creador" },
-    { key: "nombreModificador", label: "Modificador" },
-    { key: "fechaCreacion", label: "Fecha Creación" },
-    { key: "fechaModificacion", label: "Fecha Modificación" },
   ];
-
-
   return (
-    /*cantida */
   <>
         <div className="flex justify-between items-center mb-4">
           <h2
@@ -340,12 +272,12 @@ const FrmPersonas = ({ busqueda }) => {
               ))}
             </select>
             <select
-              value={filtros.carrera}
-              onChange={(e) => setFiltros({ ...filtros, carrera: e.target.value })}
+              value={filtros.nivelAcademico}
+              onChange={(e) => setFiltros({ ...filtros, nivelAcademico: e.target.value })}
               className="px-3 py-2 border rounded dark:bg-gray-700 dark:text-white dark:border-gray-600"
             >
-              <option value="">Carrera</option>
-              {carreras.map((c) => (
+              <option value="">Nivel_Academico</option>
+              {nivelAcademico.map((c) => (
                 <option key={c.idCatalogo} value={c.descripcionCatalogo}>
                   {c.descripcionCatalogo}
                 </option>
@@ -502,13 +434,13 @@ const FrmPersonas = ({ busqueda }) => {
 </select>
 
 <select
-  name="idCarrera"
-  value={form.idCarrera}
+  name="idNivelAcademico"
+  value={form.idNivelAcademico}
   onChange={handleInputChange}
   className="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white dark:border-gray-600"
 >
-  <option value="">Seleccione Carrera</option>
-  {carreras.map((c) => (
+  <option value="">Seleccione Nivel Academico</option>
+  {nivelAcademico.map((c) => (
     <option key={c.idCatalogo} value={c.idCatalogo}>
       {c.descripcionCatalogo}
     </option>

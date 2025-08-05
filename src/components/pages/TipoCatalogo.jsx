@@ -1,36 +1,39 @@
-import React, { useState, useEffect } from "react";
-import Swal from "sweetalert2";
+import React, { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
+import Swal from "sweetalert2";
 
 import tipoCatalogoService from "../../services/TipoCatalogo";
-import usuarioService from "../../services/Usuario";
+import usuarioService from "../../services/Usuario"; // Asegúrate de tener este servicio
 
 import TablaBase from "../Shared/TablaBase";
-import ContadoresBase from "../Shared/Contadores";
 import ModalBase from "../Shared/ModalBase";
 import FormularioBase from "../Shared/FormularioBase";
+import ContadoresBase from "../Shared/Contadores";
 
-const TipoCatalogo = ({ busqueda = "" }) => {
+const TipoCatalogo = ({busqueda=''}) => {
   const modoOscuro = useSelector((state) => state.theme.modoOscuro);
-
-  const fondo = modoOscuro ? "bg-gray-800" : "bg-white";
+  const fondo = modoOscuro ? "bg-gray-900" : "bg-white";
   const texto = modoOscuro ? "text-gray-200" : "text-gray-800";
   const encabezado = modoOscuro ? "bg-gray-700 text-gray-200" : "bg-gray-100 text-gray-700";
 
-  const [tipos, setTipos] = useState([]);
-  const [usuarios, setUsuarios] = useState([]);
+  const [datos, setDatos] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [usuarios, setUsuarios] = useState([]);
+
+ 
+  const [paginaActual, setPaginaActual] = useState(1);
+  const [filasPorPagina, setFilasPorPagina] = useState(10);
+
   const [modalOpen, setModalOpen] = useState(false);
   const [modoEdicion, setModoEdicion] = useState(false);
   const [formLoading, setFormLoading] = useState(false);
   const [formError, setFormError] = useState("");
+
   const [form, setForm] = useState({
     idTipoCatalogo: 0,
     nombreTipoCatalogo: "",
     activo: true,
   });
-
-  const [isCollapsed, setIsCollapsed] = useState(false);
 
   const formatearFecha = (fecha) => {
     if (!fecha) return "-";
@@ -47,51 +50,60 @@ const TipoCatalogo = ({ busqueda = "" }) => {
   const cargarUsuarios = async () => {
     try {
       const res = await usuarioService.listarUsuario();
-      if (res?.success && Array.isArray(res.data)) {
-        setUsuarios(res.data);
-      }
-    } catch {
-      setUsuarios([]);
+      return res?.data || [];
+    } catch (err) {
+      console.error("Error al cargar usuarios:", err);
+      return [];
     }
   };
 
-  const obtenerNombreUsuario = (id) => {
-    const usuario = usuarios.find((u) => u.idUsuario === id);
-    return usuario?.nombreCompleto || usuario?.nombreUsuario || "N/D";
-  };
-
-  const cargarTipos = async () => {
+  const cargarDatos = async () => {
     setLoading(true);
     try {
-      const res = await tipoCatalogoService.listarTiposCatalogo();
-      const tiposData = res?.data || (Array.isArray(res) ? res : []);
-      const tiposConNombres = tiposData.map((t) => ({
-        ...t,
-        nombreCreador: obtenerNombreUsuario(t.idCreador),
-        nombreModificador: obtenerNombreUsuario(t.idModificador),
-        fechaCreacionFormat: formatearFecha(t.fechaCreacion),
-        fechaModificacionFormat: formatearFecha(t.fechaModificacion),
-      }));
-      setTipos(tiposConNombres);
-      setFormError("");
-    } catch {
-      setTipos([]);
-      setFormError("Error al cargar tipos de catálogo.");
+      const [resTipos, usuariosCargados] = await Promise.all([
+        tipoCatalogoService.listarTiposCatalogo(),
+        cargarUsuarios(),
+      ]);
+
+      setUsuarios(usuariosCargados);
+
+      const tipos = resTipos?.data || [];
+
+      const datosFormateados = tipos.map((t) => {
+        const creador = usuariosCargados.find((u) => u.id_Usuario === t.idCreador)?.usuario || "-";
+        const modificador = usuariosCargados.find((u) => u.id_Usuario === t.idModificador)?.usuario || "-";
+
+        return {
+          ...t,
+          fechaCreacionFormat: formatearFecha(t.fechaCreacion),
+          fechaModificacionFormat: formatearFecha(t.fechaModificacion),
+          activo: t.activo ?? true,
+          creador,
+          modificador,
+        };
+      });
+
+      setDatos(datosFormateados);
+    } catch (err) {
+      console.error("Error al cargar tipos de catálogo:", err);
+      setDatos([]);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    cargarUsuarios();
+    cargarDatos();
   }, []);
 
-  useEffect(() => {
-    if (usuarios.length > 0) cargarTipos();
-  }, [usuarios]);
+  
 
   const abrirModalNuevo = () => {
-    setForm({ idTipoCatalogo: 0, nombreTipoCatalogo: "", activo: true });
+    setForm({
+      idTipoCatalogo: 0,
+      nombreTipoCatalogo: "",
+      activo: true,
+    });
     setFormError("");
     setModoEdicion(false);
     setModalOpen(true);
@@ -103,61 +115,72 @@ const TipoCatalogo = ({ busqueda = "" }) => {
     setFormError("");
   };
 
-  const cargarParaEditar = (tipo) => {
+  const cargarParaEditar = (item) => {
     setForm({
-      idTipoCatalogo: tipo.idTipoCatalogo,
-      nombreTipoCatalogo: tipo.nombreTipoCatalogo,
-      activo: tipo.activo,
+      idTipoCatalogo: item.idTipoCatalogo,
+      nombreTipoCatalogo: item.nombreTipoCatalogo,
+      activo: item.activo,
     });
     setModoEdicion(true);
     setModalOpen(true);
   };
 
   const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setForm((prev) => ({
-      ...prev,
-      [name]: name === "activo" ? value === "true" : value,
-    }));
+    const { name, value, type, checked } = e.target;
+    if (type === "checkbox") {
+      setForm((prev) => ({ ...prev, [name]: checked }));
+    } else {
+      setForm((prev) => ({ ...prev, [name]: value }));
+    }
+    setFormError("");
   };
 
   const handleGuardar = async () => {
     if (!form.nombreTipoCatalogo.trim()) {
-      setFormError("El nombre es obligatorio.");
+      setFormError("El nombre del tipo de catálogo es requerido.");
       return;
     }
 
     try {
       setFormLoading(true);
       const payload = {
+        idTipoCatalogo: form.idTipoCatalogo,
         nombreTipoCatalogo: form.nombreTipoCatalogo.trim(),
         activo: form.activo,
       };
 
-      let res;
-      if (modoEdicion) {
-        payload.idTipoCatalogo = form.idTipoCatalogo;
-        res = await tipoCatalogoService.actualizarTipoCatalogo(payload);
-      } else {
-        res = await tipoCatalogoService.insertarTipoCatalogo(payload);
-      }
+      const res = modoEdicion
+        ? await tipoCatalogoService.actualizarTipoCatalogo(payload)
+        : await tipoCatalogoService.insertarTipoCatalogo(payload);
 
       cerrarModal();
+
+      const numero = res?.numero;
       const mensaje = res?.mensaje || res?.message || "Operación realizada.";
-      const esExito = res?.success || res?.numero > 0;
+      const exito = typeof numero === "number" ? numero > 0 : (res?.success ?? true);
 
       await Swal.fire({
-        icon: esExito ? "success" : "error",
-        title: esExito ? "Éxito" : "Error",
+        icon: exito ? "success" : "error",
+        title: exito ? "Éxito" : "Error",
         text: mensaje,
-        confirmButtonColor: esExito ? "#3085d6" : "#d33",
+        confirmButtonColor: exito ? "#3085d6" : "#d33",
       });
 
-      if (esExito) cargarTipos();
+      if (exito) cargarDatos();
     } catch (error) {
       cerrarModal();
-      const mensajeError =
-        error.response?.data?.mensaje || error.message || "Error inesperado";
+      let mensajeError = "Error inesperado";
+
+      if (error && typeof error === "object") {
+        if ("mensaje" in error) {
+          mensajeError = error.mensaje;
+        } else if ("message" in error) {
+          mensajeError = error.message;
+        }
+      } else if (typeof error === "string") {
+        mensajeError = error;
+      }
+
       await Swal.fire({
         icon: "error",
         title: "Error",
@@ -170,116 +193,153 @@ const TipoCatalogo = ({ busqueda = "" }) => {
   };
 
   const busquedaLower = busqueda.toLowerCase();
-  const tiposFiltrados = tipos.filter((t) =>
-    t.nombreTipoCatalogo?.toLowerCase().includes(busquedaLower)
+  const filtrados = datos.filter((d) =>
+    (d.nombreTipoCatalogo || "").toLowerCase().includes(busquedaLower)
   );
 
-  const activos = tiposFiltrados.filter((t) => t.activo).length;
-  const inactivos = tiposFiltrados.length - activos;
+  const totalPaginas = Math.ceil(filtrados.length / filasPorPagina);
+  const indexUltima = paginaActual * filasPorPagina;
+  const indexPrimera = indexUltima - filasPorPagina;
+  const datosPaginados = filtrados.slice(indexPrimera, indexUltima);
+
+  const activos = filtrados.filter((d) => d.activo).length;
+  const inactivos = filtrados.length - activos;
 
   const columnas = [
     { key: "idTipoCatalogo", label: "ID", className: "text-center w-12" },
     { key: "nombreTipoCatalogo", label: "Nombre" },
-    { key: "nombreCreador", label: "Creador" },
     { key: "fechaCreacionFormat", label: "Fecha Creación" },
-    { key: "nombreModificador", label: "Modificador" },
     { key: "fechaModificacionFormat", label: "Fecha Modificación" },
-    { key: "activo", label: "Activo", className: "text-center w-16" },
+    { key: "creador", label: "Creador" },
+    { key: "modificador", label: "Modificador" },
+    {
+      key: "activo",
+      label: "Activo",
+      className: "text-center w-16",
+      render: (item) =>
+        item.activo ? (
+          <span className="text-green-500 font-semibold select-none">✔</span>
+        ) : (
+          <span className="text-red-500 font-semibold select-none">✘</span>
+        ),
+    },
   ];
 
   return (
-    <div className="p-4">
-      <div className={`shadow-lg rounded-xl p-6 ${fondo}`}>
-        <div className="flex justify-between items-center mb-4">
-          <h2
-            className={`text-2xl md:text-3xl font-extrabold tracking-wide cursor-pointer select-none ${texto}`}
-            onClick={() => setIsCollapsed(!isCollapsed)}
-            aria-expanded={!isCollapsed}
-            aria-controls="tipoCatalogoContent"
-            role="button"
-            tabIndex={0}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" || e.key === " ") {
-                setIsCollapsed(!isCollapsed);
-              }
-            }}
-          >
-            {isCollapsed ? "►" : "▼"} Tipos de Catálogo
-          </h2>
-        </div>
+    <div>
+      <h2 className="text-3xl font-bold mb-4 text-center sm:text-left select-none">
+        Tipos de Catálogo
+      </h2>
 
-        {!isCollapsed && (
-          <div id="tipoCatalogoContent">
-            <ContadoresBase
-              activos={activos}
-              inactivos={inactivos}
-              total={tiposFiltrados.length}
-              modoOscuro={modoOscuro}
-              onNuevo={abrirModalNuevo}
-            />
+      <ContadoresBase
+        activos={activos}
+        inactivos={inactivos}
+        total={filtrados.length}
+        onNuevo={abrirModalNuevo}
+        modoOscuro={modoOscuro}
+      />
 
-            <TablaBase
-              datos={tiposFiltrados}
-              columnas={columnas}
-              modoOscuro={modoOscuro}
-              loading={loading}
-              texto={texto}
-              encabezadoClase={encabezado}
-              onEditar={cargarParaEditar}
-            />
-          </div>
-        )}
-
-        <ModalBase
-          isOpen={modalOpen}
-          onClose={cerrarModal}
-          titulo={modoEdicion ? "Editar Tipo de Catálogo" : "Nuevo Tipo de Catálogo"}
-          modoOscuro={modoOscuro}
+      <div className="mb-2 flex justify-start items-center gap-2 text-sm">
+        <label htmlFor="filasPorPagina" className="font-semibold select-none">
+          Filas por página:
+        </label>
+        <select
+          id="filasPorPagina"
+          value={filasPorPagina}
+          onChange={(e) => {
+            setFilasPorPagina(parseInt(e.target.value));
+            setPaginaActual(1);
+          }}
+          className={`w-[5rem] px-3 py-1 rounded border ${
+            modoOscuro
+              ? "bg-gray-800 text-white border-gray-600"
+              : "bg-white text-gray-900 border-gray-300"
+          }`}
         >
-          <FormularioBase
-            onSubmit={handleGuardar}
-            onCancel={cerrarModal}
-            modoOscuro={modoOscuro}
-            formError={formError}
-            formLoading={formLoading}
-            modoEdicion={modoEdicion}
-            titulo="Tipo Catálogo"
-          >
-            <div className="space-y-4">
-              <input
-                type="text"
-                name="nombreTipoCatalogo"
-                placeholder="Nombre *"
-                value={form.nombreTipoCatalogo}
-                onChange={handleInputChange}
-                className={`w-full px-3 py-2 border rounded ${
-                  modoOscuro
-                    ? "bg-gray-700 text-white border-gray-600"
-                    : "bg-white text-gray-800 border-gray-300"
-                }`}
-                required
-                autoFocus
-              />
-              <label className={`block ${texto}`}>
-                Estado:
-                <select
-                  name="activo"
-                  value={form.activo}
-                  onChange={handleInputChange}
-                  className={`w-full mt-1 px-3 py-2 border rounded ${
-                    modoOscuro
-                      ? "bg-gray-700 text-white border-gray-600"
-                      : "bg-white text-gray-800 border-gray-300"
-                  }`}
-                >
-                  <option value={true}>Activo</option>
-                  <option value={false}>Inactivo</option>
-                </select>
-              </label>
-            </div>
-          </FormularioBase>
-        </ModalBase>
+          {[10, 30, 45, 60, 100].map((num) => (
+            <option key={num} value={num}>
+              {num}
+            </option>
+          ))}
+        </select>
       </div>
+
+      <TablaBase
+        datos={datosPaginados}
+        columnas={columnas}
+        modoOscuro={modoOscuro}
+        onEditar={cargarParaEditar}
+        loading={loading}
+        texto={texto}
+        encabezadoClase={encabezado}
+      />
+
+      {/* Paginación */}
+      <div className="flex flex-wrap items-center justify-between mt-6 gap-4">
+        <button
+          disabled={paginaActual === 1}
+          onClick={() => setPaginaActual((p) => Math.max(p - 1, 1))}
+          className={`rounded px-4 py-2 text-white ${
+            paginaActual === 1 ? "bg-gray-400 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700"
+          } transition-colors`}
+        >
+          Anterior
+        </button>
+        <span className="font-semibold select-none">
+          Página {paginaActual} de {totalPaginas || 1}
+        </span>
+        <button
+          disabled={paginaActual === totalPaginas || totalPaginas === 0}
+          onClick={() =>
+            setPaginaActual((p) => (p < totalPaginas ? p + 1 : totalPaginas))
+          }
+          className={`rounded px-4 py-2 text-white ${
+            paginaActual === totalPaginas || totalPaginas === 0
+              ? "bg-gray-400 cursor-not-allowed"
+              : "bg-blue-600 hover:bg-blue-700"
+          } transition-colors`}
+        >
+          Siguiente
+        </button>
+      </div>
+
+      <ModalBase isOpen={modalOpen} onClose={cerrarModal} modoOscuro={modoOscuro}>
+        <FormularioBase
+          onSubmit={handleGuardar}
+          onCancel={cerrarModal}
+          modoOscuro={modoOscuro}
+          formError={formError}
+          formLoading={formLoading}
+          modoEdicion={modoEdicion}
+          titulo="Tipo de Catálogo"
+        >
+          <div className="space-y-4">
+            <label className={`${texto} font-semibold`}>Nombre del Tipo:</label>
+            <input
+              type="text"
+              name="nombreTipoCatalogo"
+              value={form.nombreTipoCatalogo}
+              onChange={handleInputChange}
+              className={`w-full px-3 py-2 border rounded ${
+                modoOscuro
+                  ? "bg-gray-700 text-white border-gray-600"
+                  : "bg-white text-gray-800 border-gray-300"
+              }`}
+            />
+
+            <label className={`${texto} font-semibold flex items-center gap-2`}>
+              <input
+                type="checkbox"
+                name="activo"
+                checked={form.activo}
+                onChange={handleInputChange}
+                className="mt-0"
+              />
+              Activo
+            </label>
+          </div>
+        </FormularioBase>
+      </ModalBase>
     </div>
   );
 };
