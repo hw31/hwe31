@@ -226,21 +226,16 @@ const FrmAulas = () => {
   };
 
   return (
-    <div
-      className={`mx-auto rounded-2xl p-6 max-w-[900px] w-full ${
-        modoOscuro ? "bg-gray-900 text-white" : "bg-white text-gray-900"
-      }`}
-    >
-      <div
-        className={`w-full max-w-[900px] px-4 rounded-2xl shadow-md p-6 ${
-          modoOscuro
-            ? "bg-gray-900 text-white shadow-gray-700"
-            : "bg-white text-gray-900 shadow-gray-300"
-        }`}
-      >
-        <h2 className="text-3xl font-bold mb-4 text-center sm:text-left">
-          Gestión de Aulas
-        </h2>
+    <>
+   <div className="flex justify-between items-center mb-4">
+          <h2
+            className={`text-2xl md:text-3xl font-extrabold tracking-wide ${
+              modoOscuro ? "text-white" : "text-gray-800"
+            }`}
+          >
+           Grupos
+          </h2>
+        </div>
 
         <BuscadorBase
           placeholder="Buscar aula por nombre..."
@@ -456,8 +451,7 @@ const FrmAulas = () => {
             </label>
           </FormularioBase>
         </ModalBase>
-      </div>
-    </div>
+ </>
   );
 };
 

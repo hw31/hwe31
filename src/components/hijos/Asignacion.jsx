@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
 import asignacionDocenteService from "../../services/AsignacionDocente";
 import usuarioService from "../../services/UsuariosRoles"; // listarUsuariosRoles
@@ -135,7 +135,7 @@ console.log("ROL:", rol, "ROL LOWER:", rolLower, "LOADING:", loading);
       IdEstado: "",
     });
   };
-
+ 
   const abrirModalNuevo = () => {
     setModoEdicion(false);
     setAsignacionSeleccionada(null);
@@ -257,9 +257,7 @@ console.log("ROL:", rol, "ROL LOWER:", rolLower, "LOADING:", loading);
 
   return (
     
-   <div className={`p-4 ${modoOscuro ? "bg-gray-800 min-h-screen" : "bg-gray-50"}`}
-     style={{ paddingTop: 1 }}  >
-      <div className={`shadow-md rounded-xl p-6 ${fondo}`}>
+<>
         <div className="flex justify-between items-center mb-4">
           <h2
             className={`text-2xl md:text-3xl font-extrabold tracking-wide ${
@@ -408,6 +406,7 @@ console.log("ROL:", rol, "ROL LOWER:", rolLower, "LOADING:", loading);
   </div>
 
   {/* Botón "Nuevo" alineado a la derecha */}
+    {rolLower === "administrador" && (
   <button
     onClick={abrirModalNuevo}
     style={{
@@ -433,8 +432,9 @@ console.log("ROL:", rol, "ROL LOWER:", rolLower, "LOADING:", loading);
     aria-label="Agregar nueva asignación docente"
   >
     <FaPlus /> Nuevo
-  </button>
+  </button>)}
 </div>
+
 
         {/* Mensajes */}
         {loading && <p className="text-gray-400 italic">Cargando asignaciones...</p>}
@@ -714,14 +714,7 @@ console.log("ROL:", rol, "ROL LOWER:", rolLower, "LOADING:", loading);
           </div>
         )}
 
-        {/* Contenido según vista actual */}
-        {vista === "asignacion" && <Asignacion />}
-        {vista === "horarios" && <FrmHorarios />}
-        {vista === "aulas" && <FrmAulas />}
-        {vista === "grupos" && <FrmGrupos />}
-        {vista === "materias" && <FrmMaterias />}
-      </div>
-    </div>
+   </>
   );
 };
 
