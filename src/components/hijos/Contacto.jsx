@@ -253,24 +253,16 @@ const FrmContacto = ({ busqueda }) => {
   ];
 
   return (
-    <div className="p-4">
-      <div className={`shadow-lg rounded-xl p-6 ${fondo}`}>
-        <h2
-          className={`text-2xl md:text-3xl font-extrabold tracking-wide cursor-pointer select-none ${texto}`}
-          onClick={() => setIsCollapsed(!isCollapsed)}
-          role="button"
-          tabIndex={0}
-          aria-expanded={!isCollapsed}
-          aria-controls="contactosContent"
-          onKeyDown={(e) => {
-            if (e.key === "Enter" || e.key === " ") setIsCollapsed(!isCollapsed);
-          }}
-        >
-          {isCollapsed ? "►" : "▼"} Gestión de Contactos
-        </h2>
-
-        {!isCollapsed && (
-          <div id="contactosContent" className="mt-4">
+   <>
+        <div className="flex justify-between items-center mb-4">
+          <h2
+            className={`text-2xl md:text-3xl font-extrabold tracking-wide ${
+              modoOscuro ? "text-white" : "text-gray-800"
+            }`}
+          >
+            Contactos
+          </h2>
+        </div>
             <ContadoresBase
               activos={activos}
               inactivos={inactivos}
@@ -314,7 +306,7 @@ const FrmContacto = ({ busqueda }) => {
               Siguiente
             </button>
           </div>
-        )}
+        
 
         <ModalBase isOpen={modalOpen} onClose={cerrarModal} modoOscuro={modoOscuro}>
           <FormularioBase

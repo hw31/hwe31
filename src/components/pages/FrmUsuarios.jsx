@@ -1,16 +1,12 @@
 import React, { useState } from "react";
 import { useSelector } from "react-redux";
-import FrmPersonas from "../hijos/Persona";
+
 import FrmUser from "../hijos/User";
-
-import FrmContacto from "../hijos/Contacto";
+import UserRol from "../hijos/UserRol";
+import UserPermiso from "../hijos/UserPermiso";
 import BuscadorBase from "../Shared/BuscadorBase";
-import UserRol from "../hijos//UserRol";
-import UserPermiso from "../hijos//UserPermiso";
-import { Users, ArrowLeft } from "lucide-react"; // Iconos
 
-import FrmDireccion from "../hijos/Direccion";
-
+import { ArrowLeftCircle, KeyRound, ShieldCheck } from "lucide-react";
 
 const FrmUsuarios = () => {
   const modoOscuro = useSelector((state) => state.theme.modoOscuro);
@@ -71,18 +67,10 @@ const FrmUsuarios = () => {
           />
         </div>
 
-        {soloUser ? (
-          <FrmUser busqueda={busqueda} />
-        ) : (
-          <>
-           <FrmDireccion />
-            <FrmPersonas busqueda={busqueda} />
-            <FrmContacto busqueda={busqueda} />
-            <FrmUser busqueda={busqueda} />
-            <UserRol busqueda={busqueda} />
-            <UserPermiso busqueda={busqueda} />
-          </>
-        )}
+        {/* Contenido según vista */}
+        {vista === "usuarios" && <FrmUser busqueda={busqueda} />}
+        {vista === "usuariosroles" && <UserRol busqueda={busqueda} />}
+        {vista === "permisos" && <UserPermiso busqueda={busqueda} />}
       </div>
     </div>
   );

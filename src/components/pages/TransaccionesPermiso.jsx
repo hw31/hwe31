@@ -218,14 +218,13 @@ const TransaccionesPermisos = ({ busqueda = "" }) => {
     <div className={`p-4 rounded-xl shadow-md ${fondo}`}>
       <div className="flex justify-between items-center mb-4">
         <h2
-          className={`text-2xl font-bold cursor-pointer select-none ${texto}`}
-          onClick={() => setIsCollapsed(!isCollapsed)}
+          className={`text-2xl font-bold cursor-pointer select-none ${texto}`}      
         >
-          {isCollapsed ? "►" : "▼"} Transacciones-Permisos
+          Transacciones-Permisos
         </h2>
       </div>
 
-      {!isCollapsed && (
+    
         <div>
           <ContadoresBase
             activos={activos}
@@ -295,7 +294,7 @@ const TransaccionesPermisos = ({ busqueda = "" }) => {
             </button>
           </div>
         </div>
-      )}
+      
 
       <ModalBase
         isOpen={modalOpen}

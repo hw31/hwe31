@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { useSelector } from "react-redux";
 import Swal from "sweetalert2";
 import { FaCheckCircle, FaTimesCircle } from "react-icons/fa";
+
 import usuarioService from "../../services/Usuario";
 import personaService from "../../services/Persona";
 import contactoService from "../../services/Contacto";
@@ -49,23 +50,26 @@ const FrmUsuarios = ({ busqueda }) => {
     idEstado: "",
   });
 
-  useEffect(() => {
-  const handleClickOutside = (event) => {
-    if (
-      inputRefPersona.current &&
-      !inputRefPersona.current.contains(event.target) &&
-      dropdownRefPersona.current &&
-      !dropdownRefPersona.current.contains(event.target)
-    ) {
-      setMostrarDropdownPersona(false);
-    }
-  };
+  const [filasPorPagina, setFilasPorPagina] = useState(10);
+  const [paginaActual, setPaginaActual] = useState(1);
 
-  document.addEventListener("mousedown", handleClickOutside);
-  return () => {
-    document.removeEventListener("mousedown", handleClickOutside);
-  };
-}, []);
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (
+        inputRefPersona.current &&
+        !inputRefPersona.current.contains(event.target) &&
+        dropdownRefPersona.current &&
+        !dropdownRefPersona.current.contains(event.target)
+      ) {
+        setMostrarDropdownPersona(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
 
   useEffect(() => {
     if (!busquedaPersona) {
@@ -78,9 +82,6 @@ const FrmUsuarios = ({ busqueda }) => {
     });
     setPersonasFiltradas(filtro);
   }, [busquedaPersona, personas]);
-
-  const [filasPorPagina, setFilasPorPagina] = useState(10);
-  const [paginaActual, setPaginaActual] = useState(1);
 
   const formatearFecha = (fecha) => {
     if (!fecha) return "-";
@@ -167,20 +168,6 @@ const FrmUsuarios = ({ busqueda }) => {
   useEffect(() => {
     cargarTodo();
   }, []);
-
-  useEffect(() => {
-  if (!busquedaPersona) {
-    setPersonasFiltradas(personas);
-    return;
-  }
-
-  const filtro = personas.filter((p) => {
-    const nombreCompleto = `${p.primerNombre} ${p.segundoNombre || ""} ${p.primerApellido} ${p.segundoApellido || ""}`.toLowerCase();
-    return nombreCompleto.includes(busquedaPersona.toLowerCase());
-  });
-
-  setPersonasFiltradas(filtro);
-}, [busquedaPersona, personas]);
 
   const abrirModalNuevo = () => {
     setForm({
@@ -311,70 +298,83 @@ const FrmUsuarios = ({ busqueda }) => {
         ),
     },
   ];
-return (
-  <div className="p-4">
-    <div className={`shadow-lg rounded-xl p-6 ${fondo}`}>
-      <h2
-        className={`text-2xl md:text-3xl font-extrabold tracking-wide cursor-pointer select-none ${texto}`}
-        onClick={() => setIsCollapsed(!isCollapsed)}
-        role="button"
-        tabIndex={0}
-        aria-expanded={!isCollapsed}
-        aria-controls="usuariosContent"
-        onKeyDown={(e) => {
-          if (e.key === "Enter" || e.key === " ") setIsCollapsed(!isCollapsed);
-        }}
-      >
-        {isCollapsed ? "►" : "▼"} Gestión de Usuarios
-      </h2>
 
-      {!isCollapsed && (
-        <div id="usuariosContent" className="mt-4">
-          <ContadoresBase
-            activos={activos}
-            inactivos={inactivos}
-            total={usuariosFiltrados.length}
-            modoOscuro={modoOscuro}
-            onNuevo={abrirModalNuevo}
-          />
+  return (
+    <>
+      <div className="flex justify-between items-center mb-4">
+        <h2 className={`text-2xl md:text-3xl font-extrabold tracking-wide ${modoOscuro ? "text-white" : "text-gray-800"}`}>
+          Usuario
+        </h2>
+      </div>
 
-        <TablaBase
-          datos={datosPaginados}
-          columnas={columnas}
-          modoOscuro={modoOscuro}
-          loading={loading}
-          texto={texto}
-          encabezadoClase={encabezado}
-          onEditar={abrirModalEditar}
-        />
+      <ContadoresBase
+        activos={activos}
+        inactivos={inactivos}
+        total={usuariosFiltrados.length}
+        modoOscuro={modoOscuro}
+        onNuevo={abrirModalNuevo}
+      />
 
-        {/* BOTONES SIGUIENTES */}
-        <div className="flex flex-wrap items-center justify-between mt-6 gap-4">
-          <button
-            disabled={paginaActual === 1}
-            onClick={() => setPaginaActual((p) => Math.max(p - 1, 1))}
-            className={`rounded px-4 py-2 text-white ${
-              paginaActual === 1 ? "bg-gray-400 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700"
-            } transition-colors`}
-          >
-            Anterior
-          </button>
-          <span className="font-semibold select-none">
-            Página {paginaActual} de {totalPaginas || 1}
-          </span>
-          <button
-            disabled={paginaActual === totalPaginas || totalPaginas === 0}
-            onClick={() => setPaginaActual((p) => (p < totalPaginas ? p + 1 : totalPaginas))}
-            className={`rounded px-4 py-2 text-white ${
-              paginaActual === totalPaginas || totalPaginas === 0
-                ? "bg-gray-400 cursor-not-allowed"
-                : "bg-blue-600 hover:bg-blue-700"
-            } transition-colors`}
-          >
-            Siguiente
-          </button>
-        </div>
-      )}
+      {/* Selector de filas por página */}
+      <div className="mt-2 mb-4 flex flex-wrap items-center justify-center sm:justify-start gap-2 text-sm">
+        <label htmlFor="filasPorPagina" className="font-semibold">
+          Filas por página:
+        </label>
+        <select
+          id="filasPorPagina"
+          value={filasPorPagina}
+          onChange={(e) => {
+            setFilasPorPagina(parseInt(e.target.value));
+            setPaginaActual(1);
+          }}
+          className={`w-[5rem] px-3 py-1 rounded border ${
+            modoOscuro ? "bg-gray-800 text-white border-gray-600" : "bg-white text-gray-900 border-gray-300"
+          }`}
+        >
+          {[10, 30, 45, 60, 100].map((num) => (
+            <option key={num} value={num}>
+              {num}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <TablaBase
+        datos={datosPaginados}
+        columnas={columnas}
+        modoOscuro={modoOscuro}
+        loading={loading}
+        texto={texto}
+        encabezadoClase={encabezado}
+        onEditar={abrirModalEditar}
+      />
+
+      {/* Botones de paginación */}
+      <div className="flex flex-wrap items-center justify-between mt-6 gap-4">
+        <button
+          disabled={paginaActual === 1}
+          onClick={() => setPaginaActual((p) => Math.max(p - 1, 1))}
+          className={`rounded px-4 py-2 text-white ${
+            paginaActual === 1 ? "bg-gray-400 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700"
+          } transition-colors`}
+        >
+          Anterior
+        </button>
+        <span className="font-semibold select-none">
+          Página {paginaActual} de {totalPaginas || 1}
+        </span>
+        <button
+          disabled={paginaActual === totalPaginas || totalPaginas === 0}
+          onClick={() => setPaginaActual((p) => (p < totalPaginas ? p + 1 : totalPaginas))}
+          className={`rounded px-4 py-2 text-white ${
+            paginaActual === totalPaginas || totalPaginas === 0
+              ? "bg-gray-400 cursor-not-allowed"
+              : "bg-blue-600 hover:bg-blue-700"
+          } transition-colors`}
+        >
+          Siguiente
+        </button>
+      </div>
 
         <ModalBase isOpen={modalOpen} onClose={cerrarModal} modoOscuro={modoOscuro}>
           <FormularioBase
@@ -473,10 +473,8 @@ return (
           </div>
         </FormularioBase>
       </ModalBase>
-    </div>
-  </div>
+ </>
 );
-
 };
 
 export default FrmUsuarios;

@@ -233,75 +233,42 @@ const personasFiltradas = personas.filter((p) =>
   ];
 
   return (
-    <div className="p-4 max-w-6xl mx-auto">
-      <h2 className="text-2xl font-bold mb-4">Gestión de Direcciones</h2>
+    <div className="p-4">
+      <div className={`shadow-lg rounded-xl p-6 ${fondo}`}>
+        <h2 className={`text-2xl md:text-3xl font-extrabold tracking-wide mb-4 ${texto}`}>
+          Direcciones
+        </h2>
 
-      {/* Buscador */}
-      <input
-        type="text"
-        placeholder="Buscar por nombre de persona..."
-        className="mb-4 p-2 border rounded w-full"
-        value={busqueda}
-        onChange={(e) => setBusqueda(e.target.value)}
-      />
+        <ContadoresBase
+          activos={activos}
+          inactivos={inactivos}
+          total={direccionesFiltradas.length}
+          modoOscuro={modoOscuro}
+          onNuevo={abrirModalNuevo}
+        />
 
-      {/* Formulario */}
-      <form
-        onSubmit={handleSubmit}
-        className="bg-gray-800 text-white p-4 rounded mb-6 shadow-md space-y-4"
-      >
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <input
-            name="idPersona"
-            placeholder="ID Persona"
-            className="p-2 rounded text-black"
-            value={form.idPersona}
-            onChange={handleChange}
-            required
-          />
-          <input
-            name="idTipoDireccion"
-            placeholder="ID Tipo Dirección"
-            className="p-2 rounded text-black"
-            value={form.idTipoDireccion}
-            onChange={handleChange}
-            required
-          />
-          <input
-            name="detalleDireccion"
-            placeholder="Detalle"
-            className="p-2 rounded text-black"
-            value={form.detalleDireccion}
-            onChange={handleChange}
-          />
-          <input
-            name="codigoPostal"
-            placeholder="Código Postal"
-            className="p-2 rounded text-black"
-            value={form.codigoPostal}
-            onChange={handleChange}
-          />
-          <input
-            name="municipio"
-            placeholder="Municipio"
-            className="p-2 rounded text-black"
-            value={form.municipio}
-            onChange={handleChange}
-          />
-          <input
-            name="departamento"
-            placeholder="Departamento"
-            className="p-2 rounded text-black"
-            value={form.departamento}
-            onChange={handleChange}
-          />
-          <input
-            name="referencia"
-            placeholder="Referencia"
-            className="p-2 rounded text-black"
-            value={form.referencia}
-            onChange={handleChange}
-          />
+        {/* SELECT FILAS */}
+        <div className="mb-2 flex justify-start items-center gap-2 text-sm">
+          <label htmlFor="filasPorPagina" className="font-semibold select-none">
+            Filas por página:
+          </label>
+          <select
+            id="filasPorPagina"
+            value={filasPorPagina}
+            onChange={(e) => {
+              setFilasPorPagina(parseInt(e.target.value));
+              setPaginaActual(1);
+            }}
+            className={`w-[5rem] px-3 py-1 rounded border ${
+              modoOscuro ? "bg-gray-800 text-white border-gray-600" : "bg-white text-gray-900 border-gray-300"
+            }`}
+          >
+            {[1, 10, 30, 45, 60, 100].map((num) => (
+              <option key={num} value={num}>
+                {num}
+              </option>
+            ))}
+          </select>
         </div>
 
         <TablaBase
@@ -431,7 +398,7 @@ const personasFiltradas = personas.filter((p) =>
           </FormularioBase>
         </ModalBase>
       </div>
-   </>
+    </div>
   );
 };
 

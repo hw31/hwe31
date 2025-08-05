@@ -30,6 +30,9 @@ const FrmTipoTransacciones = ({ busqueda = "" }) => {
 
   const [isCollapsed, setIsCollapsed] = useState(false);
 
+  const [paginaActual, setPaginaActual] = useState(1);
+  const [filasPorPagina, setFilasPorPagina] = useState(10);
+
   const formatearFecha = (fecha) => {
     if (!fecha) return "-";
     const d = new Date(fecha);
@@ -51,7 +54,6 @@ const FrmTipoTransacciones = ({ busqueda = "" }) => {
         ...t,
         fechaCreacionFormat: formatearFecha(t.fechaCreacion),
         fechaModificacionFormat: formatearFecha(t.fechaModificacion),
-        // Usamos directamente las propiedades 'creador' y 'modificador' que vienen en la API
       }));
       setTipos(tiposFormateados);
       setFormError("");
@@ -154,12 +156,18 @@ const FrmTipoTransacciones = ({ busqueda = "" }) => {
   const activos = tiposFiltrados.filter((t) => t.activo).length;
   const inactivos = tiposFiltrados.length - activos;
 
+  const totalPaginas = Math.ceil(tiposFiltrados.length / filasPorPagina);
+  const datosPaginados = tiposFiltrados.slice(
+    (paginaActual - 1) * filasPorPagina,
+    paginaActual * filasPorPagina
+  );
+
   const columnas = [
     { key: "idTipoTransaccion", label: "ID", className: "text-center w-12" },
     { key: "descripcion", label: "Descripción" },
-    { key: "creador", label: "Creador" },          // Directo del API
+    { key: "creador", label: "Creador" },
     { key: "fechaCreacionFormat", label: "Fecha Creación" },
-    { key: "modificador", label: "Modificador" },  // Directo del API
+    { key: "modificador", label: "Modificador" },
     { key: "fechaModificacionFormat", label: "Fecha Modificación" },
     { key: "activo", label: "Activo", className: "text-center w-16" },
   ];
@@ -169,18 +177,8 @@ const FrmTipoTransacciones = ({ busqueda = "" }) => {
       <div className="flex justify-between items-center mb-4">
         <h2
           className={`text-2xl font-bold cursor-pointer select-none ${texto}`}
-          onClick={() => setIsCollapsed(!isCollapsed)}
-          aria-expanded={!isCollapsed}
-          aria-controls="tipoTransaccionContent"
-          role="button"
-          tabIndex={0}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" || e.key === " ") {
-              setIsCollapsed(!isCollapsed);
-            }
-          }}
         >
-          {isCollapsed ? "►" : "▼"} Tipos de Transacción
+          Tipos de Transacción
         </h2>
       </div>
 
@@ -194,8 +192,32 @@ const FrmTipoTransacciones = ({ busqueda = "" }) => {
             onNuevo={abrirModalNuevo}
           />
 
+          {/* SELECT FILAS */}
+          <div className="mb-2 flex justify-start items-center gap-2 text-sm mt-4">
+            <label htmlFor="filasPorPagina" className="font-semibold select-none">
+              Filas por página:
+            </label>
+            <select
+              id="filasPorPagina"
+              value={filasPorPagina}
+              onChange={(e) => {
+                setFilasPorPagina(parseInt(e.target.value));
+                setPaginaActual(1);
+              }}
+              className={`w-[5rem] px-3 py-1 rounded border ${
+                modoOscuro ? "bg-gray-800 text-white border-gray-600" : "bg-white text-gray-900 border-gray-300"
+              }`}
+            >
+              {[1, 10, 30, 45, 60, 100].map((num) => (
+                <option key={num} value={num}>
+                  {num}
+                </option>
+              ))}
+            </select>
+          </div>
+
           <TablaBase
-            datos={tiposFiltrados}
+            datos={datosPaginados}
             columnas={columnas}
             modoOscuro={modoOscuro}
             loading={loading}
@@ -203,6 +225,33 @@ const FrmTipoTransacciones = ({ busqueda = "" }) => {
             encabezadoClase={encabezado}
             onEditar={cargarParaEditar}
           />
+
+          {/* BOTONES SIGUIENTES */}
+          <div className="flex flex-wrap items-center justify-between mt-6 gap-4">
+            <button
+              disabled={paginaActual === 1}
+              onClick={() => setPaginaActual((p) => Math.max(p - 1, 1))}
+              className={`rounded px-4 py-2 text-white ${
+                paginaActual === 1 ? "bg-gray-400 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700"
+              } transition-colors`}
+            >
+              Anterior
+            </button>
+            <span className="font-semibold select-none">
+              Página {paginaActual} de {totalPaginas || 1}
+            </span>
+            <button
+              disabled={paginaActual === totalPaginas || totalPaginas === 0}
+              onClick={() => setPaginaActual((p) => (p < totalPaginas ? p + 1 : totalPaginas))}
+              className={`rounded px-4 py-2 text-white ${
+                paginaActual === totalPaginas || totalPaginas === 0
+                  ? "bg-gray-400 cursor-not-allowed"
+                  : "bg-blue-600 hover:bg-blue-700"
+              } transition-colors`}
+            >
+              Siguiente
+            </button>
+          </div>
         </div>
       )}
 
