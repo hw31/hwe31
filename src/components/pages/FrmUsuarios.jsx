@@ -1,15 +1,14 @@
 import React, { useState } from "react";
 import { useSelector } from "react-redux";
-import FrmPersonas from "../hijos/Persona";
 import FrmUser from "../hijos/User";
 
-import FrmContacto from "../hijos/Contacto";
+
 import BuscadorBase from "../Shared/BuscadorBase";
 import UserRol from "../hijos//UserRol";
 import UserPermiso from "../hijos//UserPermiso";
-import { Users, ArrowLeft } from "lucide-react"; // Iconos
+import { Users, ArrowLeft } from "lucide-react"; 
 
-import FrmDireccion from "../hijos/Direccion";
+
 
 
 const FrmUsuarios = () => {
@@ -56,9 +55,6 @@ const FrmUsuarios = () => {
           <FrmUser busqueda={busqueda} />
         ) : (
           <>
-           <FrmDireccion />
-            <FrmPersonas busqueda={busqueda} />
-            <FrmContacto busqueda={busqueda} />
             <FrmUser busqueda={busqueda} />
             <UserRol busqueda={busqueda} />
             <UserPermiso busqueda={busqueda} />

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useSelector } from "react-redux";
 import Swal from "sweetalert2";
 
@@ -38,18 +38,42 @@ const UserPermiso = ({ busqueda }) => {
   const [loading, setLoading] = useState(false);
   const [formLoading, setFormLoading] = useState(false);
   const [formError, setFormError] = useState("");
-  const [isCollapsed, setIsCollapsed] = useState(false);
 
-  const [filtros, setFiltros] = useState({
-    texto: "",
-  });
+  const [paginaActual, setPaginaActual] = useState(1);
+  const [filasPorPagina, setFilasPorPagina] = useState(10);
+
+  const [filtros, setFiltros] = useState({ texto: "" });
 
   const [form, setForm] = useState({
     idUsuarioPermiso: 0,
     idUsuario: "",
     idPermiso: "",
-    activo: null, // boolean o null
+    activo: null,
   });
+
+  const [busquedaUsuario, setBusquedaUsuario] = useState("");
+  const [mostrarDropdownUsuario, setMostrarDropdownUsuario] = useState(false);
+  const inputRefUsuario = useRef(null);
+  const dropdownRefUsuario = useRef(null);
+
+  const usuariosFiltrados = usuarios.filter((u) =>
+    u.usuario.toLowerCase().includes(busquedaUsuario.toLowerCase())
+  );
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (
+        inputRefUsuario.current &&
+        !inputRefUsuario.current.contains(event.target) &&
+        dropdownRefUsuario.current &&
+        !dropdownRefUsuario.current.contains(event.target)
+      ) {
+        setMostrarDropdownUsuario(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const cargarTodo = async () => {
     setLoading(true);
@@ -78,24 +102,22 @@ const UserPermiso = ({ busqueda }) => {
   }, []);
 
   const abrirModalNuevo = () => {
-    setForm({
-      idUsuarioPermiso: 0,
-      idUsuario: "",
-      idPermiso: "",
-      activo: null,
-    });
+    setForm({ idUsuarioPermiso: 0, idUsuario: "", idPermiso: "", activo: null });
+    setBusquedaUsuario("");
     setFormError("");
     setModoEdicion(false);
     setModalOpen(true);
   };
 
   const abrirModalEditar = (item) => {
+    const usuario = usuarios.find((u) => u.id_Usuario === item.idUsuario);
     setForm({
       idUsuarioPermiso: item.idUsuarioPermiso,
       idUsuario: item.idUsuario,
       idPermiso: item.idPermiso,
       activo: item.activo,
     });
+    setBusquedaUsuario(usuario?.usuario || "");
     setFormError("");
     setModoEdicion(true);
     setModalOpen(true);
@@ -111,19 +133,15 @@ const UserPermiso = ({ busqueda }) => {
     const { name, value } = e.target;
     let val = value;
 
-    // Para el select activo convertir string "true"/"false" a booleano
     if (name === "activo") {
       if (value === "true") val = true;
       else if (value === "false") val = false;
       else val = null;
-    } else if (name === "idUsuario" || name === "idPermiso") {
+    } else if (name === "idPermiso") {
       val = Number(value);
     }
 
-    setForm((prev) => ({
-      ...prev,
-      [name]: val,
-    }));
+    setForm((prev) => ({ ...prev, [name]: val }));
   };
 
   const handleGuardar = async () => {
@@ -149,12 +167,12 @@ const UserPermiso = ({ busqueda }) => {
           IdUsuarioPermiso: form.idUsuarioPermiso,
           IdUsuario: form.idUsuario,
           IdPermiso: form.idPermiso,
-          Activo: form.activo, // boolean directo
+          Activo: form.activo,
         }
       : {
           IdUsuario: form.idUsuario,
           IdPermiso: form.idPermiso,
-          Activo: form.activo, // boolean directo
+          Activo: form.activo,
         };
 
     try {
@@ -185,16 +203,18 @@ const UserPermiso = ({ busqueda }) => {
     }
   };
 
-  // Filtrado y búsqueda
   const textoBusqueda = (busqueda || filtros.texto || "").toLowerCase().trim();
   const usuariosPermisoFiltrados = usuariosPermiso.filter((item) => {
     const usuarioNombre = usuarios.find((u) => u.id_Usuario === item.idUsuario)?.usuario?.toLowerCase() || "";
     const permisoNombre = permisos.find((p) => p.idPermiso === item.idPermiso)?.nombrePermiso?.toLowerCase() || "";
-
-    const coincideTexto = usuarioNombre.includes(textoBusqueda) || permisoNombre.includes(textoBusqueda);
-
-    return coincideTexto;
+    return usuarioNombre.includes(textoBusqueda) || permisoNombre.includes(textoBusqueda);
   });
+
+  const totalPaginas = Math.ceil(usuariosPermisoFiltrados.length / filasPorPagina);
+  const datosPaginados = usuariosPermisoFiltrados.slice(
+    (paginaActual - 1) * filasPorPagina,
+    paginaActual * filasPorPagina
+  );
 
   const activos = usuariosPermisoFiltrados.filter((u) => u.activo === true).length;
   const inactivos = usuariosPermisoFiltrados.length - activos;
@@ -216,15 +236,9 @@ const UserPermiso = ({ busqueda }) => {
       className: "text-center w-20",
       render: (item) =>
         item.activo ? (
-          <span className="text-green-500 font-semibold flex items-center gap-1">
-            {/* icono activo */}
-            Activo
-          </span>
+          <span className="text-green-500 font-semibold flex items-center gap-1">Activo</span>
         ) : (
-          <span className="text-red-500 font-semibold flex items-center gap-1">
-            {/* icono inactivo */}
-            Inactivo
-          </span>
+          <span className="text-red-500 font-semibold flex items-center gap-1">Inactivo</span>
         ),
     },
     {
@@ -252,68 +266,82 @@ const UserPermiso = ({ busqueda }) => {
   return (
     <div className="p-4">
       <div className={`shadow-lg rounded-xl p-6 ${fondo}`}>
-        <h2
-          className={`text-2xl md:text-3xl font-extrabold tracking-wide cursor-pointer select-none ${texto}`}
-          onClick={() => setIsCollapsed(!isCollapsed)}
-          role="button"
-          tabIndex={0}
-          aria-expanded={!isCollapsed}
-          aria-controls="usuariosPermisoContent"
-          onKeyDown={(e) => {
-            if (e.key === "Enter" || e.key === " ") setIsCollapsed(!isCollapsed);
-          }}
-        >
-          {isCollapsed ? "►" : "▼"} Gestión de Usuarios-Permisos
+        <h2 className={`text-2xl md:text-3xl font-extrabold tracking-wide mb-4 ${texto}`}>
+          Usuarios-Permiso
         </h2>
 
-        {!isCollapsed && (
-          <div id="usuariosPermisoContent" className="mt-4">
-            <ContadoresBase
-              activos={activos}
-              inactivos={inactivos}
-              total={usuariosPermisoFiltrados.length}
-              modoOscuro={modoOscuro}
-              onNuevo={abrirModalNuevo}
-            />
+        <ContadoresBase activos={activos} inactivos={inactivos} total={usuariosPermisoFiltrados.length} modoOscuro={modoOscuro} onNuevo={abrirModalNuevo} />
 
-            <TablaBase
-              datos={usuariosPermisoFiltrados}
-              columnas={columnas}
-              modoOscuro={modoOscuro}
-              loading={loading}
-              texto={texto}
-              encabezadoClase={encabezado}
-              onEditar={abrirModalEditar}
-            />
-          </div>
-        )}
+        <div className="mb-2 flex justify-start items-center gap-2 text-sm">
+          <label htmlFor="filasPorPagina" className="font-semibold select-none">
+            Filas por página:
+          </label>
+          <select
+            id="filasPorPagina"
+            value={filasPorPagina}
+            onChange={(e) => {
+              setFilasPorPagina(parseInt(e.target.value));
+              setPaginaActual(1);
+            }}
+            className={`w-[5rem] px-3 py-1 rounded border ${modoOscuro ? "bg-gray-800 text-white border-gray-600" : "bg-white text-gray-900 border-gray-300"}`}
+          >
+            {[1, 10, 30, 45, 60, 100].map((num) => (
+              <option key={num} value={num}>{num}</option>
+            ))}
+          </select>
+        </div>
+
+        <TablaBase datos={datosPaginados} columnas={columnas} modoOscuro={modoOscuro} loading={loading} texto={texto} encabezadoClase={encabezado} onEditar={abrirModalEditar} />
+
+        <div className="flex flex-wrap items-center justify-between mt-6 gap-4">
+          <button
+            disabled={paginaActual === 1}
+            onClick={() => setPaginaActual((p) => Math.max(p - 1, 1))}
+            className={`rounded px-4 py-2 text-white ${paginaActual === 1 ? "bg-gray-400 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700"} transition-colors`}
+          >Anterior</button>
+          <span className="font-semibold select-none">Página {paginaActual} de {totalPaginas || 1}</span>
+          <button
+            disabled={paginaActual === totalPaginas || totalPaginas === 0}
+            onClick={() => setPaginaActual((p) => (p < totalPaginas ? p + 1 : totalPaginas))}
+            className={`rounded px-4 py-2 text-white ${paginaActual === totalPaginas || totalPaginas === 0 ? "bg-gray-400 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700"} transition-colors`}
+          >Siguiente</button>
+        </div>
 
         <ModalBase isOpen={modalOpen} onClose={cerrarModal} modoOscuro={modoOscuro}>
-          <FormularioBase
-            onSubmit={handleGuardar}
-            onCancel={cerrarModal}
-            modoOscuro={modoOscuro}
-            formError={formError}
-            formLoading={formLoading}
-            modoEdicion={modoEdicion}
-            titulo={modoEdicion ? "Editar Permiso Usuario" : "Nuevo Permiso Usuario"}
-          >
+          <FormularioBase onSubmit={handleGuardar} onCancel={cerrarModal} modoOscuro={modoOscuro} formError={formError} formLoading={formLoading} modoEdicion={modoEdicion} titulo={modoEdicion ? "Editar Permiso Usuario" : "Nuevo Permiso Usuario"}>
             <div className="space-y-4">
-              <select
-                name="idUsuario"
-                value={form.idUsuario || ""}
-                onChange={handleInputChange}
-                className="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white dark:border-gray-600"
-                required
-                disabled={modoEdicion}
-              >
-                <option value="">Seleccione Usuario</option>
-                {usuarios.map((u) => (
-                  <option key={u.id_Usuario} value={u.id_Usuario}>
-                    {u.usuario}
-                  </option>
-                ))}
-              </select>
+              <div className="relative">
+                <input
+                  type="text"
+                  placeholder="Buscar usuario..."
+                  value={busquedaUsuario}
+                  onChange={(e) => setBusquedaUsuario(e.target.value)}
+                  onFocus={() => setMostrarDropdownUsuario(true)}
+                  ref={inputRefUsuario}
+                  disabled={modoEdicion}
+                  className="w-full px-3 py-2 border rounded bg-white text-gray-800 border-gray-300 dark:bg-gray-700 dark:text-white dark:border-gray-600"
+                />
+                {mostrarDropdownUsuario && usuariosFiltrados.length > 0 && (
+                  <ul
+                    ref={dropdownRefUsuario}
+                    className="absolute z-10 w-full max-h-48 overflow-y-auto border rounded bg-white text-gray-800 shadow dark:bg-gray-800 dark:text-white dark:border-gray-600"
+                  >
+                    {usuariosFiltrados.map((u) => (
+                      <li
+                        key={u.id_Usuario}
+                        onClick={() => {
+                          setForm((prev) => ({ ...prev, idUsuario: u.id_Usuario }));
+                          setBusquedaUsuario(u.usuario);
+                          setMostrarDropdownUsuario(false);
+                        }}
+                        className="px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer"
+                      >
+                        {u.usuario}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
 
               <select
                 name="idPermiso"
@@ -324,21 +352,13 @@ const UserPermiso = ({ busqueda }) => {
               >
                 <option value="">Seleccione Permiso</option>
                 {permisos.map((p) => (
-                  <option key={p.idPermiso} value={p.idPermiso}>
-                    {p.nombrePermiso}
-                  </option>
+                  <option key={p.idPermiso} value={p.idPermiso}>{p.nombrePermiso}</option>
                 ))}
               </select>
 
               <select
                 name="activo"
-                value={
-                  form.activo === true
-                    ? "true"
-                    : form.activo === false
-                    ? "false"
-                    : ""
-                }
+                value={form.activo === true ? "true" : form.activo === false ? "false" : ""}
                 onChange={handleInputChange}
                 className="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white dark:border-gray-600"
                 required

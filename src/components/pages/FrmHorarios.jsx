@@ -56,7 +56,7 @@ const FrmHorarios = () => {
 
   const getNombreUsuario = (id) => {
     const user = usuarios.find((u) => u.id_Usuario === id);
-    return user?.persona?.trim() || "ND";
+    return user?.usuario?.trim() || "ND";
   };
 
   const cargarDatos = async () => {

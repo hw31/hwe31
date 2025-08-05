@@ -60,7 +60,7 @@ const filtrarPorIdEstudiante = async (idEstudiante) => {
 
 
 
-/* LISTAR INSCRIPCIONES */
+
 /* LISTAR INSCRIPCIONES */
 const listarInscripcionesMaterias = async () => {
   try {
