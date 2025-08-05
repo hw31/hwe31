@@ -64,8 +64,8 @@ const FrmEstados = () => {
         activo: e.activo,
         fechaCreacion: formatearFecha(e.fecha_Creacion),
         fechaModificacion: formatearFecha(e.fecha_Modificacion),
-        nombreCreador: creador ? creador.persona.trim() : "ND",
-        nombreModificador: modificador ? modificador.persona.trim() : "ND",
+        nombreCreador: creador ? creador.usuario.trim() : "ND",
+        nombreModificador: modificador ? modificador.usuario.trim() : "ND",
       };
     });
 

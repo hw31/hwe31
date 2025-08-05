@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useSelector } from "react-redux";
 import Swal from "sweetalert2";
 import { FaCheckCircle, FaTimesCircle } from "react-icons/fa";
@@ -29,6 +29,9 @@ const FrmContacto = ({ busqueda }) => {
   const [formLoading, setFormLoading] = useState(false);
   const [formError, setFormError] = useState("");
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [filtroPersona, setFiltroPersona] = useState("");
+  const [mostrarDropdownPersona, setMostrarDropdownPersona] = useState(false);
+  const inputPersonaRef = useRef(null);
 
   const [form, setForm] = useState({
     idContacto: 0,
@@ -37,6 +40,9 @@ const FrmContacto = ({ busqueda }) => {
     valorContacto: "",
     idEstado: "",
   });
+
+  const [filasPorPagina, setFilasPorPagina] = useState(10);
+  const [paginaActual, setPaginaActual] = useState(1);
 
   const cargarDatos = async () => {
     setLoading(true);
@@ -66,6 +72,16 @@ const FrmContacto = ({ busqueda }) => {
     cargarDatos();
   }, []);
 
+  useEffect(() => {
+    const handleClickFuera = (e) => {
+      if (inputPersonaRef.current && !inputPersonaRef.current.contains(e.target)) {
+        setMostrarDropdownPersona(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickFuera);
+    return () => document.removeEventListener("mousedown", handleClickFuera);
+  }, []);
+
   const abrirModalNuevo = () => {
     setForm({
       idContacto: 0,
@@ -74,12 +90,14 @@ const FrmContacto = ({ busqueda }) => {
       valorContacto: "",
       idEstado: "",
     });
+    setFiltroPersona("");
     setFormError("");
     setModoEdicion(false);
     setModalOpen(true);
   };
 
   const abrirModalEditar = (contacto) => {
+    const persona = personas.find((p) => p.idPersona === contacto.idPersona);
     setForm({
       idContacto: contacto.idContacto,
       idPersona: contacto.idPersona,
@@ -87,6 +105,9 @@ const FrmContacto = ({ busqueda }) => {
       valorContacto: contacto.valorContacto || "",
       idEstado: contacto.idEstado || "",
     });
+    setFiltroPersona(
+      persona ? `${persona.primerNombre} ${persona.primerApellido}` : ""
+    );
     setFormError("");
     setModoEdicion(true);
     setModalOpen(true);
@@ -189,6 +210,10 @@ const FrmContacto = ({ busqueda }) => {
   const activos = contactosFiltrados.filter((c) => c.idEstado === 1).length;
   const inactivos = contactosFiltrados.length - activos;
 
+  const totalPaginas = Math.ceil(contactosFiltrados.length / filasPorPagina);
+  const inicio = (paginaActual - 1) * filasPorPagina;
+  const paginados = contactosFiltrados.slice(inicio, inicio + filasPorPagina);
+
   const columnas = [
     {
       key: "nombrePersona",
@@ -228,18 +253,23 @@ const FrmContacto = ({ busqueda }) => {
   ];
 
   return (
-<>
-        <div className="flex justify-between items-center mb-4">
-          <h2
-            className={`text-2xl md:text-3xl font-extrabold tracking-wide ${
-              modoOscuro ? "text-white" : "text-gray-800"
-            }`}
-          >
-            Contactos
-          </h2>
-        </div>
+    <div className="p-4">
+      <div className={`shadow-lg rounded-xl p-6 ${fondo}`}>
+        <h2
+          className={`text-2xl md:text-3xl font-extrabold tracking-wide cursor-pointer select-none ${texto}`}
+          onClick={() => setIsCollapsed(!isCollapsed)}
+          role="button"
+          tabIndex={0}
+          aria-expanded={!isCollapsed}
+          aria-controls="contactosContent"
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") setIsCollapsed(!isCollapsed);
+          }}
+        >
+          {isCollapsed ? "►" : "▼"} Gestión de Contactos
+        </h2>
 
-        
+        {!isCollapsed && (
           <div id="contactosContent" className="mt-4">
             <ContadoresBase
               activos={activos}
@@ -249,17 +279,42 @@ const FrmContacto = ({ busqueda }) => {
               onNuevo={abrirModalNuevo}
             />
 
-            <TablaBase
-              datos={contactosFiltrados}
-              columnas={columnas}
-              modoOscuro={modoOscuro}
-              loading={loading}
-              texto={texto}
-              encabezadoClase={encabezado}
-              onEditar={abrirModalEditar}
-            />
+          <TablaBase
+            datos={paginados}
+            columnas={columnas}
+            modoOscuro={modoOscuro}
+            loading={loading}
+            texto={texto}
+            encabezadoClase={encabezado}
+            onEditar={abrirModalEditar}
+          />
+
+              <div className="flex flex-wrap items-center justify-between mt-6 gap-4">
+            <button
+              disabled={paginaActual === 1}
+              onClick={() => setPaginaActual((p) => Math.max(p - 1, 1))}
+              className={`rounded px-4 py-2 text-white ${
+                paginaActual === 1 ? "bg-gray-400 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700"
+              } transition-colors`}
+            >
+              Anterior
+            </button>
+            <span className="font-semibold select-none">
+              Página {paginaActual} de {totalPaginas || 1}
+            </span>
+            <button
+              disabled={paginaActual === totalPaginas || totalPaginas === 0}
+              onClick={() => setPaginaActual((p) => (p < totalPaginas ? p + 1 : totalPaginas))}
+              className={`rounded px-4 py-2 text-white ${
+                paginaActual === totalPaginas || totalPaginas === 0
+                  ? "bg-gray-400 cursor-not-allowed"
+                  : "bg-blue-600 hover:bg-blue-700"
+              } transition-colors`}
+            >
+              Siguiente
+            </button>
           </div>
-        
+        )}
 
         <ModalBase isOpen={modalOpen} onClose={cerrarModal} modoOscuro={modoOscuro}>
           <FormularioBase
@@ -272,20 +327,39 @@ const FrmContacto = ({ busqueda }) => {
             titulo={modoEdicion ? "Editar Contacto" : "Nuevo Contacto"}
           >
             <div className="space-y-4">
-              <select
-                name="idPersona"
-                value={form.idPersona || ""}
-                onChange={handleInputChange}
-                className="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white dark:border-gray-600"
-                required
-              >
-                <option value="">Seleccione Persona *</option>
-                {personas.map((p) => (
-                  <option key={p.idPersona} value={p.idPersona}>
-                    {p.primerNombre} {p.segundoNombre || ""} {p.primerApellido} {p.segundoApellido || ""}
-                  </option>
-                ))}
-              </select>
+              <div className="relative" ref={inputPersonaRef}>
+                <input
+                  type="text"
+                  value={filtroPersona}
+                  onChange={(e) => {
+                    setFiltroPersona(e.target.value);
+                    setMostrarDropdownPersona(true);
+                  }}
+                  onFocus={() => setMostrarDropdownPersona(true)}
+                  placeholder="Buscar persona..."
+                  className="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white dark:border-gray-600"
+                />
+                {mostrarDropdownPersona && (
+                  <ul className="absolute z-10 w-full max-h-40 overflow-auto border rounded mt-1 dark:bg-gray-800 bg-white text-gray-900 dark:text-white border-gray-300 dark:border-gray-600">
+                    {personas.filter((p) => {
+                      const nombre = `${p.primerNombre} ${p.segundoNombre || ""} ${p.primerApellido} ${p.segundoApellido || ""}`.toLowerCase();
+                      return nombre.includes(filtroPersona.toLowerCase());
+                    }).map((p) => (
+                      <li
+                        key={p.idPersona}
+                        onClick={() => {
+                          setForm((prev) => ({ ...prev, idPersona: p.idPersona }));
+                          setFiltroPersona(`${p.primerNombre} ${p.primerApellido}`);
+                          setMostrarDropdownPersona(false);
+                        }}
+                        className="cursor-pointer px-4 py-2 hover:bg-blue-500 hover:text-white"
+                      >
+                        {p.primerNombre} {p.segundoNombre || ""} {p.primerApellido} {p.segundoApellido || ""}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
 
               <select
                 name="idTipoContacto"

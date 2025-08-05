@@ -1,541 +1,255 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { useSelector } from "react-redux";
-import { FaBook, FaChalkboardTeacher, FaArrowRight } from "react-icons/fa"; 
-import { ArrowLeft } from "lucide-react";
-import asignacionDocenteService from "../../services/AsignacionDocente";
-import inscripcionesMateriasService from "../../services/InscricipcionesxMateria";
-import inscripcionesService from "../../services/Inscripcion";
-import calificacionService from "../../services/Calificaciones";
+import calificacionesService from "../../services/Calificaciones";
+import usuarioService from "../../services/Usuario"; // nombres docentes
+import materiaService from "../../services/Materias";
 import tipoCalificacionService from "../../services/TipoCalificacion";
-import { listarPeriodosAcademicos } from "../../services/PeriodoAcademico";
+import estadoService from "../../services/Estado";
+import inscripcionService from "../../services/Inscripcion";
+import inscripcionMateriaService from "../../services/InscricipcionesxMateria";
+import { FaCheckCircle, FaTimesCircle } from "react-icons/fa";
+import Swal from "sweetalert2";
 
 const FrmCalificaciones = () => {
-  const { modoOscuro } = useSelector((state) => state.theme);
-  const idUsuario = useSelector((state) => state.auth?.idUsuario);
-  const usuario = useSelector((state) => state.auth?.usuario || null);
+  const modoOscuro = useSelector((state) => state.theme.modoOscuro);
+  const rol = useSelector((state) => state.auth.rol);
+  const rolLower = rol?.toLowerCase() || "";
+  const idUsuario = useSelector((state) => state.auth.idUsuario);
 
-  useEffect(() => {
-    console.log("Usuario en auth:", usuario);
-    console.log("idUsuario:", idUsuario);
-  }, [usuario, idUsuario]);
-
-  const [asignaciones, setAsignaciones] = useState([]);
-  const [grupoSeleccionado, setGrupoSeleccionado] = useState(null);
-  const [materiaSeleccionada, setMateriaSeleccionada] = useState(null);
-  const [estudiantes, setEstudiantes] = useState([]);
-  const [tiposCalificacion, setTiposCalificacion] = useState([]);
   const [calificaciones, setCalificaciones] = useState([]);
-  const [statusGuardado, setStatusGuardado] = useState({});
-  const [periodo, setPeriodo] = useState({ id: null, nombre: "" });
-
-  useEffect(() => {
-    const cargarPeriodo = async () => {
-      try {
-        const response = await listarPeriodosAcademicos();
-        const periodos = response.resultado || [];
-        const activo = periodos.find((p) => p.activo === true);
-        if (activo) {
-          setPeriodo({ id: activo.idPeriodoAcademico, nombre: activo.nombrePeriodo });
-        } else {
-          console.warn("No hay período académico activo.");
-        }
-      } catch (error) {
-        console.error("Error cargando período académico:", error.message);
-      }
-    };
-    cargarPeriodo();
-  }, []);
-
-  useEffect(() => {
-    const cargarAsignaciones = async () => {
-      try {
-        const data = await asignacionDocenteService.listarAsignaciones();
-        setAsignaciones(data);
-      } catch (error) {
-        console.error("Error al cargar asignaciones:", error);
-      }
-    };
-    cargarAsignaciones();
-
-    const cargarTiposCalificacion = async () => {
-      try {
-        const res = await tipoCalificacionService.listarTiposCalificacion();
-        setTiposCalificacion(
-  (res.resultado || []).filter((tipo) => tipo.activo === true || tipo.activo === 1)/*SOLO MOSTRAR LOS ACTIVOS  */
-);
-
-      } catch (error) {
-        console.error("Error al cargar tipos de calificación:", error);
-      }
-    };
-    cargarTiposCalificacion();
-  }, []);
-
-  const gruposUnicos = [];
-  const idsGrupos = new Set();
-  asignaciones.forEach((a) => {
-    if (!idsGrupos.has(a.idGrupo)) {
-      idsGrupos.add(a.idGrupo);
-      gruposUnicos.push({
-        idGrupo: a.idGrupo,
-        nombreGrupo: a.nombreGrupo,
-      });
-    }
+  const [listas, setListas] = useState({
+    docentesMap: {},           // { idUsuario: nombreDocente }
+    materiasMap: {},           // { idMateria: nombreMateria }
+    tiposCalificacionMap: {},  // { idTipoCalificacion: nombreTipo }
+    estadosMap: {},            // { idEstado: nombreEstado }
+    estudiantesInscritosPorMateria: {}, // { idMateria: [{idInscripcion, nombreEstudiante}, ...] }
   });
 
-  const materiasDelGrupo = grupoSeleccionado
-    ? asignaciones.filter((a) => a.idGrupo === grupoSeleccionado.idGrupo)
-    : [];
+  const [busqueda, setBusqueda] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
-  const handleSeleccionarMateria = async (materia) => {
-    setMateriaSeleccionada(materia);
-    setEstudiantes([]);
-    setCalificaciones([]);
+  useEffect(() => {
+    const cargarDatos = async () => {
+      try {
+        setLoading(true);
 
-    try {
-      const inscMat = await inscripcionesMateriasService.listarInscripcionesMaterias();
-      const inscripciones = await inscripcionesService.listarInscripciones();
+        // Cargar todos los datos en paralelo
+        const [
+          califResp,
+          inscripcionesMateriaResp,
+          materiasResp,
+          tiposCalificacionResp,
+          estadosResp,
+          usuariosResp,
+          inscripcionesResp,
+        ] = await Promise.all([
+          calificacionesService.listarCalificacion(),
+          inscripcionMateriaService.listarInscripcionesMaterias(),
+          materiaService.listarMaterias(),
+          tipoCalificacionService.listarTiposCalificacion(),
+          estadoService.listarEstados(),
+          usuarioService.listarUsuario(),
+          inscripcionService.listarInscripciones(),
+        ]);
 
-      const inscMatFiltradas = inscMat.filter(
-        (im) => im.iD_Grupo === materia.idGrupo && im.idMateria === materia.idMateria
-      );
+        const calificacionesRaw = califResp.data || [];
+        const inscripcionesMateria = inscripcionesMateriaResp.data || [];
+        const materias = materiasResp.resultado || [];
+        const tiposCalificacion = tiposCalificacionResp.resultado || [];
+        const estados = estadosResp.data || [];
+        const usuarios = usuariosResp.data || [];
+        const inscripciones = inscripcionesResp.data || [];
 
-      const inscritos = inscripciones.filter((insc) =>
-        inscMatFiltradas.some((im) => im.idInscripcion === insc.iD_Inscripcion)
-      );
+        // Crear mapas para acceso rápido
+        const docentesMap = {};
+        usuarios.forEach((u) => {
+          docentesMap[Number(u.id_Usuario)] = u.persona;
+        });
 
-      setEstudiantes(inscritos);
+        const materiasMap = {};
+        materias.forEach((m) => {
+          materiasMap[Number(m.idMateria)] = m.nombreMateria;
+        });
 
-      const resCalifs = await calificacionService.listarCalificacion();
-      if (resCalifs.success) {
-        const califsFiltradas = resCalifs.data.filter(
-          (c) =>
-            c.idMateria === materia.idMateria &&
-            inscritos.some((e) => e.iD_Inscripcion === c.idInscripcion)
-        );
-        setCalificaciones(califsFiltradas);
-      } else {
-        setCalificaciones([]);
+        const tiposCalificacionMap = {};
+        tiposCalificacion.forEach((tc) => {
+          tiposCalificacionMap[Number(tc.idTipoCalificacion)] = tc.tipoCalificacionNombre;
+        });
+
+        const estadosMap = {};
+        estados.forEach((e) => {
+          estadosMap[Number(e.id_Estado ?? e.idEstado)] = e.nombreEstado ?? e.nombre_Estado;
+        });
+
+        // Map de inscripciones para nombre de estudiante
+        const inscripcionesMap = {};
+        inscripciones.forEach((ins) => {
+          inscripcionesMap[Number(ins.id_Inscripcion)] = `${ins.nombre} ${ins.apellido}`;
+        });
+
+        // Estudiantes inscritos por materia
+        const estudiantesInscritosPorMateria = {};
+        inscripcionesMateria.forEach((im) => {
+          const idMat = Number(im.id_Materia);
+          if (!estudiantesInscritosPorMateria[idMat]) {
+            estudiantesInscritosPorMateria[idMat] = [];
+          }
+          estudiantesInscritosPorMateria[idMat].push({
+            idInscripcion: Number(im.id_Inscripcion),
+            nombreEstudiante: inscripcionesMap[Number(im.id_Inscripcion)] || "Desconocido",
+          });
+        });
+
+        // Filtrar calificaciones si es docente para mostrar solo las suyas
+        let listaCalificaciones = calificacionesRaw;
+        if (rolLower === "docente") {
+          listaCalificaciones = listaCalificaciones.filter(
+            (c) => Number(c.idUsuarioDocente) === Number(idUsuario)
+          );
+        }
+
+        setCalificaciones(listaCalificaciones);
+        setListas({
+          docentesMap,
+          materiasMap,
+          tiposCalificacionMap,
+          estadosMap,
+          estudiantesInscritosPorMateria,
+        });
+        setError("");
+      } catch (err) {
+        console.error("Error al cargar datos:", err);
+        setError(err?.message || "Error desconocido");
+        Swal.fire({
+          icon: "error",
+          title: "Error al cargar datos",
+          text: err?.message || "Error desconocido",
+        });
+      } finally {
+        setLoading(false);
       }
-    } catch (error) {
-      console.error("Error al cargar inscripciones o calificaciones:", error);
-      setEstudiantes([]);
-      setCalificaciones([]);
-    }
-  };
-
-  const obtenerNota = (idInscripcion, idTipoCalificacion) => {
-    const calif = calificaciones.find(
-      (c) => c.idInscripcion === idInscripcion && c.idTipoCalificacion === idTipoCalificacion
-    );
-    return calif ? String(calif.calificacion) : "";
-  };
-
-  const guardarNota = async (idInscripcion, idTipoCalificacion, nota) => {
-  const clave = `${idInscripcion}_${idTipoCalificacion}`;
-  if (nota === "") return;
-
-  setStatusGuardado((s) => ({ ...s, [clave]: "guardando" }));
-
-  try {
-    const notaNum = Number(nota);
-    if (isNaN(notaNum) || notaNum < 0) throw new Error("Nota inválida");
-    if (!idUsuario) throw new Error("Usuario no autenticado");
-
-    // Buscar calificación existente con idCalificacion válido
-    const califExistente = calificaciones.find(
-      (c) =>
-        c.idInscripcion === idInscripcion &&
-        c.idTipoCalificacion === idTipoCalificacion &&
-        c.idCalificacion
-    );
-
-    const payload = {
-      IdInscripcion: idInscripcion,
-      IdUsuarioDocente: idUsuario,
-      Calificacion: notaNum,
-      IdMateria: materiaSeleccionada.idMateria,
-      IdTipoCalificacion: idTipoCalificacion,
-      IdEstado: 1,
-      IdPeriodo: periodo.id,
     };
 
-    if (califExistente) {
-      // Actualizar calificación existente
-      payload.IdCalificacion = califExistente.idCalificacion;
-      await calificacionService.actualizarCalificaciones(payload);
+    cargarDatos();
+  }, [rolLower, idUsuario]);
 
-      setCalificaciones((prev) =>
-        prev.map((c) =>
-          c.idInscripcion === idInscripcion && c.idTipoCalificacion === idTipoCalificacion
-            ? { ...c, calificacion: notaNum }
-            : c
-        )
-      );
-    } else {
-      // Insertar nueva calificación
-      const res = await calificacionService.insertarCalificaciones(payload);
+  // Filtrar calificaciones por búsqueda (nombre estudiante)
+  const calificacionesFiltradas = calificaciones.filter((c) =>
+    c.nombreEstudiante.toLowerCase().includes(busqueda.toLowerCase())
+  );
 
-      // Debes asegurarte que aquí tienes el ID que devuelve el backend
-      const nuevoId = res.idCalificacion || res.data?.idCalificacion;
-      if (!nuevoId) {
-        throw new Error("No se recibió idCalificacion tras insertar");
-      }
+  // Estilos básicos (puedes ajustar o usar los tuyos)
+  const encabezado = modoOscuro ? "bg-gray-700 text-white" : "bg-gray-200";
+  const texto = modoOscuro ? "text-white" : "text-gray-900";
 
-      setCalificaciones((prev) => {
-        // Eliminar registros temporales sin idCalificacion para esta nota
-        const sinEsta = prev.filter(
-          (c) =>
-            !(c.idInscripcion === idInscripcion && c.idTipoCalificacion === idTipoCalificacion)
-        );
-        return [
-          ...sinEsta,
-          {
-            ...payload,
-            calificacion: notaNum,
-            idCalificacion: nuevoId,
-          },
-        ];
-      });
-    }
+  return (
+    <div className={`p-4 ${modoOscuro ? "bg-gray-900 text-white" : "bg-white text-gray-900"}`}>
+      <h2 className="text-2xl font-bold mb-4">Gestión de Calificaciones</h2>
 
-    setStatusGuardado((s) => ({ ...s, [clave]: "ok" }));
-    setTimeout(() => {
-      setStatusGuardado((s) => {
-        const copia = { ...s };
-        delete copia[clave];
-        return copia;
-      });
-    }, 1500);
-  } catch (error) {
-    console.error("Error guardando nota:", error);
-    setStatusGuardado((s) => ({ ...s, [clave]: "error" }));
-    setTimeout(() => {
-      setStatusGuardado((s) => {
-        const copia = { ...s };
-        delete copia[clave];
-        return copia;
-      });
-    }, 3000);
-  }
-};
+      <input
+        type="text"
+        placeholder="Buscar por estudiante"
+        className="border rounded px-3 py-2 mb-4 w-full max-w-md"
+        value={busqueda}
+        onChange={(e) => setBusqueda(e.target.value)}
+      />
 
-  const acumuladoPorEstudiante = (idInscripcion) =>
-    tiposCalificacion.reduce((acum, tipo) => {
-      const calif = calificaciones.find(
-        (c) => c.idInscripcion === idInscripcion && c.idTipoCalificacion === tipo.idTipoCalificacion
-      );
-      return acum + (calif ? Number(calif.calificacion) : 0);
-    }, 0);
+      {/* Mensajes */}
+      {loading && <p>Cargando calificaciones...</p>}
+      {error && <p className="text-red-600">{error}</p>}
 
-  const porcentajePorEstudiante = (idInscripcion) => {
-    const maxTotal = tiposCalificacion.reduce((acum, tipo) => acum + tipo.valorMaximo, 0);
-    if (maxTotal === 0) return 0;
-    return (acumuladoPorEstudiante(idInscripcion) / maxTotal) * 100;
-  };
+      {!loading && !error && (
+        <>
+          <table className="min-w-full border border-gray-300 mb-6">
+            <thead className={encabezado}>
+              <tr>
+                <th className="border border-gray-300 px-2 py-1">ID</th>
+                <th className="border border-gray-300 px-2 py-1">Estudiante</th>
+                <th className="border border-gray-300 px-2 py-1">Docente</th>
+                <th className="border border-gray-300 px-2 py-1">Materia</th>
+                <th className="border border-gray-300 px-2 py-1">Tipo</th>
+                <th className="border border-gray-300 px-2 py-1">Calificación</th>
+                <th className="border border-gray-300 px-2 py-1">Estado</th>
+                <th className="border border-gray-300 px-2 py-1">Fecha Registro</th>
+              </tr>
+            </thead>
+            <tbody>
+              {calificacionesFiltradas.length === 0 ? (
+                <tr>
+                  <td colSpan={8} className="text-center py-4">
+                    No se encontraron calificaciones
+                  </td>
+                </tr>
+              ) : (
+                calificacionesFiltradas.map((c) => (
+                  <tr
+                    key={c.idCalificacion}
+                    className={modoOscuro ? "bg-gray-800" : "bg-white"}
+                  >
+                    <td className="border border-gray-300 px-2 py-1 text-center">
+                      {c.idCalificacion}
+                    </td>
+                    <td className="border border-gray-300 px-2 py-1">
+                      {c.nombreEstudiante}
+                    </td>
+                    <td className="border border-gray-300 px-2 py-1">
+                      {listas.docentesMap[Number(c.idUsuarioDocente)] || "Desconocido"}
+                    </td>
+                    <td className="border border-gray-300 px-2 py-1">
+                      {listas.materiasMap[Number(c.idMateria)] || "Desconocida"}
+                    </td>
+                    <td className="border border-gray-300 px-2 py-1">
+                      {listas.tiposCalificacionMap[Number(c.idTipoCalificacion)] || "Desconocido"}
+                    </td>
+                    <td className="border border-gray-300 px-2 py-1 text-center">
+                      {c.calificacion}
+                    </td>
+                    <td className="border border-gray-300 px-2 py-1 text-center">
+                      {c.estado === "Activo" ? (
+                        <FaCheckCircle
+                          className="text-green-600 inline"
+                          title="Activo"
+                        />
+                      ) : (
+                        <FaTimesCircle
+                          className="text-red-600 inline"
+                          title="Inactivo"
+                        />
+                      )}
+                    </td>
+                    <td className="border border-gray-300 px-2 py-1">
+                      {new Date(c.fechaRegistro).toLocaleDateString()}
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
 
-  const aprobadoPorEstudiante = (idInscripcion) =>
-    porcentajePorEstudiante(idInscripcion) >= 60;
-
-  const claseStatusInput = (clave) => {
-    switch (statusGuardado[clave]) {
-      case "ok":
-        return "border-green-500";
-      case "error":
-        return "border-red-500";
-      case "guardando":
-        return "border-yellow-500 animate-pulse";
-      default:
-        return "border-gray-300";
-    }
-  };
-
-  const clasesBoton = `w-full sm:w-auto text-lg px-6 py-4 rounded-xl font-bold shadow transition-all ${
-    modoOscuro
-      ? "bg-indigo-700 text-white hover:bg-indigo-600"
-      : "bg-blue-500 text-white hover:bg-blue-600"
-  }`;
-
-  const clasesCard = `rounded-2xl shadow-md p-4 sm:p-6 transition-all duration-300 w-full max-w-full mx-auto ${
-    modoOscuro ? "bg-gray-900 text-white" : "bg-white text-gray-800"
-  }`;
-const clasesCardGrid = "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mb-6";
-
-const clasesCardMateria = `
-  bg-gradient-to-tr from-indigo-400 via-blue-500 to-pink-500 
-  shadow-lg rounded-xl p-5 cursor-pointer
-  transition transform hover:scale-105 hover:shadow-2xl
-  text-white flex flex-col justify-between
-`;
-
-const clasesCardGrupo = `
-  bg-gradient-to-tr from-green-400 via-teal-500 to-blue-600
-  shadow-lg rounded-xl p-5 cursor-pointer
-  transition transform hover:scale-105 hover:shadow-2xl
-  text-white flex flex-col justify-between
-`;
-
-return (
-  <>
-    {!grupoSeleccionado && (
-      <>
-        <h2 className={`text-2xl font-bold mb-4 ${modoOscuro ? "text-white" : "text-gray-800"}`}>
-          Seleccione un grupo
-        </h2>
-        <div className={clasesCardGrid}>
-          {gruposUnicos.map((grupo) => (
-            <div
-              key={grupo.idGrupo}
-              className={clasesCardGrupo}
-              onClick={() => {
-                setGrupoSeleccionado(grupo);
-                setMateriaSeleccionada(null);
-                setEstudiantes([]);
-                setCalificaciones([]);
-              }}
-              role="button"
-              tabIndex={0}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  setGrupoSeleccionado(grupo);
-                  setMateriaSeleccionada(null);
-                  setEstudiantes([]);
-                  setCalificaciones([]);
-                }
-              }}
-            >
-              <div className="flex items-center space-x-3">
-                <FaBook size={24} />
-                <h3 className="text-xl font-semibold">{grupo.nombreGrupo}</h3>
-              </div>
-              <div className="mt-4 text-sm opacity-90">Haz click para ver materias</div>
-            </div>
-          ))}
-        </div>
-      </>
-    )}
-
-    {grupoSeleccionado && !materiaSeleccionada && (
-      <>
-        <h2 className={`text-2xl font-bold mb-4 ${modoOscuro ? "text-white" : "text-gray-800"}`}>
-         <span className="underline">{grupoSeleccionado.nombreGrupo}</span>
-        </h2>
-
-        <div className={clasesCardGrid}>
-          {materiasDelGrupo.map((m) => (
-            <div
-              key={m.idAsignacion}
-              className={clasesCardMateria}
-              onClick={() => handleSeleccionarMateria(m)}
-              role="button"
-              tabIndex={0}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") handleSeleccionarMateria(m);
-              }}
-            >
-              <div>
-                <h3 className="text-lg font-bold">{m.nombreMateria}</h3>
-                <p className="flex items-center gap-2 mt-1 opacity-90">
-                  <FaChalkboardTeacher /> {m.nombreDocente}
-                </p>
-              </div>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleSeleccionarMateria(m);
-                }}
-className="mt-4 px-4 py-2 bg-white bg-opacity-20 hover:bg-opacity-40 rounded-full text-sm font-semibold flex items-center justify-center gap-2 transition text-black"
-
-
-              >
-                Ver detalles <FaArrowRight />
-              </button>
-            </div>
-          ))}
-        </div>
-
-  <button
-      onClick={() => setGrupoSeleccionado(null)}
-      className={`fixed bottom-4 right-4 z-50 flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold shadow-lg transition-all ${
-        modoOscuro
-          ? "bg-red-600 hover:bg-red-500 text-white"
-          : "bg-gray-200 hover:bg-gray-300 text-gray-800"
-      }`}
-    >
-      <ArrowLeft className="w-5 h-5" />
-      <span className="hidden sm:inline">Volver</span>
-    </button>
-      </>
-    )}
-
-    {materiaSeleccionada && (
-      <div className="overflow-auto max-w-full">
-        <table
-  className={`min-w-full border-collapse table-auto text-sm text-left ${
-    modoOscuro ? "text-gray-200 bg-gray-900" : "text-gray-700 bg-white"
-  }`}
->
-  <thead className={`sticky top-0 z-10 ${modoOscuro ? "bg-gray-800" : "bg-gray-100"}`}>
-    <tr>
-      <th
-        className={`border px-4 py-2 font-semibold text-center ${
-          modoOscuro ? "border-gray-700" : "border-gray-300"
-        }`}
-      >
-        Estudiante
-      </th>
-      {tiposCalificacion.map((tipo) => (
-        <th
-          key={tipo.idTipoCalificacion}
-          className={`border px-4 py-2 font-semibold text-center whitespace-nowrap ${
-            modoOscuro ? "border-gray-700" : "border-gray-300"
-          }`}
-        >
-          {tipo.tipoCalificacionNombre}
-          <br />
-          <span className="text-xs text-gray-500">Max: {tipo.valorMaximo}</span>
-        </th>
-      ))}
-      <th className={`border px-4 py-2 font-semibold text-center ${
-        modoOscuro ? "border-gray-700" : "border-gray-300"
-      }`}>Acumulado</th>
-      <th className={`border px-4 py-2 font-semibold text-center ${
-        modoOscuro ? "border-gray-700" : "border-gray-300"
-      }`}>%</th>
-      <th className={`border px-4 py-2 font-semibold text-center ${
-        modoOscuro ? "border-gray-700" : "border-gray-300"
-      }`}>Aprobado</th>
-    </tr>
-  </thead>
-  <tbody>
-    {estudiantes.length === 0 && (
-      <tr>
-        <td
-          colSpan={tiposCalificacion.length + 4}
-          className="text-center py-4 text-gray-500"
-        >
-          No hay estudiantes inscritos para esta materia y grupo.
-        </td>
-      </tr>
-    )}
-    {estudiantes.map((est, index) => (
-      <tr
-        key={est.iD_Inscripcion}
-        className={`${
-          modoOscuro
-            ? index % 2 === 0
-              ? "bg-gray-900"
-              : "bg-gray-800"
-            : index % 2 === 0
-            ? "bg-white"
-            : "bg-gray-50"
-        }`}
-      >
-        <td
-          className={`border px-4 py-2 font-medium ${
-            modoOscuro ? "border-gray-700" : "border-gray-300"
-          }`}
-        >
-          {est.nombreEstudiante || "Sin nombre"}
-        </td>
-        {tiposCalificacion.map((tipo) => {
-          const clave = `${est.iD_Inscripcion}_${tipo.idTipoCalificacion}`;
-          const notaActual = obtenerNota(est.iD_Inscripcion, tipo.idTipoCalificacion);
-          return (
-            <td
-              key={tipo.idTipoCalificacion}
-              className={`border px-2 py-1 text-center ${
-                modoOscuro ? "border-gray-700" : "border-gray-300"
-              }`}
-            >
-              <input
-                type="number"
-                min="0"
-                max={tipo.valorMaximo}
-                step="0.1"
-                value={notaActual}
-                onChange={(e) => {
-                  const val = e.target.value;
-                  setCalificaciones((prev) => {
-                    const existe = prev.find(
-                      (c) =>
-                        c.idInscripcion === est.iD_Inscripcion &&
-                        c.idTipoCalificacion === tipo.idTipoCalificacion
-                    );
-                    if (existe) {
-                      return prev.map((c) =>
-                        c.idInscripcion === est.iD_Inscripcion &&
-                        c.idTipoCalificacion === tipo.idTipoCalificacion
-                          ? { ...c, calificacion: val }
-                          : c
-                      );
-                    } else {
-                      return [
-                        ...prev,
-                        {
-                          idInscripcion: est.iD_Inscripcion,
-                          idTipoCalificacion: tipo.idTipoCalificacion,
-                          calificacion: val,
-                        },
-                      ];
-                    }
-                  });
-                }}
-                onBlur={(e) => guardarNota(est.iD_Inscripcion, tipo.idTipoCalificacion, e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && e.target.blur()}
-                className={`w-full text-center rounded border-2 px-1 py-0.5
-                  ${claseStatusInput(clave)} 
-                  focus:outline-none focus:ring-2 focus:ring-indigo-400 transition`}
-                aria-label={`${tipo.tipoCalificacionNombre} de ${est.nombreEstudiante}`}
-              />
-            </td>
-          );
-        })}
-        <td
-          className={`border px-4 py-2 text-center font-semibold ${
-            modoOscuro ? "border-gray-700" : "border-gray-300"
-          }`}
-        >
-          {acumuladoPorEstudiante(est.iD_Inscripcion).toFixed(2)}
-        </td>
-        <td
-          className={`border px-4 py-2 text-center font-semibold ${
-            modoOscuro ? "border-gray-700" : "border-gray-300"
-          }`}
-        >
-          {porcentajePorEstudiante(est.iD_Inscripcion).toFixed(1)}%
-        </td>
-        <td
-          className={`border px-4 py-2 text-center font-semibold ${
-            modoOscuro ? "border-gray-700" : "border-gray-300"
-          }`}
-        >
-          {aprobadoPorEstudiante(est.iD_Inscripcion) ? "Sí" : "No"}
-        </td>
-      </tr>
-    ))}
-  </tbody>
-</table>
-
-        <button
-          onClick={() => {
-            setMateriaSeleccionada(null);
-            setEstudiantes([]);
-            setCalificaciones([]);
-          }}
-       className={`fixed bottom-4 right-4 z-50 flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold shadow-lg transition-all ${
-        modoOscuro
-          ? "bg-red-600 hover:bg-red-500 text-white"
-          : "bg-gray-200 hover:bg-gray-300 text-gray-800"
-      }`}
-    >
-      <ArrowLeft className="w-5 h-5" />
-      <span className="hidden sm:inline">Volver</span>
-        </button>
-        
-      </div>
-    )}
-  </>
+          {/* Mostrar estudiantes inscritos por materia (opcional) */}
+          <div>
+            <h3 className="text-xl font-semibold mb-2">
+              Estudiantes inscritos por materia
+            </h3>
+            {Object.entries(listas.estudiantesInscritosPorMateria).map(
+              ([idMateria, estudiantes]) => (
+                <div key={idMateria} className="mb-4">
+                  <h4 className="font-semibold">
+                    {listas.materiasMap[idMateria] || `Materia ${idMateria}`}
+                  </h4>
+                  <ul className="list-disc list-inside">
+                    {estudiantes.map((est) => (
+                      <li key={est.idInscripcion}>{est.nombreEstudiante}</li>
+                    ))}
+                  </ul>
+                </div>
+              )
+            )}
+          </div>
+        </>
+      )}
+    </div>
   );
 };
 

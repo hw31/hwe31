@@ -10,6 +10,7 @@ import estadoService from "../../services/Estado"; // listarEstados
 import { Users, ArrowLeft } from "lucide-react"; // Iconos
 import { FaPlus, FaEdit, FaUser, FaUserCheck, FaUserTimes, FaCheckCircle, FaTimesCircle } from "react-icons/fa";
 import Swal from "sweetalert2";
+import AutocompleteSelect from "../Shared/AutocompleteSelect";
 
 const AsignacionDocenteList = () => {
   const modoOscuro = useSelector((state) => state.theme.modoOscuro);
@@ -565,100 +566,50 @@ console.log("ROL:", rol, "ROL LOWER:", rolLower, "LOADING:", loading);
                 }}
               >
                 {/* Docente */}
-                <label className="block mb-2 font-semibold">
-                  Docente:
-                  <select
-                    name="UsuarioDocente"
-                    value={formData.UsuarioDocente}
-                    onChange={handleChange}
-                    className="w-full p-2 mt-1 mb-4 rounded border"
-                    required
-                  >
-                    <option value="">Seleccione un docente</option>
-                    {listas.usuariosRoles.map((u, idx) => (
-                      <option
-                        key={u.iD_Usuario_Roles ?? idx}
-                        value={u.iD_Usuario ?? ""}
-                      >
-                        {u.nombre_Usuario ?? "Sin nombre"}
-                      </option>
-                    ))}
-                  </select>
-                </label>
+               <AutocompleteSelect
+                label="Docente"
+                value={formData.UsuarioDocente}
+                onChange={(val) => setFormData({ ...formData, UsuarioDocente: val })}
+                options={listas.usuariosRoles}
+                getOptionLabel={(u) => u.nombre_Usuario ?? "Sin nombre"}
+                getOptionValue={(u) => u.iD_Usuario}
+              />
 
-                {/* Materia */}
-                <label className="block mb-2 font-semibold">
-                  Materia:
-                  <select
-                    name="IdMateria"
-                    value={formData.IdMateria}
-                    onChange={handleChange}
-                    className="w-full p-2 mt-1 mb-4 rounded border"
-                    required
-                  >
-                    <option value="">Seleccione una materia</option>
-                    {listas.materias.map((m, idx) => (
-                      <option key={m.idMateria ?? idx} value={m.idMateria ?? ""}>
-                        {m.nombreMateria ?? "Sin nombre"}
-                      </option>
-                    ))}
-                  </select>
-                </label>
+              <AutocompleteSelect
+                label="Materia"
+                value={formData.IdMateria}
+                onChange={(val) => setFormData({ ...formData, IdMateria: val })}
+                options={listas.materias}
+                getOptionLabel={(m) => m.nombreMateria ?? "Sin nombre"}
+                getOptionValue={(m) => m.idMateria}
+              />
 
-                {/* Grupo */}
-                <label className="block mb-2 font-semibold">
-                  Grupo:
-                  <select
-                    name="IdGrupo"
-                    value={formData.IdGrupo}
-                    onChange={handleChange}
-                    className="w-full p-2 mt-1 mb-4 rounded border"
-                    required
-                  >
-                    <option value="">Seleccione un grupo</option>
-                    {listas.grupos.map((g, idx) => (
-                      <option key={g.idGrupo ?? idx} value={g.idGrupo ?? ""}>
-                        {g.codigoGrupo ?? "Sin nombre"}
-                      </option>
-                    ))}
-                  </select>
-                </label>
+              <AutocompleteSelect
+                label="Grupo"
+                value={formData.IdGrupo}
+                onChange={(val) => setFormData({ ...formData, IdGrupo: val })}
+                options={listas.grupos}
+                getOptionLabel={(g) => g.codigoGrupo ?? "Sin nombre"}
+                getOptionValue={(g) => g.idGrupo}
+              />
 
-                {/* Aula */}
-                <label className="block mb-2 font-semibold">
-                  Aula:
-                  <select
-                    name="IdAula"
-                    value={formData.IdAula}
-                    onChange={handleChange}
-                    className="w-full p-2 mt-1 mb-4 rounded border"
-                    required
-                  >
-                    <option value="">Seleccione un aula</option>
-                    {listas.aulas.map((a, idx) => (
-                      <option key={a.idAula ?? idx} value={a.idAula ?? ""}>
-                        {a.nombreAula ?? "Sin nombre"}
-                      </option>
-                    ))}
-                  </select>
-                </label>
+              <AutocompleteSelect
+                label="Aula"
+                value={formData.IdAula}
+                onChange={(val) => setFormData({ ...formData, IdAula: val })}
+                options={listas.aulas}
+                getOptionLabel={(a) => a.nombreAula ?? "Sin nombre"}
+                getOptionValue={(a) => a.idAula}
+              />
 
-                {/* Horario */}
-                <label className="block mb-2 font-semibold">Horario:</label>
-                <select
-                  name="IdHorario"
-                  value={formData.IdHorario}
-                  onChange={handleChange}
-                  className="w-full p-2 mt-1 mb-4 rounded border"
-                  required
-                >
-                  <option value="">Seleccione un horario</option>
-                  {listas.horarios.map((h, idx) => (
-                    <option key={h.idHorario ?? idx} value={h.idHorario ?? ""}>
-                      {h.descripcionHorario || "Sin descripción"}
-                    </option>
-                  ))}
-                </select>
+              <AutocompleteSelect
+                label="Horario"
+                value={formData.IdHorario}
+                onChange={(val) => setFormData({ ...formData, IdHorario: val })}
+                options={listas.horarios}
+                getOptionLabel={(h) => h.descripcionHorario ?? "Sin descripción"}
+                getOptionValue={(h) => h.idHorario}
+              />
 
                 {/* Estado */}
                 <label className="block mb-2 font-semibold">

@@ -321,8 +321,13 @@ const TransaccionesRoles = () => {
           />
         </div>
 
-        <ContadoresBase activos={activos} inactivos={inactivos} total={filtrados.length} onNuevo={abrirModalNuevo} modoOscuro={modoOscuro} />
-                <div className="mb-2 flex justify-start items-center gap-2 text-sm">
+        <ContadoresBase activos={activos}
+         inactivos={inactivos} total={filtrados.length} 
+         onNuevo={abrirModalNuevo} 
+         modoOscuro={modoOscuro} 
+         />
+         {/*SELECT FILAS*/}
+        <div className="mb-2 flex justify-start items-center gap-2 text-sm">
         <label htmlFor="filasPorPagina" className="font-semibold select-none">
           Filas por página:
         </label>
@@ -353,7 +358,8 @@ const TransaccionesRoles = () => {
           texto={texto}
           encabezadoClase={encabezado}
         />
-
+        
+          {/*BOTONES SIGUIENTES*/}
         <div className="flex flex-wrap items-center justify-between mt-6 gap-4">
           <button
             disabled={paginaActual === 1}

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useSelector } from "react-redux";
 import Swal from "sweetalert2";
 import { FaCheckCircle, FaTimesCircle } from "react-icons/fa";
@@ -32,20 +32,55 @@ const FrmUsuarios = ({ busqueda }) => {
   const [loading, setLoading] = useState(false);
   const [formLoading, setFormLoading] = useState(false);
   const [formError, setFormError] = useState("");
-  const [isCollapsed, setIsCollapsed] = useState(false);
 
-  const [filtros, setFiltros] = useState({
-    texto: "",
-    estado: "",
-  });
+  const [busquedaPersona, setBusquedaPersona] = useState("");
+  const [personasFiltradas, setPersonasFiltradas] = useState([]);
+  const [mostrarDropdownPersona, setMostrarDropdownPersona] = useState(false);
+  const inputRefPersona = useRef(null);
+  const dropdownRefPersona = useRef(null);
+
+  const [filtros, setFiltros] = useState({ texto: "", estado: "" });
 
   const [form, setForm] = useState({
     idUsuario: 0,
-    idPersona: "",          
+    idPersona: "",
     nombreUsuario: "",
     contrasena: "",
     idEstado: "",
   });
+
+  useEffect(() => {
+  const handleClickOutside = (event) => {
+    if (
+      inputRefPersona.current &&
+      !inputRefPersona.current.contains(event.target) &&
+      dropdownRefPersona.current &&
+      !dropdownRefPersona.current.contains(event.target)
+    ) {
+      setMostrarDropdownPersona(false);
+    }
+  };
+
+  document.addEventListener("mousedown", handleClickOutside);
+  return () => {
+    document.removeEventListener("mousedown", handleClickOutside);
+  };
+}, []);
+
+  useEffect(() => {
+    if (!busquedaPersona) {
+      setPersonasFiltradas(personas);
+      return;
+    }
+    const filtro = personas.filter((p) => {
+      const nombreCompleto = `${p.primerNombre} ${p.segundoNombre || ""} ${p.primerApellido} ${p.segundoApellido || ""}`.toLowerCase();
+      return nombreCompleto.includes(busquedaPersona.toLowerCase());
+    });
+    setPersonasFiltradas(filtro);
+  }, [busquedaPersona, personas]);
+
+  const [filasPorPagina, setFilasPorPagina] = useState(10);
+  const [paginaActual, setPaginaActual] = useState(1);
 
   const formatearFecha = (fecha) => {
     if (!fecha) return "-";
@@ -74,12 +109,11 @@ const FrmUsuarios = ({ busqueda }) => {
 
       return {
         idUsuario: u.id_Usuario,
-        idPersona: u.id_Persona,  
+        idPersona: u.id_Persona,
         nombreUsuario: u.usuario || "-",
-        nombreCompleto:
-          persona
-            ? `${persona.primerNombre} ${persona.segundoNombre || ""} ${persona.primerApellido} ${persona.segundoApellido || ""}`.trim()
-            : "-",
+        nombreCompleto: persona
+          ? `${persona.primerNombre} ${persona.segundoNombre || ""} ${persona.primerApellido} ${persona.segundoApellido || ""}`.trim()
+          : "-",
         correoElectronico: u.correoElectronico || "-",
         tipoContacto: contactoSeleccionado ? mapaCatalogos.get(contactoSeleccionado.idTipoContacto) || "-" : "-",
         numeroContacto: contactoSeleccionado?.valorContacto || "-",
@@ -96,14 +130,7 @@ const FrmUsuarios = ({ busqueda }) => {
   const cargarTodo = async () => {
     setLoading(true);
     try {
-      const [
-        resUsuarios,
-        resPersonas,
-        resContactos,
-        resCatalogos,
-        resTiposCatalogo,
-        resEstados,
-      ] = await Promise.all([
+      const [resUsuarios, resPersonas, resContactos, resCatalogos, resTiposCatalogo, resEstados] = await Promise.all([
         usuarioService.listarUsuario(),
         personaService.listarPersonas(),
         contactoService.listarContacto(),
@@ -141,10 +168,24 @@ const FrmUsuarios = ({ busqueda }) => {
     cargarTodo();
   }, []);
 
+  useEffect(() => {
+  if (!busquedaPersona) {
+    setPersonasFiltradas(personas);
+    return;
+  }
+
+  const filtro = personas.filter((p) => {
+    const nombreCompleto = `${p.primerNombre} ${p.segundoNombre || ""} ${p.primerApellido} ${p.segundoApellido || ""}`.toLowerCase();
+    return nombreCompleto.includes(busquedaPersona.toLowerCase());
+  });
+
+  setPersonasFiltradas(filtro);
+}, [busquedaPersona, personas]);
+
   const abrirModalNuevo = () => {
     setForm({
       idUsuario: 0,
-      idPersona: "",           // <-- inicializar vacío
+      idPersona: "",
       nombreUsuario: "",
       contrasena: "",
       idEstado: "",
@@ -157,9 +198,9 @@ const FrmUsuarios = ({ busqueda }) => {
   const abrirModalEditar = (usuario) => {
     setForm({
       idUsuario: usuario.idUsuario,
-      idPersona: usuario.idPersona,    // <-- cargar idPersona
+      idPersona: usuario.idPersona,
       nombreUsuario: usuario.nombreUsuario,
-      contrasena: "", // vacía para que no muestre contraseña actual
+      contrasena: "",
       idEstado: usuario.estado,
     });
     setFormError("");
@@ -182,46 +223,26 @@ const FrmUsuarios = ({ busqueda }) => {
   };
 
   const handleGuardar = async () => {
-    setFormError(""); // Limpiar errores previos
+    setFormError("");
 
-    if (!form.nombreUsuario || form.nombreUsuario.trim() === "") {
-      setFormError("El nombre de usuario es obligatorio.");
-      return;
-    }
-
+    if (!form.nombreUsuario?.trim()) return setFormError("El nombre de usuario es obligatorio.");
     if (!modoEdicion) {
-      if (!form.idPersona || form.idPersona === "") {
-        setFormError("Debe seleccionar una persona para el nuevo usuario.");
-        return;
-      }
-      // Nuevo usuario: contraseña obligatoria
-      if (!form.contrasena || form.contrasena.trim() === "") {
-        setFormError("La contraseña es obligatoria para un nuevo usuario.");
-        return;
-      }
-    } else {
-      // Edición: si contraseña se pone, debe no estar vacía
-      if (form.contrasena && form.contrasena.trim() === "") {
-        setFormError("Si ingresa contraseña, no puede estar vacía.");
-        return;
-      }
+      if (!form.idPersona) return setFormError("Debe seleccionar una persona.");
+      if (!form.contrasena?.trim()) return setFormError("La contraseña es obligatoria para un nuevo usuario.");
     }
 
-    if (!form.idEstado) {
-      setFormError("Debe seleccionar un estado.");
-      return;
+    if (modoEdicion && form.contrasena && !form.contrasena.trim()) {
+      return setFormError("Si ingresa contraseña, no puede estar vacía.");
     }
+
+    if (!form.idEstado) return setFormError("Debe seleccionar un estado.");
 
     setFormLoading(true);
-
-    // Preparar datos a enviar:
     const datosEnviar = modoEdicion
       ? {
           IdUsuario: form.idUsuario,
           Usuario: form.nombreUsuario.trim(),
-          ...(form.contrasena && form.contrasena.trim() !== "" && {
-            Contrasena: form.contrasena.trim(),
-          }),
+          ...(form.contrasena?.trim() && { Contrasena: form.contrasena.trim() }),
           Id_Estado: form.idEstado,
         }
       : {
@@ -256,21 +277,24 @@ const FrmUsuarios = ({ busqueda }) => {
       u.nombreUsuario.toLowerCase().includes(textoBusqueda) ||
       u.nombreCompleto.toLowerCase().includes(textoBusqueda) ||
       u.correoElectronico.toLowerCase().includes(textoBusqueda);
-
     const coincideEstado = !filtros.estado || u.nombreEstado === filtros.estado;
-
     return coincideTexto && coincideEstado;
   });
+
+  const totalPaginas = Math.ceil(usuariosFiltrados.length / filasPorPagina);
+  const datosPaginados = usuariosFiltrados.slice(
+    (paginaActual - 1) * filasPorPagina,
+    paginaActual * filasPorPagina
+  );
 
   const activos = usuariosFiltrados.filter((u) => u.estado === 1).length;
   const inactivos = usuariosFiltrados.length - activos;
 
   const columnas = [
- 
     { key: "nombreUsuario", label: "Usuario" },
     { key: "nombreCompleto", label: "Nombre Completo" },
-    { key: "tipoContacto", label: "Tipo Contacto" },
-    { key: "numeroContacto", label: "Número" },
+    { key: "fechaCreacion", label: "Fecha Creación" },
+    { key: "fechaModificacion", label: "Fecha Modificación" },
     {
       key: "nombreEstado",
       label: "Estado",
@@ -286,23 +310,25 @@ const FrmUsuarios = ({ busqueda }) => {
           </span>
         ),
     },
-
-    { key: "fechaCreacion", label: "Fecha Creación" },
-    { key: "fechaModificacion", label: "Fecha Modificación" },
   ];
 return (
-<>
-        <div className="flex justify-between items-center mb-4">
-          <h2
-            className={`text-2xl md:text-3xl font-extrabold tracking-wide ${
-              modoOscuro ? "text-white" : "text-gray-800"
-            }`}
-          >
-            Usuarios
-          </h2>
-        </div>
+  <div className="p-4">
+    <div className={`shadow-lg rounded-xl p-6 ${fondo}`}>
+      <h2
+        className={`text-2xl md:text-3xl font-extrabold tracking-wide cursor-pointer select-none ${texto}`}
+        onClick={() => setIsCollapsed(!isCollapsed)}
+        role="button"
+        tabIndex={0}
+        aria-expanded={!isCollapsed}
+        aria-controls="usuariosContent"
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") setIsCollapsed(!isCollapsed);
+        }}
+      >
+        {isCollapsed ? "►" : "▼"} Gestión de Usuarios
+      </h2>
 
- 
+      {!isCollapsed && (
         <div id="usuariosContent" className="mt-4">
           <ContadoresBase
             activos={activos}
@@ -312,91 +338,132 @@ return (
             onNuevo={abrirModalNuevo}
           />
 
-          <TablaBase
-            datos={usuariosFiltrados}
-            columnas={columnas}
-            modoOscuro={modoOscuro}
-            loading={loading}
-            texto={texto}
-            encabezadoClase={encabezado}
-            onEditar={abrirModalEditar}
-          />
+        <TablaBase
+          datos={datosPaginados}
+          columnas={columnas}
+          modoOscuro={modoOscuro}
+          loading={loading}
+          texto={texto}
+          encabezadoClase={encabezado}
+          onEditar={abrirModalEditar}
+        />
+
+        {/* BOTONES SIGUIENTES */}
+        <div className="flex flex-wrap items-center justify-between mt-6 gap-4">
+          <button
+            disabled={paginaActual === 1}
+            onClick={() => setPaginaActual((p) => Math.max(p - 1, 1))}
+            className={`rounded px-4 py-2 text-white ${
+              paginaActual === 1 ? "bg-gray-400 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700"
+            } transition-colors`}
+          >
+            Anterior
+          </button>
+          <span className="font-semibold select-none">
+            Página {paginaActual} de {totalPaginas || 1}
+          </span>
+          <button
+            disabled={paginaActual === totalPaginas || totalPaginas === 0}
+            onClick={() => setPaginaActual((p) => (p < totalPaginas ? p + 1 : totalPaginas))}
+            className={`rounded px-4 py-2 text-white ${
+              paginaActual === totalPaginas || totalPaginas === 0
+                ? "bg-gray-400 cursor-not-allowed"
+                : "bg-blue-600 hover:bg-blue-700"
+            } transition-colors`}
+          >
+            Siguiente
+          </button>
         </div>
-      
+      )}
 
-      <ModalBase isOpen={modalOpen} onClose={cerrarModal} modoOscuro={modoOscuro}>
-  <FormularioBase
-    onSubmit={handleGuardar}
-    onCancel={cerrarModal}
-    modoOscuro={modoOscuro}
-    formError={formError}
-    formLoading={formLoading}
-    modoEdicion={modoEdicion}
-    titulo={modoEdicion ? "Editar Usuario" : "Nuevo Usuario"}
-  >
-   
-
-          <div className="space-y-4">
-            {!modoEdicion && (
-  <select
-    name="idPersona"
-    value={form.idPersona || ""}
-    onChange={handleInputChange}
-    className="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white dark:border-gray-600"
-    required
-  >
-    <option value="">Seleccione Persona</option>
-    {personas.map((p) => (
-      <option key={p.idPersona} value={p.idPersona}>
-        {p.primerNombre} {p.segundoNombre || ""} {p.primerApellido} {p.segundoApellido || ""}
-      </option>
-    ))}
-  </select>
-)}
-
-
-            <input
-              type="text"
-              name="nombreUsuario"
-              placeholder="Nombre de Usuario *"
-              value={form.nombreUsuario}
-              onChange={handleInputChange}
-              className="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white dark:border-gray-600"
-              required
-            />
-
-            {!modoEdicion && (
+        <ModalBase isOpen={modalOpen} onClose={cerrarModal} modoOscuro={modoOscuro}>
+          <FormularioBase
+            onSubmit={handleGuardar}
+            onCancel={cerrarModal}
+            modoOscuro={modoOscuro}
+            formError={formError}
+            formLoading={formLoading}
+            modoEdicion={modoEdicion}
+            titulo={modoEdicion ? "Editar Usuario" : "Nuevo Usuario"}
+          >
+            <div className="space-y-4">
+              {!modoEdicion && (
+                 <div className="relative">
+                  <input
+                    type="text"
+                    placeholder="Buscar persona..."
+                    value={busquedaPersona}
+                    onChange={(e) => setBusquedaPersona(e.target.value)}
+                    onFocus={() => setMostrarDropdownPersona(true)}
+                    ref={inputRefPersona}
+                    className="w-full px-3 py-2 border rounded bg-white text-gray-800 border-gray-300 dark:bg-gray-700 dark:text-white dark:border-gray-600"
+                  />
+                  {mostrarDropdownPersona && personasFiltradas.length > 0 && (
+                    <ul 
+                    ref={dropdownRefPersona}
+                    className="absolute z-10 w-full max-h-48 overflow-y-auto border rounded bg-white text-gray-800 shadow dark:bg-gray-800 dark:text-white dark:border-gray-600">
+                      {personasFiltradas.map((p) => (
+                        <li
+                          key={p.idPersona}
+                          onClick={() => {
+                            setForm((prev) => ({ ...prev, idPersona: p.idPersona }));
+                            setBusquedaPersona(
+                              `${p.primerNombre} ${p.segundoNombre || ""} ${p.primerApellido} ${p.segundoApellido || ""}`.trim()
+                            );
+                            setMostrarDropdownPersona(false);
+                          }}
+                          className="px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer"
+                        >
+                          {p.primerNombre} {p.segundoNombre || ""} {p.primerApellido} {p.segundoApellido || ""}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              )}
               <input
-                type="password"
-                name="contrasena"
-                placeholder="Contraseña *"
-                value={form.contrasena}
+                type="text"
+                name="nombreUsuario"
+                placeholder="Nombre de Usuario *"
+                value={form.nombreUsuario}
                 onChange={handleInputChange}
                 className="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white dark:border-gray-600"
                 required
               />
-            )}
 
-            {modoEdicion && (
-              <input
-                type="password"
-                name="contrasena"
-                placeholder="Nueva Contraseña (opcional)"
-                value={form.contrasena}
+              {!modoEdicion && (
+                <input
+                  type="password"
+                  name="contrasena"
+                  placeholder="Contraseña *"
+                  value={form.contrasena}
+                  onChange={handleInputChange}
+                  className="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white dark:border-gray-600"
+                  required
+                />
+              )}
+
+              {modoEdicion && (
+                <input
+                  type="password"
+                  name="contrasena"
+                  placeholder="Nueva Contraseña (opcional)"
+                  value={form.contrasena}
+                  onChange={handleInputChange}
+                  className="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white dark:border-gray-600"
+                />
+              )}
+
+              <select
+                name="idEstado"
+                value={form.idEstado || ""}
                 onChange={handleInputChange}
                 className="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white dark:border-gray-600"
-              />
-            )}
-
-            <select
-              name="idEstado"
-              value={form.idEstado || ""}
-              onChange={handleInputChange}
-              className="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white dark:border-gray-600"
-              required
-            >
-              <option value="">Seleccione Estado </option>
-              {estados .filter((e) => e.iD_Estado === 1 || e.iD_Estado === 2)
+                required
+              >
+                <option value="">Seleccione Estado </option>
+                {estados
+                  .filter((e) => e.iD_Estado === 1 || e.iD_Estado === 2)
                   .map((e) => (
                 <option key={e.iD_Estado} value={e.iD_Estado}>
                   {e.nombre_Estado}
@@ -406,7 +473,8 @@ return (
           </div>
         </FormularioBase>
       </ModalBase>
-</>
+    </div>
+  </div>
 );
 
 };
