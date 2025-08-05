@@ -287,17 +287,18 @@ const FrmPersonas = ({ busqueda }) => {
 
   return (
     /*cantida */
-    <div className="p-4">
-      <div className={`shadow-lg rounded-xl p-6 ${fondo}`}>
-               
-        <h2
-          className={`text-2xl md:text-3xl font-extrabold tracking-wide cursor-pointer select-none ${texto}`}
-          onClick={() => setIsCollapsed(!isCollapsed)}
-        >
-          {isCollapsed ? "►" : "▼"} Gestión de Personas
-        </h2>
-
-      {!isCollapsed && (
+  <>
+        <div className="flex justify-between items-center mb-4">
+          <h2
+            className={`text-2xl md:text-3xl font-extrabold tracking-wide ${
+              modoOscuro ? "text-white" : "text-gray-800"
+            }`}
+          >
+            Persona
+          </h2>
+        </div>
+ 
+      
         <div id="personasContent" className="mt-4">
           {/* FILTROS */}
           <div className="grid grid-cols-1 md:grid-cols-6 gap-4 mb-4">
@@ -424,7 +425,7 @@ const FrmPersonas = ({ busqueda }) => {
         </div>
 
         </div>
-      )}
+    
 
       {/* MODAL */}
       <ModalBase
@@ -532,8 +533,7 @@ const FrmPersonas = ({ busqueda }) => {
             </div>
           </FormularioBase>
         </ModalBase>
-      </div>
-    </div>
+</>
   );
 };
 

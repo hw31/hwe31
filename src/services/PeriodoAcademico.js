@@ -46,7 +46,7 @@ const filtrarPorIdPeriodo = async (idPeriodo) => {
 };
 
 /* LISTAR PERIODOS */
-const listarPeriodosAcademicos = async () => {
+export const listarPeriodosAcademicos = async () => {
   try {
     const res = await api.get('PeriodoAcademico/listar');
     return res.data;

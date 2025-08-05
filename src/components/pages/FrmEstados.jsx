@@ -197,12 +197,13 @@ const FrmEstados = () => {
   ];
 
   return (
-    <div className="mx-auto max-w-[900px] w-full rounded-2xl p-6">
+    <div    className={`mx-auto rounded-2xl p-6 max-w-[900px] w-full ${
+        modoOscuro ? "bg-gray-900 text-white" : "bg-white text-gray-900"
+      }`}
+    >
       <div
-        className={`w-full px-4 rounded-2xl shadow-md p-6 ${
-          modoOscuro
-            ? "bg-gray-900 text-white shadow-gray-700"
-            : "bg-white text-gray-900 shadow-gray-300"
+        className={`w-full max-w-5xl mx-auto rounded-2xl shadow-md p-6 ${
+          modoOscuro ? "bg-gray-900 shadow-gray-700" : "bg-white shadow-gray-300"
         }`}
       >
         <h2 className="text-3xl font-bold mb-4 text-center sm:text-left">

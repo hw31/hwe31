@@ -19,19 +19,19 @@ const insertarCalificaciones = async (datosCalificaciones) => {
 /* ACTUALIZAR Calificaciones */
 const actualizarCalificaciones = async (datosCalificaciones) => {
   try {
-   
+    console.log('Payload actualizarCalificaciones:', datosCalificaciones);
     const res = await api.put('Calificaciones/actualizar', datosCalificaciones);
-
     if (res.data.success) {
       console.log('Calificaciones actualizado correctamente');
     }
-
     return res.data;
   } catch (error) {
     console.error('Error al actualizar Calificaciones:', error.message);
     throw error;
   }
 };
+
+
 /* FILTRAR CALIFICACIONES POR ID */
 const filtrarPorIdCalificaciones = async (idCalificaciones) => {
   try {

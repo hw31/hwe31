@@ -13,10 +13,14 @@ const FrmTransacciones = () => {
   const [busqueda, setBusqueda] = useState("");
 
   return (
-    <div className={`p-4 min-h-screen ${modoOscuro ? "bg-gray-900" : "bg-gray-50"}`}>
+    <div
+      className={`mx-auto rounded-2xl p-6 max-w-[900px] w-full ${
+        modoOscuro ? "bg-gray-900 text-white" : "bg-white text-gray-900"
+      }`}
+    >
       <div
-        className={`max-w-7xl mx-auto rounded-2xl shadow-md p-4 transition-all duration-300 ${
-          modoOscuro ? "bg-gray-900 shadow-gray-700" : "bg-gray-50 shadow-gray-300"
+        className={`w-full max-w-5xl mx-auto rounded-2xl shadow-md p-6 ${
+          modoOscuro ? "bg-gray-900 shadow-gray-700" : "bg-white shadow-gray-300"
         }`}
       >
         <h2
