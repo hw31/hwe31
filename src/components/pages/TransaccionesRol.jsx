@@ -387,11 +387,9 @@ const TransaccionesRoles = () => {
         </div>
 
         <ModalBase isOpen={modalOpen} onClose={cerrarModal} modoOscuro={modoOscuro}>
-          <FormularioBase
-            onSubmit={(e) => {
-              e.preventDefault();
-              handleGuardar();
-            }}
+     <FormularioBase
+  onSubmit={handleGuardar}
+
             onCancel={cerrarModal}
             modoOscuro={modoOscuro}
             formError={formError}
