@@ -4,10 +4,12 @@ import { useSelector, useDispatch } from "react-redux";
 import { Moon, Sun, LogOut, User } from "lucide-react";
 import authService from "../../services/authService";
 import styled from "styled-components";
+import fotoService from "../../services/Profile"; // <- IMPORTANTE
 import { logout as logoutAction } from "../../features/Auth/authSlice";
 import { toggleModoOscuro, fetchModoOscuro, setModoOscuro } from "../../features/theme/themeSlice";
 import SidebarMenu from "../Shared/SidebarMenu";
 import DashboardMenuCards from "../Shared/DashboardMenuCards";
+
 const Dashboard = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -15,12 +17,13 @@ const Dashboard = () => {
 
   const persona = useSelector((state) => state.auth.persona || "Usuario");
   const rol = useSelector((state) => state.auth.rol || "Sin rol");
-    const rolLower = rol.toLowerCase();
+  const rolLower = rol.toLowerCase();
   const idSesion = useSelector((state) => state.auth.idSesion);
   const modoOscuro = useSelector((state) => state.theme.modoOscuro);
 
   const [showDropdown, setShowDropdown] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(window.innerWidth > 768);
+  const [fotoPerfilUrl, setFotoPerfilUrl] = useState(null); // <- FOTO PERFIL
   const dropdownRef = useRef(null);
   const sidebarRef = useRef(null);
 
@@ -43,6 +46,21 @@ const Dashboard = () => {
     else root.classList.remove("dark");
   }, [modoOscuro]);
 
+  useEffect(() => {
+    const obtenerFoto = async () => {
+      try {
+        const data = await fotoService.obtenerMiFoto();
+        if (data.success && data.ruta) {
+          setFotoPerfilUrl(`http://localhost:5292${data.ruta}`);
+        }
+      } catch (error) {
+        console.error("Error al cargar la foto de perfil:", error);
+      }
+    };
+
+    obtenerFoto();
+  }, []);
+
   const handleLogout = async () => {
     try {
       if (idSesion) await authService.logout(idSesion);
@@ -57,7 +75,6 @@ const Dashboard = () => {
     dispatch(toggleModoOscuro(!modoOscuro));
   };
 
-  // Cerrar dropdown si clic fuera
   useEffect(() => {
     const handleClickOutsideDropdown = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
@@ -68,14 +85,9 @@ const Dashboard = () => {
     return () => document.removeEventListener("mousedown", handleClickOutsideDropdown);
   }, []);
 
-  // Cerrar sidebar si clic fuera (solo en pantallas pequeñas)
   useEffect(() => {
     const handleClickOutsideSidebar = (event) => {
-      if (
-        sidebarOpen &&
-        sidebarRef.current &&
-        !sidebarRef.current.contains(event.target)
-      ) {
+      if (sidebarOpen && sidebarRef.current && !sidebarRef.current.contains(event.target)) {
         setSidebarOpen(false);
       }
     };
@@ -88,10 +100,8 @@ const Dashboard = () => {
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
-console.log(`rol: ${rol} rolLower: ${rolLower}`);
 
-
-   return (
+  return (
     <div className="dashboard-container">
       <aside
         ref={sidebarRef}
@@ -124,17 +134,16 @@ console.log(`rol: ${rol} rolLower: ${rolLower}`);
         <div className="dashboard-header" style={{ justifyContent: "flex-end" }}>
           <div className="dashboard-user-controls" ref={dropdownRef}>
             <button
-  onClick={handleToggleTheme}
-  className="dashboard-theme-toggle"
-  aria-label="Toggle theme"
-  title={modoOscuro ? "Cambiar a modo claro" : "Cambiar a modo oscuro"}
-  style={{
-    position: "relative",
-    zIndex: 1000, // asegúrate que esté encima
-    background: "transparent", // opcional
-  }}
->
-
+              onClick={handleToggleTheme}
+              className="dashboard-theme-toggle"
+              aria-label="Toggle theme"
+              title={modoOscuro ? "Cambiar a modo claro" : "Cambiar a modo oscuro"}
+              style={{
+                position: "relative",
+                zIndex: 1000,
+                background: "transparent",
+              }}
+            >
               {modoOscuro ? (
                 <Sun className="text-yellow-400" />
               ) : (
@@ -149,14 +158,33 @@ console.log(`rol: ${rol} rolLower: ${rolLower}`);
                 aria-haspopup="true"
                 aria-expanded={showDropdown}
               >
-                <User className="w-5 h-5" />
+                {fotoPerfilUrl ? (
+                  <img
+                    src={fotoPerfilUrl}
+                    alt="Foto de perfil"
+                    className="w-6 h-6 rounded-full object-cover mr-2"
+                  />
+                ) : (
+                  <User className="w-5 h-5 mr-2" />
+                )}
                 <span>{persona}</span>
               </button>
 
               {showDropdown && (
                 <div className="dashboard-user-dropdown" role="menu" aria-label="User menu">
                   <div className="flex flex-col items-center mb-4">
-                    <div className="profile-pic-placeholder" aria-hidden="true" />
+                    {fotoPerfilUrl ? (
+                      <img
+                        src={fotoPerfilUrl}
+                        alt="Foto de perfil"
+                        className="w-24 h-24 rounded-full object-cover border border-gray-300 shadow-md mb-2"
+                      />
+                    ) : (
+                      <div
+                        className="w-24 h-24 rounded-full bg-gray-300 animate-pulse mb-2"
+                        aria-hidden="true"
+                      />
+                    )}
                     <p className="font-semibold text-lg text-center">{persona}</p>
                     <p>{rol}</p>
                   </div>
@@ -169,35 +197,27 @@ console.log(`rol: ${rol} rolLower: ${rolLower}`);
           </div>
         </div>
 
-{mostrarBienvenida && (
- <div className="dashboard-welcome flex flex-col items-center" role="region" aria-live="polite">
+        {mostrarBienvenida && (
+          <div className="dashboard-welcome flex flex-col items-center" role="region" aria-live="polite">
+            <h1 className="text-2xl sm:text-3xl font-bold mb-6 text-center sm:whitespace-nowrap sm:overflow-hidden sm:text-ellipsis sm:max-w-full">
+              ¡Bienvenido, {persona}!
+            </h1>
+            {rolLower === "administrador" && <DashboardMenuCards />}
+          </div>
+        )}
 
- <h1
-  className="text-2xl sm:text-3xl font-bold mb-6 text-center sm:whitespace-nowrap sm:overflow-hidden sm:text-ellipsis sm:max-w-full"
->
-  ¡Bienvenido, {persona}!
-</h1>
-
-  {rolLower === "administrador" && <DashboardMenuCards />}
-</div>
-
-)}
-
-
-<style>{`
-   @media (max-width: 767px) {
-  .dashboard-welcome {
-    padding-top: 4rem; /* 64px */
-  }
-}
-@media (min-width: 768px) {
-  .dashboard-welcome {
-    padding-top: 1rem; /* 16px */
-  }
-}
-
-`}</style>
-
+        <style>{`
+          @media (max-width: 767px) {
+            .dashboard-welcome {
+              padding-top: 4rem;
+            }
+          }
+          @media (min-width: 768px) {
+            .dashboard-welcome {
+              padding-top: 1rem;
+            }
+          }
+        `}</style>
 
         <Outlet />
       </main>
@@ -233,7 +253,6 @@ const StyledBurgerWrapper = styled.div`
   }
 
   .menuButton:active {
-
     box-shadow: 6px 6px 12px #3a3a3a, -6px -6px 12px #000000;
   }
 
@@ -257,7 +276,6 @@ const StyledBurgerWrapper = styled.div`
   input:checked ~ span.bot {
     transform: translateY(-270%) rotate(-45deg);
     width: 40px;
-    
     box-shadow: 0 0 10px #495057;
   }
 
@@ -265,7 +283,6 @@ const StyledBurgerWrapper = styled.div`
     transform: translateX(-20px);
     opacity: 0;
   }
-  
 `;
 
 export default Dashboard;

@@ -60,8 +60,8 @@ const DashboardMenuCards = () => {
       const menus = await getMenu();
       const visibles = menus.filter((item) => item.visible && item.disponible);
       const ordenados = visibles.sort((a, b) => {
-        if (a.nombre === "Dashboard") return -1;
-        if (b.nombre === "Dashboard") return 1;
+        if (a.nombre === "Menu") return -1;
+        if (b.nombre === "Menu") return 1;
         return 0;
       });
       setMenuItems(ordenados);

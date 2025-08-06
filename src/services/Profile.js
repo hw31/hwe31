@@ -1,6 +1,5 @@
 import api from "./api";
 
-
 const subirFoto = async (fotoFile) => {
   try {
     const formData = new FormData();
@@ -12,21 +11,17 @@ const subirFoto = async (fotoFile) => {
       },
     });
 
-    return response.data;
+    return response.data; // { Numero, Mensaje, Ruta }
   } catch (error) {
     console.error("Error al subir la foto de perfil:", error);
     throw error;
   }
 };
 
-
 const obtenerMiFoto = async () => {
   try {
-    const response = await api.get("FotoPerfil/mi-foto", {
-      responseType: "blob", 
-    });
-
-    return response.data; 
+    const response = await api.get("FotoPerfil/mi-foto");
+    return response.data;
   } catch (error) {
     console.error("Error al obtener la foto de perfil:", error);
     throw error;

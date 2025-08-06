@@ -299,7 +299,7 @@ const TransaccionesRoles = () => {
   ];
 
   return (
-    <div className="mx-auto max-w-[900px] w-full rounded-2xl p-6">
+    
       <div
         className={`w-full px-4 rounded-2xl shadow-md p-6 ${
           modoOscuro ? "bg-gray-900 text-white shadow-gray-700" : "bg-white text-gray-900 shadow-gray-300"
@@ -470,7 +470,7 @@ const TransaccionesRoles = () => {
           </FormularioBase>
         </ModalBase>
       </div>
-    </div>
+ 
   );
 };
 

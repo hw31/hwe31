@@ -65,8 +65,8 @@ const SidebarMenu = ({ isSidebarOpen }) => {
 
         // Dashboard primero
         const ordenados = visibles.sort((a, b) => {
-          if (a.nombre === "Dashboard") return -1;
-          if (b.nombre === "Dashboard") return 1;
+          if (a.nombre === "Menu") return -1;
+          if (b.nombre === "Menu") return 1;
           return 0;
         });
 

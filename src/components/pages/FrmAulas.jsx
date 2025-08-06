@@ -233,7 +233,7 @@ const FrmAulas = () => {
               modoOscuro ? "text-white" : "text-gray-800"
             }`}
           >
-           Grupos
+        Aulas
           </h2>
         </div>
 

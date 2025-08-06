@@ -71,6 +71,7 @@ const handleFocus = () => {
       const data = await materiaService.listarMaterias();
       const materiasMapeadas = data.map((m) => ({
         idMateria: m.idMateria ?? 0,
+        codigoMateria: m.codigoMateria ?? "",
         nombreMateria: m.nombreMateria ?? m.nombre ?? "",
         descripcion: m.descripcion ?? "",
         idPeriodoAcademico: m.idPeriodoAcademico ?? 0,
@@ -394,6 +395,7 @@ const seleccionarCarrera = (carrera) => {
       <TablaBase
         datos={datosPaginados}
         columnas={[
+          { key: "codigoMateria", label: "Codigo" },
           { key: "nombreMateria", label: "Nombre" },
           { key: "descripcion", label: "Descripción" },
           {

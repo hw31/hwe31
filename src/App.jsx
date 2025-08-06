@@ -32,6 +32,7 @@ import FrmTipoTransacciones from "./components/pages/FrmTipoTransacciones";
 import FrmTransaccionxRol from "./components/pages/FrmTransaccionRol";
 import FrmTransaccionPermiso from "./components/pages/FrmTransaccionPermiso";
 import FrmRescateEvaculacion from "./components/pages/FrmRescateEvaculacion";
+import MateriasPorCarrera from "./components/hijos/MateriasPorCarrera";
 
 function App() {
   const dispatch = useDispatch();
@@ -84,6 +85,7 @@ function App() {
           <Route path="calificaciones" element={<FrmCalificaciones />} />
           <Route path="grupos" element={<FrmGrupos />} />
           <Route path="horarios" element={<FrmHorarios />} />
+          <Route path="carrera/:idCarrera" element={<MateriasPorCarrera />} />
           <Route path="tipocalificacion" element={<FrmTipoCalificaciones />} />
           <Route path="transacciones" element={<FrmTransacciones />} />
           <Route path="tipotransacciones" element={<FrmTipoTransacciones />} />
