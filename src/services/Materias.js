@@ -56,21 +56,11 @@ const listarMaterias = async () => {
     throw error;
   }
 };
-const filtrarPorCarrera = async (idCarrera) => {
-  try {
-    const res = await api.get('Materias/filtrar_por_carrera', {
-      params: { idCarrera }
-    });
-    return res.data;
-  } catch (error) {
-    console.error('Error al filtrar materias por carrera:', error.message);
-    throw error;
-  }
-};
+
 export default {
   insertarMateria,
   actualizarMateria,
   filtrarPorIdMateria,
   listarMaterias,
-  filtrarPorCarrera
+
 };

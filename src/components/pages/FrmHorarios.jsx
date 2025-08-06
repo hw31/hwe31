@@ -6,7 +6,8 @@ import { GraduationCap, PlusCircle, Edit3 } from "lucide-react";
 
 import carreraService from "../../services/Carreras";
 import estudianteCarreraService from "../../services/EstudiantesCarreras";
-import materiasService from "../../services/Materias"; // <- Servicio de materias
+import materiasCarrerasService from "../../services/MateriasCarrera";
+import materiasService from "../../services/Materias"; 
 
 const FrmCarreras = () => {
   const modoOscuro = useSelector((state) => state.theme.modoOscuro);
@@ -69,29 +70,33 @@ const FrmCarreras = () => {
     }
   };
 
-  // Carga materias según carrera seleccionada
+  // Carga materias según carrera seleccionada usando materiasCarrerasService
   const cargarMaterias = async (idCarrera) => {
-  setLoadingMaterias(true);
-  try {
-    const res = await materiasService.filtrarPorCarrera(idCarrera);
+    setLoadingMaterias(true);
+    try {
+      const res = await materiasCarrerasService.listarPorCarrera(idCarrera);
 
-    if (res.numero === -1 && res.mensaje) {
+      if (!res || res.length === 0) {
+        setMaterias([]);
+        Swal.fire("Información", "No hay materias para esta carrera.", "info");
+      } else {
+        // Mapear para extraer campos útiles de materias relacionadas
+        const materiasData = res.map((mc) => ({
+          idMateria: mc.ID_Materia,
+          nombreMateria: mc.nombreMateria || mc.NombreMateria || "Nombre no disponible",
+          codigoMateria: mc.codigoMateria || mc.CodigoMateria || "Código no disponible",
+        }));
+        setMaterias(materiasData);
+      }
+
+      setCarreraSeleccionada(carreras.find((c) => c.idCarrera === idCarrera) || null);
+    } catch (error) {
+      Swal.fire("Error", "No se pudieron cargar las materias", "error");
       setMaterias([]);
-      Swal.fire("Información", res.mensaje, "info");
-    } else if (Array.isArray(res.resultado)) {
-      setMaterias(res.resultado);
-    } else {
-      setMaterias([]);
+    } finally {
+      setLoadingMaterias(false);
     }
-
-    setCarreraSeleccionada(carreras.find((c) => c.idCarrera === idCarrera) || null);
-  } catch (error) {
-    Swal.fire("Error", "No se pudieron cargar las materias", "error");
-    setMaterias([]);
-  } finally {
-    setLoadingMaterias(false);
-  }
-};
+  };
 
   // Al seleccionar una carrera, cargar sus materias
   const handleSeleccionarCarrera = (idCarrera) => {
@@ -219,59 +224,61 @@ const FrmCarreras = () => {
             ← Volver a Carreras
           </button>
 
-{loadingMaterias ? (
-  <p className="text-center font-medium text-lg">Cargando materias...</p>
-) : materias.length === 0 ? (
-  <p className="text-center font-medium text-lg">No hay materias para esta carrera.</p>
-) : (
-  <div className="flex flex-col items-center mt-6 space-y-4">
-    {/* Título arriba de la tabla */}
-    <h2 className={`text-xl font-semibold ${modoOscuro ? "text-white" : "text-gray-800"}`}>
-      Plan de estudio de {carreraSeleccionada?.nombreCarrera}
-    </h2>
+          {loadingMaterias ? (
+            <p className="text-center font-medium text-lg">Cargando materias...</p>
+          ) : materias.length === 0 ? (
+            <p className="text-center font-medium text-lg">No hay materias para esta carrera.</p>
+          ) : (
+            <div className="flex flex-col items-center mt-6 space-y-4">
+              {/* Título arriba de la tabla */}
+              <h2 className={`text-xl font-semibold ${modoOscuro ? "text-white" : "text-gray-800"}`}>
+                Plan de estudio de {carreraSeleccionada?.nombreCarrera}
+              </h2>
 
-    <div className={`w-full max-w-4xl rounded-2xl overflow-hidden shadow-lg border ${modoOscuro ? "bg-gray-800 border-gray-600" : "bg-white border-gray-300"}`}>
-      <table className={`w-full border-separate border-spacing-y-2 ${modoOscuro ? "text-white" : "text-gray-900"}`}>
-        <thead>
-          <tr className="bg-blue-600 text-white text-sm font-bold uppercase tracking-wider">
-            <th className="px-4 py-3 text-left rounded-l-xl w-28  border-r border-gray-300 dark:border-gray-600">Código</th>
-            <th className="px-4 py-3 text-left rounded-r-xl w-64">Nombre</th>
-          </tr>
-        </thead>
-        <tbody>
-          {materias.map((materia) => (
-            <tr
-              key={materia.idMateria}
-              className={`transition duration-200 ease-in-out shadow-sm ${
-                modoOscuro
-                  ? "bg-gray-700 hover:bg-blue-600"
-                  : "bg-blue-100 hover:bg-blue-200"
-              }`}
-            >
-              <td className="px-4 py-4 rounded-l-xl font-medium w-28 border-r border-gray-300 dark:border-gray-600">
-                {materia.codigoMateria}
-              </td>
-              <td className="px-4 py-4 rounded-r-xl truncate w-64">
-                {materia.nombreMateria}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  </div>
-)}
-
+              <div
+                className={`w-full max-w-4xl overflow-hidden shadow-lg border ${
+                  modoOscuro ? "bg-gray-800 border-gray-600" : "bg-transparent border-gray-300"
+                }`}
+              >
+                <table className={`w-full border-separate  ${modoOscuro ? "text-white" : "text-gray-900"}`}>
+                  <thead>
+                    <tr className="bg-blue-600 text-white text-sm font-bold uppercase tracking-wider">
+                      <th className="px-4 py-3 text-left rounded-l-xl w-28  border-r border-gray-300 dark:border-gray-600">
+                        Código
+                      </th>
+                      <th className="px-4 py-3 text-left rounded-r-xl w-64">Nombre</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {materias.map((materia) => (
+                      <tr
+                        key={materia.idMateria}
+                        className={`transition duration-200 ease-in-out shadow-sm ${
+                          modoOscuro ? "bg-gray-700 hover:bg-blue-600" : "bg-blue-100 hover:bg-blue-200"
+                        }`}
+                      >
+                        <td className="px-4 py-4 rounded-l-xl font-medium w-28 border-r border-gray-300 dark:border-gray-600">
+                          {materia.codigoMateria}
+                        </td>
+                        <td className="px-4 py-4 rounded-r-xl truncate w-64">{materia.nombreMateria}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
         </>
       )}
 
       {/* MODAL */}
       {modal && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 z-50">
+         <div
+          className="fixed inset-0 flex items-center justify-center z-50"
+          style={{ backdropFilter: "blur(5px)" }}
+        >
           <div className="bg-white rounded-xl p-6 w-full max-w-md shadow-lg">
-            <h2 className="text-xl font-bold mb-4">
-              {formData.idCarrera ? "Editar Carrera" : "Nueva Carrera"}
-            </h2>
+            <h2 className="text-xl font-bold mb-4">{formData.idCarrera ? "Editar Carrera" : "Nueva Carrera"}</h2>
             <div className="space-y-4">
               <input
                 type="text"
@@ -290,12 +297,7 @@ const FrmCarreras = () => {
                 className="w-full border rounded-lg p-2"
               />
               <label className="flex items-center gap-2 text-sm">
-                <input
-                  type="checkbox"
-                  name="activo"
-                  checked={formData.activo}
-                  onChange={handleChange}
-                />
+                <input type="checkbox" name="activo" checked={formData.activo} onChange={handleChange} />
                 Activo
               </label>
             </div>
@@ -304,10 +306,7 @@ const FrmCarreras = () => {
               <button onClick={cerrarModal} className="px-4 py-2 bg-gray-300 rounded-lg">
                 Cancelar
               </button>
-              <button
-                onClick={guardarCarrera}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-              >
+              <button onClick={guardarCarrera} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
                 Guardar
               </button>
             </div>
