@@ -257,49 +257,59 @@ console.log("ROL:", rol, "ROL LOWER:", rolLower, "LOADING:", loading);
     : "bg-gray-100 text-gray-700";
 
   return (
-    
 <>
-        <div className="flex justify-between items-center mb-4">
-          <h2
-            className={`text-2xl md:text-3xl font-extrabold tracking-wide ${
-              modoOscuro ? "text-white" : "text-gray-800"
-            }`}
-          >
-            ASIGNACIONES
-          </h2>
-        </div>
-          
+<div
+  style={{
+    maxWidth: 800,
+    margin: "0 auto 20px",
+    width: "90%",
+    display: "flex",
+    alignItems: "center",
+    gap: "20px", // <-- ajusta este valor para acercar o alejar
+  }}
+>
+  <h2
+    style={{
+      fontSize: "1.75rem",
+      fontWeight: "800",
+      color: modoOscuro ? "#fff" : "#2d2d2d",
+      margin: 0,
+    }}
+  >
+Asignaciones
+  </h2>
 
-        <div style={{ maxWidth: 600, margin: "20px auto 30px", width: "90%" }}>
-          <input
-            type="text"
-            placeholder="Buscar..."
-            value={busqueda}
-            onChange={handleBusquedaChange}
-            style={{
-            width: "50%",
-            padding: "8px 16px",
-            fontSize: 16,
-            borderRadius: "9999px",
-            border: `1.2px solid ${modoOscuro ? "#444" : "#ccc"}`,
-            outline: "none",
-            boxShadow: modoOscuro
-              ? "inset 0 1px 4px rgba(234, 227, 227, 0.1)"
-              : "inset 0 1px 4px rgba(0,0,0,0.1)",
-            color: texto,
-          
-            transition: "border-color 0.3s ease",
-            display: "block",
-            margin: "0 auto",
-          }}
-          onFocus={(e) =>
-            (e.target.style.borderColor = modoOscuro ? "#90caf9" : "#1976d2")
-          }
-          onBlur={(e) =>
-            (e.target.style.borderColor = modoOscuro ? "#444" : "#ccc")
-          }
-          />
-        </div>
+  <input
+    type="text"
+    placeholder="Buscar..."
+    value={busqueda}
+    onChange={handleBusquedaChange}
+    style={{
+      width: "380px",
+      padding: "8px 16px",
+      fontSize: 16,
+      borderRadius: "9999px",
+       border: `1.2px solid ${modoOscuro ? "#444" : "#ccc"}`,
+               outline: "none",
+               boxShadow: modoOscuro
+                 ? "inset 0 1px 4px rgba(234, 227, 227, 0.1)"
+                 : "inset 0 1px 4px rgba(0,0,0,0.1)",
+               color: texto,
+             
+               transition: "border-color 0.3s ease",
+               display: "block",
+               margin: "0 auto",
+             }}
+             onFocus={(e) =>
+               (e.target.style.borderColor = modoOscuro ? "#90caf9" : "#1976d2")
+             }
+             onBlur={(e) =>
+               (e.target.style.borderColor = modoOscuro ? "#444" : "#ccc")
+             }
+  />
+</div>
+
+
 <div className="flex flex-wrap justify-between items-center mb-6 gap-4">
   {/* Contenedores de contadores centrados */}
   <div className="flex flex-wrap justify-center gap-6 flex-grow min-w-[250px]">

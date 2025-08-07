@@ -8,9 +8,18 @@ import TransaccionesRol from "./TransaccionesRol";
 
 import BuscadorBase from "../Shared/BuscadorBase";
 
+// Importa iconos lucide-react
+import { ShieldCheck, Users, ListChecks, ArrowLeft } from "lucide-react";
+
 const FrmTransacciones = () => {
   const modoOscuro = useSelector((state) => state.theme.modoOscuro);
   const [busqueda, setBusqueda] = useState("");
+  const [vista, setVista] = useState("tipos"); // Por defecto abre TipoTransacciones
+
+  const botonClase = (color, activo) =>
+    `px-4 py-2 rounded text-white font-medium mr-2 transition flex items-center gap-2 ${
+      activo ? "brightness-125" : "brightness-90 hover:brightness-110"
+    } ${color}`;
 
   return (
     <div
@@ -23,37 +32,58 @@ const FrmTransacciones = () => {
           modoOscuro ? "bg-gray-900 shadow-gray-700" : "bg-white shadow-gray-300"
         }`}
       >
-        <h2
-          className={`text-3xl font-bold mb-4 text-center ${
-            modoOscuro ? "text-white" : "text-gray-800"
-          }`}
-        >
-          Gestión de Transacciones y Tipos
-        </h2>
+        {vista === "tipos" && (
+          <div className="mb-4 flex justify-center flex-wrap gap-2">
+            <button
+              className={botonClase("bg-green-600", vista === "permisos")}
+              onClick={() => setVista("permisos")}
+              type="button"
+            >
+              <ShieldCheck size={25} />
+              Transacciones Permisos
+            </button>
+            <button
+              className={botonClase("bg-teal-600", vista === "roles")}
+              onClick={() => setVista("roles")}
+              type="button"
+            >
+              <Users size={25} />
+              Transacciones Roles
+            </button>
+          </div>
+        )}
 
-        <div className="mb-4">
-          <BuscadorBase
-            placeholder="Buscar en transacciones y tipos..."
-            valor={busqueda}
-            onChange={(e) => setBusqueda(e.target.value)}
-            modoOscuro={modoOscuro}
-          />
-        </div>
+        {/* Buscador solo en tipos y permisos */}
+        {(vista === "tipos" || vista === "permisos") && (
+          <div className="mb-4">
+            <BuscadorBase
+              placeholder="Buscar..."
+              valor={busqueda}
+              onChange={(e) => setBusqueda(e.target.value)}
+              modoOscuro={modoOscuro}
+            />
+          </div>
+        )}
 
-        <div className="mb-6">
-          <Transacciones busqueda={busqueda} />
-        </div>
 
-        <div className="mb-6">
-          <TipoTransacciones busqueda={busqueda} />
-        </div>
-        <div className="mb-6">
-          <TransaccionesPermisos busqueda={busqueda} />
-        </div>
+        {/* Botón Volver visible en todas las vistas excepto "tipos" */}
+        {vista !== "tipos" && (
+          <button
+            onClick={() => setVista("tipos")}
+            className="mb-4 px-3 py-1 rounded bg-blue-600 text-white hover:bg-blue-700 transition flex items-center gap-1"
+            type="button"
+          >
+            <ArrowLeft size={16} />
+            Volver
+          </button>
+        )}
+
+        {/* Contenido dinámico según vista */}
         <div>
-          <TransaccionesRol busqueda={busqueda} />
+          {vista === "tipos" && <TipoTransacciones busqueda={busqueda} />}
+          {vista === "permisos" && <TransaccionesPermisos busqueda={busqueda} />}
+          {vista === "roles" && <TransaccionesRol busqueda={busqueda} />}
         </div>
-
       </div>
     </div>
   );

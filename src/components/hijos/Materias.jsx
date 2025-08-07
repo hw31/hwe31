@@ -339,21 +339,12 @@ const seleccionarCarrera = (carrera) => {
 
   return (
   <>
-    <div className="flex justify-between items-center mb-4">
-      <h2
-        className={`text-2xl md:text-3xl font-extrabold tracking-wide ${
-          modoOscuro ? "text-white" : "text-gray-800"
-        }`}
-      >
-        Materias
-      </h2>
-    </div>
-
     <BuscadorBase
-      placeholder="Buscar materia por nombre..."
+      placeholder="Buscar..."
       valor={busqueda}
       onChange={(e) => setBusqueda(e.target.value)}
       modoOscuro={modoOscuro}
+       titulo="Materias"
     />
 
     <ContadoresBase

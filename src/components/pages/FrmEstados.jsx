@@ -206,15 +206,13 @@ const FrmEstados = () => {
           modoOscuro ? "bg-gray-900 shadow-gray-700" : "bg-white shadow-gray-300"
         }`}
       >
-        <h2 className="text-3xl font-bold mb-4 text-center sm:text-left">
-          Gestión de Estados
-        </h2>
 
         <BuscadorBase
           placeholder="Buscar..."
           valor={busqueda}
           onChange={(e) => setBusqueda(e.target.value)}
           modoOscuro={modoOscuro}
+          titulo="Estados"
         />
 
         <ContadoresBase

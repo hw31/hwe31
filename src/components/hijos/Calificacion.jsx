@@ -327,21 +327,24 @@ const Calificacion = ({
   const clasesCard = `rounded-2xl shadow-md p-4 sm:p-6 transition-all duration-300 w-full max-w-full mx-auto ${
     modoOscuro ? "bg-gray-900 text-white" : "bg-white text-gray-800"
   }`;
-  const clasesCardGrid = "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mb-6";
+const clasesCardGrid = "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mb-6";
 
   const clasesCardMateria = `
-    bg-gradient-to-tr from-indigo-400 via-blue-500 to-pink-500 
-    shadow-lg rounded-xl p-5 cursor-pointer
-    transition transform hover:scale-105 hover:shadow-2xl
-    text-white flex flex-col justify-between
-  `;
+     bg-gradient-to-tr from-indigo-400 via-blue-500 to-pink-500 
+      shadow-lg rounded-2xl p-8 cursor-pointer
+      transition transform hover:scale-105 hover:shadow-2xl
+      text-white flex flex-col justify-between
+      min-h-[160px] text-lg
+      `;
 
   const clasesCardGrupo = `
     bg-gradient-to-tr from-green-400 via-teal-500 to-blue-600
-    shadow-lg rounded-xl p-5 cursor-pointer
-    transition transform hover:scale-105 hover:shadow-2xl
-    text-white flex flex-col justify-between
-  `;
+      shadow-lg rounded-xl p-5 cursor-pointer
+      transition transform hover:scale-105 hover:shadow-2xl
+      text-white flex flex-col justify-between
+      max-w-full
+      w-full
+      `;
 
   return (
     <>

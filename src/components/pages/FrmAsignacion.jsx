@@ -1,8 +1,8 @@
 import React, { useState } from "react";
 import { useSelector } from "react-redux";
 import FrmHorarios from "../hijos/Horarios";
-import FrmAulas from "../pages/FrmAulas";
-import FrmGrupos from "../pages/FrmGrupos";
+import FrmAulas from "../hijos/Aulas";
+import FrmGrupos from "../hijos/Grupos";
 import FrmMaterias from "../hijos/Materias"; // ← NUEVO
 import Asignacion from "../hijos/Asignacion";
 import {

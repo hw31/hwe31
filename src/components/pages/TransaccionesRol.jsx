@@ -299,15 +299,12 @@ const TransaccionesRoles = () => {
   ];
 
   return (
-    
-      <div
-        className={`w-full px-4 rounded-2xl shadow-md p-6 ${
-          modoOscuro ? "bg-gray-900 text-white shadow-gray-700" : "bg-white text-gray-900 shadow-gray-300"
-        }`}
-      >
-        <h2 className="text-3xl font-bold mb-4 text-center sm:text-left cursor-pointer select-none">
-          Gestión de Transacciones por Rol
+    <>
+      <div className="flex justify-between items-center mb-4">
+        <h2 className={`text-2xl md:text-3xl font-extrabold tracking-wide ${modoOscuro ? "text-white" : "text-gray-800"}`}>
+          Transaccion por Rol
         </h2>
+      </div>
 
         <div className="flex justify-between items-center mb-4 flex-wrap gap-4">
           <BuscadorBase
@@ -469,7 +466,7 @@ const TransaccionesRoles = () => {
             </div>
           </FormularioBase>
         </ModalBase>
-      </div>
+    </>
  
   );
 };

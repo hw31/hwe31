@@ -157,19 +157,14 @@ const Horarios = () => {
 
 <>
         <div className="flex justify-between items-center mb-4">
-          <h2
-            className={`text-2xl md:text-3xl font-extrabold tracking-wide ${
-              modoOscuro ? "text-white" : "text-gray-800"
-            }`}
-          >
-            Horarios
-          </h2>
+        
         </div>
         <BuscadorBase
-          placeholder="Buscar por día o hora"
+          placeholder="Buscar..."
           valor={busqueda}
           onChange={(e) => setBusqueda(e.target.value)}
           modoOscuro={modoOscuro}
+          titulo="Horarios"
         />
 
         <ContadoresBase
@@ -200,7 +195,7 @@ const Horarios = () => {
         </div>
 
         <div className="overflow-x-auto w-full mt-4">
-          <div className="min-w-[700px]">
+            <div className="min-w-full sm:min-w-[700px]">
             <TablaBase
               datos={datosPaginados}
               columnas={[

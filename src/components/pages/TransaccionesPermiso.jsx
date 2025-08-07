@@ -215,16 +215,13 @@ const TransaccionesPermisos = ({ busqueda = "" }) => {
   ];
 
   return (
-    <div className={`p-4 rounded-xl shadow-md ${fondo}`}>
+    <>
       <div className="flex justify-between items-center mb-4">
-        <h2
-          className={`text-2xl font-bold cursor-pointer select-none ${texto}`}      
-        >
-          Transacciones-Permisos
+        <h2 className={`text-2xl md:text-3xl font-extrabold tracking-wide ${modoOscuro ? "text-white" : "text-gray-800"}`}>
+          Transaccion Usuario
         </h2>
       </div>
 
-    
         <div>
           <ContadoresBase
             activos={activos}
@@ -294,8 +291,6 @@ const TransaccionesPermisos = ({ busqueda = "" }) => {
             </button>
           </div>
         </div>
-      
-
       <ModalBase
         isOpen={modalOpen}
         onClose={cerrarModal}
@@ -390,7 +385,7 @@ const TransaccionesPermisos = ({ busqueda = "" }) => {
           </div>
         </FormularioBase>
       </ModalBase>
-    </div>
+   </>
   );
 };
 
