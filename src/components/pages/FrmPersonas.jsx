@@ -8,10 +8,21 @@ import Personas from "../hijos/Persona";
 import Direcciones from "../hijos/Direccion";
 import TitulosAcademicos from "../hijos/TitulosAcademicos";
 import Contactos from "../hijos/Contacto";
+import EstudianteCarrera from "../hijos/EstudianteCarrera";
+
 import BuscadorBase from "../Shared/BuscadorBase";
 
 // Iconos
-import { Users, MapPin, Phone, KeyRound, ShieldCheck, Award } from "lucide-react";
+import {
+  Users,
+  MapPin,
+  Phone,
+  KeyRound,
+  ShieldCheck,
+  Award,
+  User,
+  GraduationCap,
+} from "lucide-react";
 
 const FrmPersonasDireccionesContactos = () => {
   const modoOscuro = useSelector((state) => state.theme.modoOscuro);
@@ -19,10 +30,10 @@ const FrmPersonasDireccionesContactos = () => {
   const [vista, setVista] = useState("personas");
 
   const botonClase = (color) =>
-    `flex items-center justify-center gap-2 w-32 h-10 rounded text-sm text-white transition font-medium ${color} hover:brightness-110`;
+   `flex items-center justify-center gap-2 h-12 w-full min-w-[150px] rounded text-sm text-white transition font-medium ${color} hover:brightness-110`;
+
 
   return (
-    // Contenedor principal con overflow-x hidden para evitar doble scroll horizontal
     <div
       style={{ overflowX: "hidden" }}
       className={`mx-auto rounded-2xl p-6 max-w-[900px] w-full ${
@@ -34,74 +45,49 @@ const FrmPersonasDireccionesContactos = () => {
           modoOscuro ? "bg-gray-900 shadow-gray-700" : "bg-white shadow-gray-300"
         }`}
       >
-        <h2
-          className={`text-2xl font-bold mb-6 text-center ${
-            modoOscuro ? "text-white" : "text-gray-800"
-          }`}
-        >
-          Gestión de Personas, Direcciones y Contactos
-        </h2>
-
         {/* Botones de navegación */}
-        <div className="flex flex-wrap gap-2 justify-center mb-5">
-          {vista !== "personas" && (
-            <button
-              onClick={() => setVista("personas")}
-              className={botonClase("bg-indigo-600")}
-            >
-              <Users size={20} /> Personas
-            </button>
-          )}
-          {vista !== "direcciones" && (
-            <button
-              onClick={() => setVista("direcciones")}
-              className={botonClase("bg-green-600")}
-            >
-              <MapPin size={20} /> Direcciones
-            </button>
-          )}
-          {vista !== "contactos" && (
-            <button
-              onClick={() => setVista("contactos")}
-              className={botonClase("bg-blue-600")}
-            >
-              <Phone size={20} /> Contactos
-            </button>
-          )}
-          {vista !== "usuarios" && (
-            <button
-              onClick={() => setVista("usuarios")}
-              className={botonClase("bg-gray-600")}
-            >
-              <Users size={16} /> Usuarios
-            </button>
-          )}
-          {vista !== "usuariosroles" && (
-            <button
-              onClick={() => setVista("usuariosroles")}
-              className={botonClase("bg-green-700")}
-            >
-              <KeyRound size={20} /> Usuarios Roles
-            </button>
-          )}
-          {vista !== "titulo" && (
-              <button
-                onClick={() => setVista("titulo")}
-                className={botonClase("bg-sky-500")}
-                style={{ width: "25vh" }} // opcional, ya no es necesario si quitas w-32
-              >
-                <Award size={20} /> Título Académico
-              </button>
-          )}
-          {vista !== "permisos" && (
-            <button
-              onClick={() => setVista("permisos")}
-              className={botonClase("bg-rose-600")}
-            >
-              <ShieldCheck size={20} /> Permisos
-            </button>
-          )}
-        </div>
+    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
+  {vista !== "personas" && (
+    <button onClick={() => setVista("personas")} className={botonClase("bg-indigo-600")}>
+      <Users size={20} /> Personas
+    </button>
+  )}
+  {vista !== "direcciones" && (
+    <button onClick={() => setVista("direcciones")} className={botonClase("bg-green-600")}>
+      <MapPin size={20} /> Direcciones
+    </button>
+  )}
+  {vista !== "contactos" && (
+    <button onClick={() => setVista("contactos")} className={botonClase("bg-blue-600")}>
+      <Phone size={20} /> Contactos
+    </button>
+  )}
+  {vista !== "titulo" && (
+    <button onClick={() => setVista("titulo")} className={botonClase("bg-sky-500")}>
+      <Award size={20} /> Título Académico
+    </button>
+  )}
+  {vista !== "usuarios" && (
+    <button onClick={() => setVista("usuarios")} className={botonClase("bg-gray-600")}>
+      <User size={20} /> Usuarios
+    </button>
+  )}
+  {vista !== "usuariosroles" && (
+    <button onClick={() => setVista("usuariosroles")} className={botonClase("bg-green-700")}>
+      <KeyRound size={20} /> Usuarios Roles
+    </button>
+  )}
+  {vista !== "estudiantes-carrera" && (
+    <button onClick={() => setVista("estudiantes-carrera")} className={botonClase("bg-rose-700")}>
+      <GraduationCap size={20} /> Estudiantes-Carrera
+    </button>
+  )}
+  {vista !== "permisos" && (
+    <button onClick={() => setVista("permisos")} className={botonClase("bg-purple-700")}>
+      <ShieldCheck size={20} /> Usuarios Permisos
+    </button>
+  )}
+</div>
 
         {/* Buscador */}
         <div className="mb-5">
@@ -122,6 +108,9 @@ const FrmPersonasDireccionesContactos = () => {
           {vista === "usuariosroles" && <UserRol busqueda={busqueda} />}
           {vista === "titulo" && <TitulosAcademicos busqueda={busqueda} />}
           {vista === "permisos" && <UserPermiso busqueda={busqueda} />}
+          {vista === "estudiantes-carrera" && (
+            <EstudianteCarrera busqueda={busqueda} />
+          )}
         </div>
       </div>
     </div>

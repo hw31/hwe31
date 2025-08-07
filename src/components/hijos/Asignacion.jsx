@@ -26,6 +26,7 @@ const AsignacionDocenteList = () => {
   /*ocultar columna editar */
  const rol = useSelector((state) => state.auth.rol);
   const rolLower = rol ? rol.toLowerCase() : null;
+const mostrarDocente = rolLower === "administrador" || rolLower === "estudiante";
 
 
 const [loading, setLoading] = useState(false);
@@ -278,7 +279,7 @@ console.log("ROL:", rol, "ROL LOWER:", rolLower, "LOADING:", loading);
   >
 Asignaciones
   </h2>
-
+ {rolLower === "administrador" && (
   <input
     type="text"
     placeholder="Buscar..."
@@ -306,12 +307,13 @@ Asignaciones
              onBlur={(e) =>
                (e.target.style.borderColor = modoOscuro ? "#444" : "#ccc")
              }
-  />
+  />)}
 </div>
 
-
+ {rolLower === "administrador" && (
 <div className="flex flex-wrap justify-between items-center mb-6 gap-4">
   {/* Contenedores de contadores centrados */}
+  
   <div className="flex flex-wrap justify-center gap-6 flex-grow min-w-[250px]">
     {/* Activos */}
     <div
@@ -444,7 +446,7 @@ Asignaciones
   >
     <FaPlus /> Nuevo
   </button>)}
-</div>
+</div>)}
 
 
         {/* Mensajes */}
@@ -455,79 +457,89 @@ Asignaciones
         )}
 
         {/* Tabla */}
-        {!loading && asignaciones.length > 0 && (
-           <div className="overflow-x-auto">
-            <table className="min-w-full">
-              <thead className={encabezado}>
-                <tr>
-                  {/*<th className="px-4 py-2 text-left text-sm font-semibold">ID</th>*/}
-                  <th className="px-4 py-2 text-left text-sm font-semibold">Docente</th>
-                  <th className="px-4 py-2 text-left text-sm font-semibold">Materia</th>
-                  <th className="px-4 py-2 text-left text-sm font-semibold">Grupo</th>
-                  <th className="px-4 py-2 text-left text-sm font-semibold">Aula</th>
-                  <th className="px-4 py-2 text-left text-sm font-semibold">Horario</th>
-  {rolLower === "administrador" &&  (  <th className="px-4 py-2 text-left text-sm font-semibold">Estado</th>)}
-    {rolLower === "administrador" &&  (
-      <th className="px-4 py-2 text-left text-sm font-semibold">Acciones</th>  )}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {asignacionesFiltradas.map((asig) => (
-               
-                  <tr
-                    key={asig.idAsignacion}
-                    className={`transition-colors ${
-                      modoOscuro ? "hover:bg-gray-700" : "hover:bg-blue-50"
-                    }`}
-                  >
-                    <td className={`px-4 py-2 text-sm ${texto}`}>
-                      {
-                        listas.usuariosRoles.find(
-                          (u) => u.iD_Usuario === asig.usuarioDocenteId
-                        )?.nombre_Usuario || "N/D"
-                      }
-                    </td>
+{!loading && asignaciones.length > 0 && (
+  <div className="overflow-x-auto">
+    <table className="min-w-full">
+      <thead className={encabezado}>
+        <tr>
+          {/* Mostrar columna Docente solo si es administrador o estudiante */}
+          {(rolLower === "administrador" || rolLower === "estudiante") && (
+            <th className="px-4 py-2 text-left text-sm font-semibold">Docente</th>
+          )}
+          <th className="px-4 py-2 text-left text-sm font-semibold">Materia</th>
+          <th className="px-4 py-2 text-left text-sm font-semibold">Grupo</th>
+          <th className="px-4 py-2 text-left text-sm font-semibold">Aula</th>
+          <th className="px-4 py-2 text-left text-sm font-semibold">Horario</th>
+          {rolLower === "administrador" && (
+            <th className="px-4 py-2 text-left text-sm font-semibold">Estado</th>
+          )}
+          {rolLower === "administrador" && (
+            <th className="px-4 py-2 text-left text-sm font-semibold">Acciones</th>
+          )}
+        </tr>
+      </thead>
 
-                    <td className={`px-4 py-2 text-sm ${texto}`}>
-                      {asig.nombreMateria || "N/D"}
-                    </td>
-                    <td className={`px-4 py-2 text-sm ${texto}`}>
-                      {asig.nombreGrupo || "N/D"}
-                    </td>
-                    <td className={`px-4 py-2 text-sm ${texto}`}>
-                      {asig.nombreAula || "N/D"}
-                    </td>
-                    <td className={`px-4 py-2 text-sm ${texto}`}>
-                      {(() => {
-                        const horario = listas.horarios.find(h => h.idHorario === asig.idHorario);
-                        return horario ? horario.descripcionHorario : "N/D";
-                      })()}
-                    </td>
- {rolLower === "administrador" &&  (
-                    <td className="px-4 py-2 text-center">
-                        {asig.nombreEstado?.toLowerCase() === "activo" ? (
-                          <FaCheckCircle className="text-green-500 text-xl mx-auto" />
-                        ) : (
-                          <FaTimesCircle className="text-red-500 text-xl mx-auto" />
-                        )}
-                    </td>)}
- {rolLower === "administrador" &&  (
-                    <td className="px-4 py-2 text-sm">
-                     <button
-                      className="text-blue-600 hover:text-blue-800 text-xl flex justify-center items-center w-full"
-                      onClick={() => abrirModalEditar(asig)}
-                      aria-label="Editar asignación"
-                    >
-                      <FaEdit />
-                    </button>
+      <tbody className="divide-y divide-gray-100">
+        {asignacionesFiltradas.map((asig) => (
+          <tr
+            key={asig.idAsignacion}
+            className={`transition-colors ${
+              modoOscuro ? "hover:bg-gray-700" : "hover:bg-blue-50"
+            }`}
+          >
+            {(rolLower === "administrador" || rolLower === "estudiante") && (
+              <td className={`px-4 py-2 text-sm ${texto}`}>
+                {
+                  listas.usuariosRoles.find(
+                    (u) => u.iD_Usuario === asig.usuarioDocenteId
+                  )?.nombre_Usuario || "N/D"
+                }
+              </td>
+            )}
+            <td className={`px-4 py-2 text-sm ${texto}`}>
+              {asig.nombreMateria || "N/D"}
+            </td>
+            <td className={`px-4 py-2 text-sm ${texto}`}>
+              {asig.nombreGrupo || "N/D"}
+            </td>
+            <td className={`px-4 py-2 text-sm ${texto}`}>
+              {asig.nombreAula || "N/D"}
+            </td>
+            <td className={`px-4 py-2 text-sm ${texto}`}>
+              {(() => {
+                const horario = listas.horarios.find(
+                  (h) => h.idHorario === asig.idHorario
+                );
+                return horario ? horario.descripcionHorario : "N/D";
+              })()}
+            </td>
+            {rolLower === "administrador" && (
+              <td className="px-4 py-2 text-center">
+                {asig.nombreEstado?.toLowerCase() === "activo" ? (
+                  <FaCheckCircle className="text-green-500 text-xl mx-auto" />
+                ) : (
+                  <FaTimesCircle className="text-red-500 text-xl mx-auto" />
+                )}
+              </td>
+            )}
+            {rolLower === "administrador" && (
+              <td className="px-4 py-2 text-sm">
+                <button
+                  className="text-blue-600 hover:text-blue-800 text-xl flex justify-center items-center w-full"
+                  onClick={() => abrirModalEditar(asig)}
+                  aria-label="Editar asignación"
+                >
+                  <FaEdit />
+                </button>
+              </td>
+            )}
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+)}
 
-                    </td>)}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
 
         {/* Modal */}
         {modalOpen && (
