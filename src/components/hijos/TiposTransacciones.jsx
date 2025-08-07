@@ -176,7 +176,7 @@ const FrmTipoTransacciones = ({ busqueda = "" }) => {
    <>
       <div className="flex justify-between items-center mb-4">
         <h2 className={`text-2xl md:text-3xl font-extrabold tracking-wide ${modoOscuro ? "text-white" : "text-gray-800"}`}>
-          Transaccion Usuario
+         Tipos de Transacciones
         </h2>
       </div>
 

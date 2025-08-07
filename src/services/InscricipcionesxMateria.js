@@ -65,7 +65,7 @@ const filtrarPorIdEstudiante = async (idEstudiante) => {
 const listarInscripcionesMaterias = async () => {
   try {
     const res = await api.get('InscripcionesMaterias/listar');
-    return res.data.data; // <-- ✅ Esta es la clave
+    return res.data.data; 
   } catch (error) {
     console.error('Error al listar inscripciones:', error.message);
     throw error;

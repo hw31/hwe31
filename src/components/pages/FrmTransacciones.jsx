@@ -1,10 +1,10 @@
 import React, { useState } from "react";
 import { useSelector } from "react-redux";
 
-import Transacciones from "./Transacciones";
-import TipoTransacciones from "./TiposTransacciones"; 
-import TransaccionesPermisos from "./TransaccionesPermiso";
-import TransaccionesRol from "./TransaccionesRol";
+import Transacciones from "../hijos/Transacciones";
+import TipoTransacciones from "../hijos/TiposTransacciones"; 
+import TransaccionesPermisos from "../hijos/TransaccionesPermiso";
+import TransaccionesRol from "../hijos/TransaccionesRol";
 
 import BuscadorBase from "../Shared/BuscadorBase";
 

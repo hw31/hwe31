@@ -24,6 +24,9 @@ const PeriodoAcademico = () => {
   const [loading, setLoading] = useState(false);
   const [formLoading, setFormLoading] = useState(false);
   const [formError, setFormError] = useState("");
+  const [paginaActual, setPaginaActual] = useState(1);
+  const [filasPorPagina, setFilasPorPagina] = useState(10);
+
   const [form, setForm] = useState({
     idPeriodoAcademico: 0,
     nombre: "",
@@ -155,7 +158,6 @@ const PeriodoAcademico = () => {
     }
   };
 
-  // Filtrar periodos según texto de búsqueda
   const datosFiltrados = periodos.filter((p) => {
     const texto = busqueda.toLowerCase();
     return (
@@ -166,7 +168,20 @@ const PeriodoAcademico = () => {
     );
   });
 
-  // Define columnas para TablaBase
+  const totalPaginas = Math.ceil(datosFiltrados.length / filasPorPagina);
+  const datosPaginados = datosFiltrados.slice(
+    (paginaActual - 1) * filasPorPagina,
+    paginaActual * filasPorPagina
+  );
+
+  const handlePaginaAnterior = () => {
+    if (paginaActual > 1) setPaginaActual(paginaActual - 1);
+  };
+
+  const handlePaginaSiguiente = () => {
+    if (paginaActual < totalPaginas) setPaginaActual(paginaActual + 1);
+  };
+
   const columnas = [
     { key: "nombre", label: "Nombre del Periodo", style: { maxWidth: "180px", width: "180px" } },
     { key: "activo", label: "Estado", style: { width: "80px" } },
@@ -175,120 +190,179 @@ const PeriodoAcademico = () => {
   ];
 
   return (
-  <>
+    <>
+      <BuscadorBase
+        placeholder="Buscar..."
+        valor={busqueda}
+        onChange={(e) => {
+          setBusqueda(e.target.value);
+          setPaginaActual(1);
+        }}
+        modoOscuro={modoOscuro}
+        titulo="Periodo"
+      />
 
-        <BuscadorBase
-          placeholder="Buscar..."
-          valor={busqueda}
-          onChange={(e) => setBusqueda(e.target.value)}
-          modoOscuro={modoOscuro}
-          titulo="Periodo"
-        />
+      <ContadoresBase
+        activos={periodos.filter((p) => p.estado === "Activo").length}
+        inactivos={periodos.filter((p) => p.estado === "Inactivo").length}
+        total={periodos.length}
+        onNuevo={abrirModalNuevo}
+        modoOscuro={modoOscuro}
+      />
 
-        <ContadoresBase
-          activos={periodos.filter((p) => p.estado === "Activo").length}
-          inactivos={periodos.filter((p) => p.estado === "Inactivo").length}
-          total={periodos.length}
-          onNuevo={abrirModalNuevo}
-          modoOscuro={modoOscuro}
-        />
-
-        {/* Contenedor para aplicar estilos solo a esta tabla */}
-        <div className="periodos-table-container">
-          <style>{`
-            .periodos-table-container table th,
-            .periodos-table-container table td {
-              padding-left: 6px !important;
-              padding-right: 6px !important;
-              white-space: nowrap;
-            }
-            .periodos-table-container table th:nth-child(1),
-            .periodos-table-container table td:nth-child(1) {
-              max-width: 80px;
-              width: 50px;
-              overflow: hidden;
-              text-overflow: ellipsis;
-            }
-            .periodos-table-container table th:nth-child(2),
-            .periodos-table-container table td:nth-child(2) {
-              width: 80px;
-              max-width: 80px;
-              text-align: center;
-            }
-            .periodos-table-container table th:nth-child(3),
-            .periodos-table-container table td:nth-child(3),
-            .periodos-table-container table th:nth-child(4),
-            .periodos-table-container table td:nth-child(4) {
-              width: 90px;
-              max-width: 90px;
-              text-align: center;
-            }
-          `}</style>
-
-          <TablaBase
-            datos={datosFiltrados}
-            columnas={columnas}
-            modoOscuro={modoOscuro}
-            onEditar={handleEditar}
-            loading={loading}
-            texto={texto}
-            encabezadoClase={encabezado}
-          />
-        </div>
-
-        <ModalBase
-          isOpen={modalOpen}
-          onClose={cerrarModal}
-          titulo={modoEdicion ? "Editar Periodo" : "Nuevo Periodo"}
-          modoOscuro={modoOscuro}
+      {/* Selector de filas por página */}
+      <div className="mt-2 mb-4 flex flex-wrap items-center justify-center sm:justify-start gap-2 text-sm">
+        <label htmlFor="filasPorPagina" className="font-semibold">
+          Filas por página:
+        </label>
+        <select
+          id="filasPorPagina"
+          value={filasPorPagina}
+          onChange={(e) => {
+            setFilasPorPagina(parseInt(e.target.value));
+            setPaginaActual(1);
+          }}
+          className={`border rounded dark:bg-gray-700 dark:text-white dark:border-gray-600 text-sm py-1 px-2`}
+          style={{ maxWidth: "5rem" }}
         >
-          <FormularioBase
-            onSubmit={handleGuardar}
-            onCancel={cerrarModal}
-            modoOscuro={modoOscuro}
-            formError={formError}
-            formLoading={formLoading}
-            modoEdicion={modoEdicion}
-            titulo="Periodo Académico"
+          {[1, 10, 30, 45, 60, 100].map((num) => (
+            <option key={num} value={num}>
+              {num}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <div className="periodos-table-container">
+        <style>{`
+          .periodos-table-container table th,
+          .periodos-table-container table td {
+            padding-left: 6px !important;
+            padding-right: 6px !important;
+            white-space: nowrap;
+          }
+          .periodos-table-container table th:nth-child(1),
+          .periodos-table-container table td:nth-child(1) {
+            max-width: 80px;
+            width: 50px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+          }
+          .periodos-table-container table th:nth-child(2),
+          .periodos-table-container table td:nth-child(2) {
+            width: 80px;
+            max-width: 80px;
+            text-align: center;
+          }
+          .periodos-table-container table th:nth-child(3),
+          .periodos-table-container table td:nth-child(3),
+          .periodos-table-container table th:nth-child(4),
+          .periodos-table-container table td:nth-child(4) {
+            width: 90px;
+            max-width: 90px;
+            text-align: center;
+          }
+        `}</style>
+
+        <TablaBase
+          datos={datosPaginados}
+          columnas={columnas}
+          modoOscuro={modoOscuro}
+          onEditar={handleEditar}
+          loading={loading}
+          texto={texto}
+          encabezadoClase={encabezado}
+        />
+      </div>
+
+      {/* Navegación de páginas */}
+      {totalPaginas > 1 && (
+        <div className="mt-4 flex justify-center gap-4 text-sm">
+          <button
+            onClick={handlePaginaAnterior}
+            disabled={paginaActual === 1}
+            className={`px-4 py-2 rounded-md border ${
+              paginaActual === 1
+                ? "border-gray-400 text-gray-400 cursor-not-allowed"
+                : modoOscuro
+                ? "border-blue-500 text-blue-500 hover:bg-blue-600 hover:text-white"
+                : "border-blue-600 text-blue-600 hover:bg-blue-700 hover:text-white"
+            }`}
           >
-            <div className="space-y-4">
-              <input
-                type="text"
-                name="nombre"
-                placeholder="Nombre del periodo"
-                value={form.nombre}
-                onChange={handleInputChange}
-                className="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white dark:border-gray-600"
-                autoFocus
-              />
-              <select
-                name="estado"
-                value={form.estado}
-                onChange={handleInputChange}
-                className="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white dark:border-gray-600"
-              >
-                <option value="">Seleccione estado</option>
-                <option value="Activo">Activo</option>
-                <option value="Inactivo">Inactivo</option>
-              </select>
-              <input
-                type="date"
-                name="fechaInicio"
-                value={form.fechaInicio}
-                onChange={handleInputChange}
-                className="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white dark:border-gray-600"
-              />
-              <input
-                type="date"
-                name="fechaFin"
-                value={form.fechaFin}
-                onChange={handleInputChange}
-                className="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white dark:border-gray-600"
-              />
-            </div>
-          </FormularioBase>
-        </ModalBase>
-</>
+            Anterior
+          </button>
+          <span className="flex items-center font-semibold">
+            Página {paginaActual} de {totalPaginas}
+          </span>
+          <button
+            onClick={handlePaginaSiguiente}
+            disabled={paginaActual === totalPaginas}
+            className={`px-4 py-2 rounded-md border ${
+              paginaActual === totalPaginas
+                ? "border-gray-400 text-gray-400 cursor-not-allowed"
+                : modoOscuro
+                ? "border-blue-500 text-blue-500 hover:bg-blue-600 hover:text-white"
+                : "border-blue-600 text-blue-600 hover:bg-blue-700 hover:text-white"
+            }`}
+          >
+            Siguiente
+          </button>
+        </div>
+      )}
+
+      <ModalBase
+        isOpen={modalOpen}
+        onClose={cerrarModal}
+        titulo={modoEdicion ? "Editar Periodo" : "Nuevo Periodo"}
+        modoOscuro={modoOscuro}
+      >
+        <FormularioBase
+          onSubmit={handleGuardar}
+          onCancel={cerrarModal}
+          modoOscuro={modoOscuro}
+          formError={formError}
+          formLoading={formLoading}
+          modoEdicion={modoEdicion}
+          titulo="Periodo Académico"
+        >
+          <div className="space-y-4">
+            <input
+              type="text"
+              name="nombre"
+              placeholder="Nombre del periodo"
+              value={form.nombre}
+              onChange={handleInputChange}
+              className="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white dark:border-gray-600"
+              autoFocus
+            />
+            <select
+              name="estado"
+              value={form.estado}
+              onChange={handleInputChange}
+              className="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white dark:border-gray-600"
+            >
+              <option value="">Seleccione estado</option>
+              <option value="Activo">Activo</option>
+              <option value="Inactivo">Inactivo</option>
+            </select>
+            <input
+              type="date"
+              name="fechaInicio"
+              value={form.fechaInicio}
+              onChange={handleInputChange}
+              className="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white dark:border-gray-600"
+            />
+            <input
+              type="date"
+              name="fechaFin"
+              value={form.fechaFin}
+              onChange={handleInputChange}
+              className="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white dark:border-gray-600"
+            />
+          </div>
+        </FormularioBase>
+      </ModalBase>
+    </>
   );
 };
 

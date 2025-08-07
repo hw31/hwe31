@@ -1,8 +1,8 @@
 import React, { useState } from "react";
 import { useSelector } from "react-redux";
 
-import Catalogos from "../pages/Catalogos";
-import TipoCatalogo from "../pages/TipoCatalogo";
+import Catalogos from "../hijos/Catalogos";
+import TipoCatalogo from "../hijos/TipoCatalogo";
 import BuscadorBase from "../Shared/BuscadorBase";
 
 import { ArrowLeftCircle, Book } from "lucide-react";

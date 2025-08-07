@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import Swal from "sweetalert2";
@@ -7,7 +7,10 @@ import { GraduationCap, PlusCircle, Edit3 } from "lucide-react";
 import carreraService from "../../services/Carreras";
 import estudianteCarreraService from "../../services/EstudiantesCarreras";
 import materiasCarrerasService from "../../services/MateriasCarrera";
-import materiasService from "../../services/Materias"; 
+import materiasService from "../../services/Materias";
+import estadoService from "../../services/Estado";
+
+import Switch from "../Shared/Switch";
 
 const FrmCarreras = () => {
   const modoOscuro = useSelector((state) => state.theme.modoOscuro);
@@ -17,8 +20,18 @@ const FrmCarreras = () => {
   const navigate = useNavigate();
 
   const [carreras, setCarreras] = useState([]);
+  const [materias, setMaterias] = useState([]);
+  const [estados, setEstados] = useState([]);
+  const [todasMaterias, setTodasMaterias] = useState([]);
+  const [carreraSeleccionada, setCarreraSeleccionada] = useState(null);
+  const [materiaBusqueda, setMateriaBusqueda] = useState("");
+  const [sugerencias, setSugerencias] = useState([]);
+  const [mostrarSugerencias, setMostrarSugerencias] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [loadingMaterias, setLoadingMaterias] = useState(false);
   const [modal, setModal] = useState(false);
+  const inputRef = useRef(null);
+
   const [formData, setFormData] = useState({
     idCarrera: null,
     nombreCarrera: "",
@@ -26,42 +39,35 @@ const FrmCarreras = () => {
     activo: true,
   });
 
-  // Estados para materias y carrera seleccionada
-  const [materias, setMaterias] = useState([]);
-  const [carreraSeleccionada, setCarreraSeleccionada] = useState(null);
-  const [loadingMaterias, setLoadingMaterias] = useState(false);
-
   useEffect(() => {
     cargarCarreras();
+    materiasService.listarMaterias().then(setTodasMaterias);
+    estadoService.listarEstados().then(setEstados);
   }, []);
 
   const cargarCarreras = async () => {
     setLoading(true);
     try {
       let data = [];
-
       if (rolLower === "administrador") {
         const res = await carreraService.listarCarreras();
-        data = Array.isArray(res)
-          ? res.map((c) => ({
-              idCarrera: c.iD_Carrera,
-              nombreCarrera: c.nombreCarrera,
-              codigoCarrera: c.codigoCarrera,
-              activo: c.activo,
-            }))
-          : [];
+        data = res.map((c) => ({
+          idCarrera: c.iD_Carrera,
+          nombreCarrera: c.nombreCarrera,
+          codigoCarrera: c.codigoCarrera,
+          activo: c.activo,
+        }));
       } else {
         const res = await estudianteCarreraService.listarPorUsuario(idUsuario);
-        data = Array.isArray(res)
-          ? res.map((ec) => ({
-              idCarrera: ec.iD_Carrera,
-              nombreCarrera: ec.nombreCarrera,
-              codigoCarrera: ec.codigoCarrera,
-              activo: ec.activo,
-            }))
-          : [];
+        data = res
+          .filter((ec) => ec.iD_Estado === 1) // sool carreras activas
+          .map((ec) => ({
+            idCarrera: ec.iD_Carrera,
+            nombreCarrera: ec.nombreCarrera,
+            codigoCarrera: ec.codigoCarrera,
+            activo: ec.iD_Estado === 1,
+          }));
       }
-
       setCarreras(data);
     } catch (error) {
       Swal.fire("Error", "No se pudieron cargar las carreras", "error");
@@ -70,27 +76,25 @@ const FrmCarreras = () => {
     }
   };
 
-  // Carga materias según carrera seleccionada usando materiasCarrerasService
   const cargarMaterias = async (idCarrera) => {
     setLoadingMaterias(true);
     try {
       const res = await materiasCarrerasService.listarPorCarrera(idCarrera);
-
-      if (!res || res.length === 0) {
-        setMaterias([]);
-        Swal.fire("Información", "No hay materias para esta carrera.", "info");
-      } else {
-        // Mapear para extraer campos útiles de materias relacionadas
-        const materiasData = res.map((mc) => ({
-          idMateria: mc.ID_Materia,
-          nombreMateria: mc.nombreMateria || mc.NombreMateria || "Nombre no disponible",
-          codigoMateria: mc.codigoMateria || mc.CodigoMateria || "Código no disponible",
-        }));
-        setMaterias(materiasData);
-      }
-
-      setCarreraSeleccionada(carreras.find((c) => c.idCarrera === idCarrera) || null);
-    } catch (error) {
+      const materiasData = res.map((mc) => ({
+        idRelacion: mc.iD_MateriaCarrera,
+        idMateria: mc.iD_Materia,
+        nombreMateria: mc.nombreMateria,
+        codigoMateria: mc.codigoMateria,
+        idEstado: mc.iD_Estado,
+        activo: mc.iD_Estado === 1,
+        creador: mc.creador,
+        modificador: mc.modificador,
+        fechaCreacion: mc.fecha_Creacion,
+        fechaModificacion: mc.fecha_Modificacion,
+      }));
+      setMaterias(materiasData);
+      setCarreraSeleccionada(carreras.find((c) => c.idCarrera === idCarrera));
+    } catch {
       Swal.fire("Error", "No se pudieron cargar las materias", "error");
       setMaterias([]);
     } finally {
@@ -98,15 +102,15 @@ const FrmCarreras = () => {
     }
   };
 
-  // Al seleccionar una carrera, cargar sus materias
   const handleSeleccionarCarrera = (idCarrera) => {
     cargarMaterias(idCarrera);
   };
 
-  // Volver a la lista de carreras
   const volverACarreras = () => {
     setCarreraSeleccionada(null);
     setMaterias([]);
+    setMateriaBusqueda("");
+    setSugerencias([]);
   };
 
   const abrirModal = (carrera = null) => {
@@ -154,6 +158,111 @@ const FrmCarreras = () => {
     }
   };
 
+  const formatearFecha = (fecha) => {
+  if (!fecha) return "-";
+  const d = new Date(fecha);
+  return d.toLocaleDateString("es-NI", {
+    year: "numeric",
+    month: "short",
+    day: "2-digit",
+  });
+};
+
+
+  const handleBusquedaChange = (e) => {
+    const valor = e.target.value;
+    setMateriaBusqueda(valor);
+    if (valor.trim() === "") {
+      setSugerencias([]);
+      return;
+    }
+    const sugerenciasFiltradas = todasMaterias.filter((m) =>
+      m.nombreMateria.toLowerCase().includes(valor.toLowerCase())
+    );
+    setSugerencias(sugerenciasFiltradas);
+    setMostrarSugerencias(true);
+  };
+
+
+  const handleSeleccionarMateria = async (materia) => {
+    const confirm = await Swal.fire({
+      title: "Confirmar inserción",
+      text: `¿Seguro que quieres ingresar: "${materia.nombreMateria}" a "${carreraSeleccionada.nombreCarrera}"?`,
+      icon: "question",
+      showCancelButton: true,
+      confirmButtonText: "Sí, insertar",
+      cancelButtonText: "Cancelar",
+    });
+
+    if (!confirm.isConfirmed) return;
+
+    try {
+      await materiasCarrerasService.insertarMateriaCarrera({
+        iD_Carrera: carreraSeleccionada.idCarrera,
+        iD_Materia: materia.idMateria,
+        iD_Estado: 1,
+      });
+      Swal.fire("Éxito", "Materia agregada correctamente", "success");
+      cargarMaterias(carreraSeleccionada.idCarrera);
+      setMateriaBusqueda("");
+      setSugerencias([]);
+    } catch (error) {
+      // Intentamos obtener el mensaje específico de error de la API
+      const msgError =
+        error?.response?.data?.mensaje ||
+        error?.message ||
+        "No se pudo agregar la materia";
+      Swal.fire("Error", msgError, "error");
+    }
+  };
+
+  const handleOutsideClick = (e) => {
+    if (inputRef.current && !inputRef.current.contains(e.target)) {
+      setMostrarSugerencias(false);
+    }
+  };
+
+  useEffect(() => {
+    document.addEventListener("click", handleOutsideClick);
+    return () => document.removeEventListener("click", handleOutsideClick);
+  }, []);
+
+  const toggleMateriaCarrera = async (relacion) => {
+    const nuevoEstado = relacion.idEstado === 1 ? 2 : 1;
+    // Guardamos el estado previo para revertir en caso de error
+    const estadoPrevio = materias.find((m) => m.idRelacion === relacion.idRelacion);
+
+    // Actualizamos UI inmediatamente
+    setMaterias((prev) =>
+      prev.map((m) =>
+        m.idRelacion === relacion.idRelacion
+          ? { ...m, idEstado: nuevoEstado, activo: nuevoEstado === 1 }
+          : m
+      )
+    );
+
+    try {
+      await materiasCarrerasService.actualizarMateriaCarrera({
+        iD_MateriaCarrera: relacion.idRelacion,
+        iD_Estado: nuevoEstado,
+      });
+    } catch (error) {
+      const msgError =
+        error?.response?.data?.mensaje ||
+        error?.message ||
+        "No se pudo cambiar el estado";
+      Swal.fire("Error", msgError, "error");
+      // Revertimos el cambio local
+      setMaterias((prev) =>
+        prev.map((m) =>
+          m.idRelacion === relacion.idRelacion
+            ? { ...m, idEstado: estadoPrevio.idEstado, activo: estadoPrevio.idEstado === 1 }
+            : m
+        )
+      );
+    }
+  };
+
   const fondo = modoOscuro ? "bg-gray-900" : "bg-white";
   const texto = modoOscuro ? "text-white" : "text-gray-900";
 
@@ -196,12 +305,10 @@ const FrmCarreras = () => {
                     <GraduationCap size={26} className="text-blue-500" />
                     <h3 className="text-xl font-semibold">{carrera.nombreCarrera}</h3>
                   </div>
-
                   <p className="mt-2 text-sm text-gray-600">Código: {carrera.codigoCarrera}</p>
                   <p className={`text-sm mt-1 ${carrera.activo ? "text-green-600" : "text-red-500"}`}>
                     {carrera.activo ? "Activo" : "Inactivo"}
                   </p>
-
                   {rolLower === "administrador" && (
                     <button
                       onClick={() => abrirModal(carrera)}
@@ -219,66 +326,102 @@ const FrmCarreras = () => {
         <>
           <button
             onClick={volverACarreras}
-            className="mb-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+            className="mb-6 px-5 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
           >
             ← Volver a Carreras
           </button>
+
+          <h2 className="text-3xl font-extrabold mb-6 text-center font-sans tracking-wide text-blue-600">
+            Plan de estudio de {carreraSeleccionada?.nombreCarrera}
+          </h2>
+
+          {rolLower === "administrador" && (
+            <div className="mb-6 w-full max-w-md mx-auto relative" ref={inputRef}>
+              <input
+                value={materiaBusqueda}
+                onChange={handleBusquedaChange}
+                placeholder="Buscar materia para agregar..."
+                className="w-full max-w-md rounded-full border border-gray-300 px-5 py-3 text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition shadow-md"
+              />
+              {mostrarSugerencias && sugerencias.length > 0 && (
+                <ul className="absolute z-30 mt-1 max-h-60 w-full overflow-auto rounded-xl border border-gray-300 bg-white shadow-lg scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+                  {sugerencias.map((m) => (
+                    <li
+                      key={m.iD_Materia}
+                      onClick={() => handleSeleccionarMateria(m)}
+                      className="cursor-pointer px-5 py-3 text-gray-800 hover:bg-blue-500 hover:text-white transition rounded-lg"
+                    >
+                      {m.nombreMateria}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
 
           {loadingMaterias ? (
             <p className="text-center font-medium text-lg">Cargando materias...</p>
           ) : materias.length === 0 ? (
             <p className="text-center font-medium text-lg">No hay materias para esta carrera.</p>
           ) : (
-            <div className="flex flex-col items-center mt-6 space-y-4">
-              {/* Título arriba de la tabla */}
-              <h2 className={`text-xl font-semibold ${modoOscuro ? "text-white" : "text-gray-800"}`}>
-                Plan de estudio de {carreraSeleccionada?.nombreCarrera}
-              </h2>
-
-              <div
-                className={`w-full max-w-4xl overflow-hidden shadow-lg border ${
-                  modoOscuro ? "bg-gray-800 border-gray-600" : "bg-transparent border-gray-300"
+            <div className="overflow-x-auto">
+              <table
+                className={`mx-auto w-full max-w-5xl border-collapse text-left ${
+                  modoOscuro ? "bg-gray-800 text-white" : "bg-white text-black"
                 }`}
               >
-                <table className={`w-full border-separate  ${modoOscuro ? "text-white" : "text-gray-900"}`}>
-                  <thead>
-                    <tr className="bg-blue-600 text-white text-sm font-bold uppercase tracking-wider">
-                      <th className="px-4 py-3 text-left rounded-l-xl w-28  border-r border-gray-300 dark:border-gray-600">
-                        Código
-                      </th>
-                      <th className="px-4 py-3 text-left rounded-r-xl w-64">Nombre</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {materias.map((materia) => (
-                      <tr
-                        key={materia.idMateria}
-                        className={`transition duration-200 ease-in-out shadow-sm ${
-                          modoOscuro ? "bg-gray-700 hover:bg-blue-600" : "bg-blue-100 hover:bg-blue-200"
-                        }`}
-                      >
-                        <td className="px-4 py-4 rounded-l-xl font-medium w-28 border-r border-gray-300 dark:border-gray-600">
-                          {materia.codigoMateria}
+                <thead>
+                  <tr className="border-b border-gray-300">
+                    <th className="px-6 py-4 font-semibold">Código</th>
+                    <th className="px-6 py-4 font-semibold">Materia</th>
+                    <th className="px-6 py-4 font-semibold">Creador</th>
+                    <th className="px-6 py-4 font-semibold">Modificador</th>
+                    <th className="px-6 py-4 font-semibold">Fecha Creación</th>
+                    <th className="px-6 py-4 font-semibold">Fecha Modificación</th>
+                    {rolLower === "administrador" && <th className="px-6 py-4 font-semibold">Activo</th>}
+                  </tr>
+                </thead>
+                <tbody>
+                  {materias.map((m) => (
+                    <tr
+                      key={m.idRelacion}
+                      className={`border-b border-gray-300 transition hover:bg-blue-100 ${
+                        modoOscuro ? "hover:bg-blue-700" : ""
+                      }`}
+                    >
+                      <td className="px-6 py-4">{m.codigoMateria}</td>
+                      <td className="px-6 py-4">{m.nombreMateria}</td>
+                      <td className="px-6 py-4">{m.creador}</td>
+                      <td className="px-6 py-4">{m.modificador}</td>
+                      <td className="px-6 py-4">{formatearFecha(m.fechaCreacion)}</td>
+                      <td className="px-6 py-4">{formatearFecha(m.fechaModificacion)}</td>
+                      {rolLower === "administrador" && (
+                        <td className="px-6 py-4">
+                          <Switch
+                            checked={m.idEstado === 1}
+                            onChange={() => toggleMateriaCarrera(m)}
+                          />
                         </td>
-                        <td className="px-4 py-4 rounded-r-xl truncate w-64">{materia.nombreMateria}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                      )}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           )}
         </>
       )}
 
-      {/* MODAL */}
+      {/* MODAL DE CARRERA */}
       {modal && (
-         <div
+        <div
           className="fixed inset-0 flex items-center justify-center z-50"
           style={{ backdropFilter: "blur(5px)" }}
         >
           <div className="bg-white rounded-xl p-6 w-full max-w-md shadow-lg">
-            <h2 className="text-xl font-bold mb-4">{formData.idCarrera ? "Editar Carrera" : "Nueva Carrera"}</h2>
+            <h2 className="text-xl font-bold mb-4">
+              {formData.idCarrera ? "Editar Carrera" : "Nueva Carrera"}
+            </h2>
             <div className="space-y-4">
               <input
                 type="text"
@@ -297,16 +440,26 @@ const FrmCarreras = () => {
                 className="w-full border rounded-lg p-2"
               />
               <label className="flex items-center gap-2 text-sm">
-                <input type="checkbox" name="activo" checked={formData.activo} onChange={handleChange} />
+                <input
+                  type="checkbox"
+                  name="activo"
+                  checked={formData.activo}
+                  onChange={handleChange}
+                />
                 Activo
               </label>
             </div>
-
             <div className="flex justify-end gap-3 mt-6">
-              <button onClick={cerrarModal} className="px-4 py-2 bg-gray-300 rounded-lg">
+              <button
+                onClick={cerrarModal}
+                className="px-4 py-2 bg-gray-300 rounded-lg"
+              >
                 Cancelar
               </button>
-              <button onClick={guardarCarrera} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+              <button
+                onClick={guardarCarrera}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+              >
                 Guardar
               </button>
             </div>
