@@ -4,11 +4,17 @@ import { useSelector, useDispatch } from "react-redux";
 import { Moon, Sun, LogOut, User } from "lucide-react";
 import authService from "../../services/authService";
 import styled from "styled-components";
-import fotoService from "../../services/Profile"; // <- IMPORTANTE
+import fotoService from "../../services/Profile";
 import { logout as logoutAction } from "../../features/Auth/authSlice";
-import { toggleModoOscuro, fetchModoOscuro, setModoOscuro } from "../../features/theme/themeSlice";
+import {
+  toggleModoOscuro,
+  fetchModoOscuro,
+  setModoOscuro,
+} from "../../features/theme/themeSlice";
 import SidebarMenu from "../Shared/SidebarMenu";
 import DashboardMenuCards from "../Shared/DashboardMenuCards";
+import CardInscripcionesConfirmadas from "../Shared/CardInscripcionesConfirmadas";
+import CardUsuariosKPI from "../Shared/CardUsuariosKPI"
 
 const Dashboard = () => {
   const dispatch = useDispatch();
@@ -23,7 +29,7 @@ const Dashboard = () => {
 
   const [showDropdown, setShowDropdown] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(window.innerWidth > 768);
-  const [fotoPerfilUrl, setFotoPerfilUrl] = useState(null); // <- FOTO PERFIL
+  const [fotoPerfilUrl, setFotoPerfilUrl] = useState(null);
   const dropdownRef = useRef(null);
   const sidebarRef = useRef(null);
 
@@ -57,7 +63,6 @@ const Dashboard = () => {
         console.error("Error al cargar la foto de perfil:", error);
       }
     };
-
     obtenerFoto();
   }, []);
 
@@ -202,7 +207,13 @@ const Dashboard = () => {
             <h1 className="text-2xl sm:text-3xl font-bold mb-6 text-center sm:whitespace-nowrap sm:overflow-hidden sm:text-ellipsis sm:max-w-full">
               ¡Bienvenido, {persona}!
             </h1>
-            {rolLower === "administrador" && <DashboardMenuCards />}
+            {rolLower === "administrador" && (
+              <div className="flex flex-wrap justify-center gap-4">
+                <DashboardMenuCards />
+                <CardInscripcionesConfirmadas modoOscuro={modoOscuro} />
+                 <CardUsuariosKPI modoOscuro={modoOscuro} />
+              </div>
+            )}
           </div>
         )}
 

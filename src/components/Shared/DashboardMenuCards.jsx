@@ -22,7 +22,7 @@ import {
   Award,
   Settings,
   Lock,
-  University
+  University,
 } from "lucide-react";
 import { useSelector } from "react-redux";
 
@@ -46,8 +46,7 @@ const iconMap = {
  lock: Lock,
  toggleright: ToggleRight,
  "file-check2": FileCheck2,
- university : University
-
+ university : University,
 };
 
 const DashboardMenuCards = () => {
