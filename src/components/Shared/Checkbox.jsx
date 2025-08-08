@@ -3,7 +3,7 @@ import styled from "styled-components";
 
 const Checkbox = ({ checked, onChange, modoOscuro = false }) => {
   return (
-    <StyledWrapper modoOscuro={modoOscuro}>
+    <StyledWrapper $modoOscuro={modoOscuro}>
       <input
         className="toggle-checkbox"
         id="toggle"
@@ -37,7 +37,7 @@ const StyledWrapper = styled.div`
   .hamburger .bar {
     width: 100%;
     height: 4px;
-    background-color: ${({ modoOscuro }) => (modoOscuro ? "#eee" : "#fff")};
+    background-color: ${({ $modoOscuro }) => ($modoOscuro ? "#eee" : "#fff")};
     border-radius: 10px;
     transition: transform 0.3s ease, opacity 0.3s ease;
     position: relative;

@@ -3,7 +3,6 @@ import { useNavigate, Outlet, useLocation } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
 import { Moon, Sun, LogOut } from "lucide-react";
 import authService from "../../services/authService";
-import styled from "styled-components";
 import fotoService from "../../services/Profile"; // <- IMPORTANTE
 import { logout as logoutAction } from "../../features/Auth/authSlice";
 import { toggleModoOscuro, fetchModoOscuro, setModoOscuro } from "../../features/theme/themeSlice";
@@ -27,7 +26,7 @@ const Dashboard = () => {
   const [fotoPerfilUrl, setFotoPerfilUrl] = useState(null);
   const dropdownRef = useRef(null);
   const sidebarRef = useRef(null);
-  const toggleRef = useRef(null); // Referencia para el toggle hamburguesa
+  const toggleRef = useRef(null); // Referencia exclusiva para el toggle hamburguesa
 
   const mostrarBienvenida = location.pathname === "/dashboard";
 
@@ -115,32 +114,30 @@ const Dashboard = () => {
   return (
     <div className="dashboard-container" style={{ position: "relative" }}>
       {/* SIDEBAR */}
-     <aside
-  ref={sidebarRef}
-  className={`dashboard-sidebar ${sidebarOpen ? "open" : "closed"}`}
-  style={{
-    position: "fixed",
-    top: 0,
-    left: 0,
-    height: "100vh",
-    width: sidebarOpen ? "16rem" : "4.5rem",
-    paddingTop: "4rem",
-    background: modoOscuro
-      ? "linear-gradient(135deg, #2c446e, #1b2a47)"  // gradiente azul oscuro tipo login
-      : "linear-gradient(135deg, #5a6d8c, #40577a)",  // gradiente claro azulado
-    boxShadow: modoOscuro
-      ? "inset 2px 2px 10px rgba(0,0,0,0.9), inset -1px -1px 5px rgba(255,255,255,0.1), 6px 6px 15px rgba(0,0,0,0.8)"
-      : "inset 2px 2px 10px rgba(0,0,0,0.3), inset -1px -1px 5px rgba(255,255,255,0.3), 4px 4px 15px rgba(0,0,0,0.3)",
-    transition: "width 0.3s ease, box-shadow 0.3s ease, background 0.3s ease",
-    zIndex: 1200,
-    overflowX: "hidden",
-    color: modoOscuro ? "white" : "white",
-    display: "flex",
-    flexDirection: "column",
-  }}
->
-
-      
+      <aside
+        ref={sidebarRef}
+        className={`dashboard-sidebar ${sidebarOpen ? "open" : "closed"}`}
+        style={{
+          position: "fixed",
+          top: 0,
+          left: 0,
+          height: "100vh",
+          width: sidebarOpen ? "16rem" : "4.5rem",
+          paddingTop: "4rem",
+          background: modoOscuro
+            ? "linear-gradient(135deg, #2c446e, #1b2a47)"
+            : "linear-gradient(135deg, #5a6d8c, #40577a)",
+          boxShadow: modoOscuro
+            ? "inset 2px 2px 10px rgba(0,0,0,0.9), inset -1px -1px 5px rgba(255,255,255,0.1), 6px 6px 15px rgba(0,0,0,0.8)"
+            : "inset 2px 2px 10px rgba(0,0,0,0.3), inset -1px -1px 5px rgba(255,255,255,0.3), 4px 4px 15px rgba(0,0,0,0.3)",
+          transition: "width 0.3s ease, box-shadow 0.3s ease, background 0.3s ease",
+          zIndex: 1200,
+          overflowX: "hidden",
+          color: "white",
+          display: "flex",
+          flexDirection: "column",
+        }}
+      >
         <SidebarMenu isSidebarOpen={sidebarOpen} />
         <div className="system-name" style={{ marginTop: "auto", padding: "1rem" }}>
           <p>Sistema de Gestión de Calificaciones</p>
@@ -154,22 +151,40 @@ const Dashboard = () => {
           ${modoOscuro ? "text-white" : "text-gray-900"} transition-all duration-300`}
         style={{
           height: "4rem",
-          zIndex: 1300, // MÁS ALTO que sidebar para que quede ENCIMA
+          zIndex: 1300,
         }}
       >
-        {/* Toggle hamburguesa */}
+        {/* Toggle hamburguesa solo checkbox con ref */}
         <div ref={toggleRef}>
           <Checkbox
             checked={sidebarOpen}
-            onChange={() => setSidebarOpen((prev) => !prev)}
+            onChange={() => setSidebarOpen((prev) => !prev)} // alterna el sidebar
             modoOscuro={modoOscuro}
           />
         </div>
-          <div className="logo-container" style={{ marginTop: "1rem", textAlign: "center" }}>
-          <img src="/images/iconologo.png" alt="CAL-I Logo" className="logo-img" />
-          <h1 className="logo-title">CAL-I</h1>
+
+        {/* Logo separado sin toggleRef */}
+        <div
+          className="flex items-center gap-4 cursor-pointer"
+          onClick={() => navigate("/dashboard")}
+          style={{ marginTop: "0.4rem", marginLeft: "1rem" }}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") navigate("/dashboard");
+          }}
+        >
+          <img
+            src="/images/iconologo.png"
+            alt="CAL-I Logo"
+            className="w-10 h-10 sm:w-14 sm:h-14 object-contain"
+          />
+          <h1 className="font-extrabold text-lg sm:text-2xl sm:text-3xl tracking-wide hidden sm:block">
+            CAL-I
+          </h1>
         </div>
 
+        {/* Controles del usuario */}
         <div className="ml-auto flex items-center gap-4 pr-4 relative" ref={dropdownRef}>
           <button
             onClick={handleToggleTheme}
@@ -196,7 +211,7 @@ const Dashboard = () => {
               ) : (
                 <div className="w-8 h-8 rounded-full bg-gray-300 animate-pulse" />
               )}
-              <span className="font-medium">{persona}</span>
+              <span className="font-medium"> {persona?.split(" ")[0]} {persona?.split(" ")[1]}!</span>
             </button>
 
             {showDropdown && (
@@ -233,25 +248,25 @@ const Dashboard = () => {
           marginLeft: sidebarOpen ? "16rem" : "4.5rem",
           transition: "margin-left 0.3s ease",
           position: "relative",
-          zIndex: 1, // Debajo del panel superior y sidebar
+          zIndex: 1,
           minHeight: "100vh",
           backgroundColor: modoOscuro ? "#181818" : "#fafafa",
           color: modoOscuro ? "white" : "black",
         }}
       >
-        {mostrarBienvenida && (
-          <div
-            className="dashboard-welcome flex flex-col items-center"
-            role="region"
-            aria-live="polite"
-            style={{ paddingTop: "6rem" }}
-          >
-            <h1 className="text-2xl sm:text-3xl font-bold mb-6 text-center sm:whitespace-nowrap sm:overflow-hidden sm:text-ellipsis sm:max-w-full">
-              ¡Bienvenido, {persona}!
-            </h1>
-            {rolLower === "administrador" && <DashboardMenuCards />}
-          </div>
-        )}
+       {mostrarBienvenida && (
+  <div
+    className="dashboard-welcome flex flex-col items-center"
+    role="region"
+    aria-live="polite"
+    style={{ paddingTop: "6rem" }}
+  >
+    <h1 className="text-2xl sm:text-3xl font-bold mb-6 text-center sm:whitespace-nowrap sm:overflow-hidden sm:text-ellipsis sm:max-w-full">
+      ¡Bienvenido, {persona?.split(" ")[0]} {persona?.split(" ")[1]}!
+    </h1>
+    {rolLower === "administrador" && <DashboardMenuCards />}
+  </div>
+)}
 
         <Outlet />
       </main>
@@ -260,3 +275,5 @@ const Dashboard = () => {
 };
 
 export default Dashboard;
+
+
