@@ -1,188 +1,166 @@
-import React, { useEffect, useState } from 'react';
-import contactoService from '../../services/Contacto';
-import Swal from 'sweetalert2';
-import { FaEdit, FaPlus } from 'react-icons/fa';
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useSelector } from "react-redux"; // <-- importado
+import { ChevronLeft, ChevronRight, ArrowLeft } from "lucide-react";
 
-const FrmContacto = () => {
-  const [contactos, setContactos] = useState([]);
-  const [modoEdicion, setModoEdicion] = useState(false);
-  const [busqueda, setBusqueda] = useState('');
-  const [form, setForm] = useState({
-    idContacto: 0,
-    nombre: '',
-    telefono: '',
-    correo: '',
-    direccion: '',
-    activo: true
-  });
+const sections = [
+  {
+    title: "Nuestra Misión",
+    content:
+      "En CAL-I, nuestra misión es brindar una solución tecnológica eficiente, accesible y segura para el registro, organización y consulta de calificaciones en instituciones de educación superior. Buscamos mejorar los procesos académicos y administrativos, fortaleciendo la comunicación entre docentes, estudiantes y personal administrativo, para ofrecer una experiencia educativa más transparente y eficiente.",
+  },
+  {
+    title: "Nuestra Visión",
+    content:
+      "Aspiramos a consolidarnos como una plataforma confiable y funcional que se adapte a diferentes contextos institucionales, contribuyendo a la transformación digital del sistema educativo nicaragüense. CAL-I busca ser un referente para la gestión académica moderna y flexible, capaz de apoyar la innovación y el desarrollo de las universidades.",
+  },
+  {
+    title: "Nuestros Valores",
+    content:
+      "Eficiencia, Seguridad, Accesibilidad, Transparencia y Adaptabilidad son los valores que guían nuestro desarrollo. Optimizamos recursos, protegemos información, facilitamos el acceso, promovemos la claridad y adaptamos la plataforma a las necesidades específicas de cada institución educativa.",
+    isList: true,
+    listItems: [
+      "Eficiencia: Optimizamos tiempo y recursos en la gestión de calificaciones, eliminando procesos manuales.",
+      "Seguridad: Protegemos la información mediante autenticación y control de acceso por roles.",
+      "Accesibilidad: Interfaz intuitiva y funcional para todo tipo de usuarios y dispositivos.",
+      "Transparencia: Permite consultas claras y organizadas de registros académicos para estudiantes y docentes.",
+      "Adaptabilidad: Flexible para ajustarse a las necesidades específicas de diferentes instituciones educativas.",
+    ],
+  },
+  {
+    title: "Sobre CAL-I",
+    content:
+      "CAL-I es una plataforma web desarrollada por estudiantes de Ingeniería en Sistemas de la Universidad de Managua, con el propósito de modernizar la gestión académica en el entorno universitario. Nuestra herramienta facilita el registro, organización y consulta de calificaciones, apoyando a docentes, estudiantes y personal administrativo para fortalecer la calidad educativa en Nicaragua.",
+  },
+];
 
-  const obtenerContactos = async () => {
-    try {
-      const res = await contactoService.listarContacto();
-      setContactos(res);
-    } catch (error) {
-      console.error('Error al listar contactos:', error);
-    }
+const FrmAbout = () => {
+  const modoOscuro = useSelector((state) => state.theme.modoOscuro);
+  const [index, setIndex] = useState(0);
+  const navigate = useNavigate();
+
+  const next = () => {
+    setIndex((prev) => (prev === sections.length - 1 ? 0 : prev + 1));
   };
 
-  useEffect(() => {
-    obtenerContactos();
-  }, []);
-
-  const handleChange = (e) => {
-    const { name, value, type, checked } = e.target;
-    setForm({
-      ...form,
-      [name]: type === 'checkbox' ? checked : value
-    });
+  const prev = () => {
+    setIndex((prev) => (prev === 0 ? sections.length - 1 : prev - 1));
   };
 
-  const limpiar = () => {
-    setForm({
-      idContacto: 0,
-      nombre: '',
-      telefono: '',
-      correo: '',
-      direccion: '',
-      activo: true
-    });
-    setModoEdicion(false);
-  };
+  const { title, content, isList, listItems } = sections[index];
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    try {
-      if (modoEdicion) {
-        await contactoService.actualizarContacto(form);
-        Swal.fire('Actualizado', 'Contacto actualizado correctamente', 'success');
-      } else {
-        await contactoService.insertarContacto(form);
-        Swal.fire('Registrado', 'Contacto registrado correctamente', 'success');
-      }
-      obtenerContactos();
-      limpiar();
-    } catch (error) {
-      Swal.fire('Error', 'Ocurrió un error al guardar', 'error');
-    }
+  const handleVolver = () => {
+    navigate("/dashboard/aulas"); // Cambia según tu ruta correcta
   };
-
-  const editarContacto = (contacto) => {
-    setForm(contacto);
-    setModoEdicion(true);
-  };
-
-  const contactosFiltrados = contactos.filter((c) =>
-    c.nombre.toLowerCase().includes(busqueda.toLowerCase()) ||
-    c.correo.toLowerCase().includes(busqueda.toLowerCase())
-  );
 
   return (
-    <div className="p-4 max-w-6xl mx-auto">
-      <h2 className="text-2xl font-bold mb-4">Gestión de Contactos</h2>
-
-      {/* Buscador */}
-      <input
-        type="text"
-        placeholder="Buscar por nombre o correo..."
-        className="mb-4 p-2 border rounded w-full"
-        value={busqueda}
-        onChange={(e) => setBusqueda(e.target.value)}
-      />
-
-      {/* Formulario */}
-      <form
-        onSubmit={handleSubmit}
-        className="bg-gray-800 text-white p-4 rounded mb-6 shadow-md space-y-4"
+    <div
+      className={`max-w-3xl mx-auto p-6 mt-10 rounded-lg shadow-lg relative ${
+        modoOscuro
+          ? "bg-gray-900 text-gray-100"
+          : "bg-white text-gray-900"
+      }`}
+    >
+      {/* Botón Volver arriba */}
+      <button
+        onClick={handleVolver}
+        aria-label="Volver al menú"
+        className={`absolute top-4 left-4 flex items-center gap-1 transition ${
+          modoOscuro
+            ? "text-gray-300 hover:text-blue-400"
+            : "text-gray-700 hover:text-blue-600"
+        }`}
       >
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <input
-            type="text"
-            name="nombre"
-            placeholder="Nombre"
-            className="p-2 rounded text-black"
-            value={form.nombre}
-            onChange={handleChange}
-            required
-          />
-          <input
-            type="text"
-            name="telefono"
-            placeholder="Teléfono"
-            className="p-2 rounded text-black"
-            value={form.telefono}
-            onChange={handleChange}
-          />
-          <input
-            type="email"
-            name="correo"
-            placeholder="Correo electrónico"
-            className="p-2 rounded text-black"
-            value={form.correo}
-            onChange={handleChange}
-          />
-          <input
-            type="text"
-            name="direccion"
-            placeholder="Dirección"
-            className="p-2 rounded text-black"
-            value={form.direccion}
-            onChange={handleChange}
-          />
-          <label className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              name="activo"
-              checked={form.activo}
-              onChange={handleChange}
-            />
-            Activo
-          </label>
-        </div>
+        <ArrowLeft size={24} />
+        Volver
+      </button>
 
-        <button
-          type="submit"
-          className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded"
+      <h1
+        className={`text-4xl font-extrabold mb-8 text-center ${
+          modoOscuro ? "text-white" : "text-gray-900"
+        }`}
+      >
+        Acerca de CAL-I
+      </h1>
+
+      {/* Flecha izquierda */}
+      <button
+        onClick={prev}
+        aria-label="Anterior"
+        className={`absolute top-1/2 left-0 transform -translate-y-1/2 p-2 rounded-full transition ${
+          modoOscuro
+            ? "text-gray-300 hover:bg-gray-700"
+            : "text-gray-700 hover:bg-gray-200"
+        }`}
+      >
+        <ChevronLeft size={32} />
+      </button>
+
+      {/* Contenido */}
+      <div className="min-h-[220px] px-10">
+        <h2
+          className={`text-2xl font-bold mb-4 ${
+            modoOscuro ? "text-white" : "text-gray-900"
+          }`}
         >
-          {modoEdicion ? 'Actualizar' : 'Registrar'}
-        </button>
-      </form>
+          {title}
+        </h2>
 
-      {/* Tabla */}
-      <div className="overflow-x-auto">
-        <table className="min-w-full bg-gray-900 text-white rounded">
-          <thead>
-            <tr className="bg-gray-700">
-              <th className="p-2">Nombre</th>
-              <th className="p-2">Teléfono</th>
-              <th className="p-2">Correo</th>
-              <th className="p-2">Dirección</th>
-              <th className="p-2">Activo</th>
-              <th className="p-2">Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            {contactosFiltrados.map((c) => (
-              <tr key={c.idContacto} className="border-b border-gray-600">
-                <td className="p-2">{c.nombre}</td>
-                <td className="p-2">{c.telefono}</td>
-                <td className="p-2">{c.correo}</td>
-                <td className="p-2">{c.direccion}</td>
-                <td className="p-2">{c.activo ? 'Sí' : 'No'}</td>
-                <td className="p-2">
-                  <button
-                    onClick={() => editarContacto(c)}
-                    className="bg-yellow-500 hover:bg-yellow-600 px-3 py-1 rounded text-black"
-                  >
-                    <FaEdit />
-                  </button>
-                </td>
-              </tr>
+        {isList ? (
+          <ul
+            className={`list-disc list-inside space-y-2 leading-relaxed ${
+              modoOscuro ? "text-gray-300" : "text-gray-700"
+            }`}
+          >
+            {listItems.map((item, idx) => (
+              <li key={idx}>{item}</li>
             ))}
-          </tbody>
-        </table>
+          </ul>
+        ) : (
+          <p
+            className={`leading-relaxed ${
+              modoOscuro ? "text-gray-300" : "text-gray-700"
+            }`}
+          >
+            {content}
+          </p>
+        )}
+      </div>
+
+      {/* Flecha derecha */}
+      <button
+        onClick={next}
+        aria-label="Siguiente"
+        className={`absolute top-1/2 right-0 transform -translate-y-1/2 p-2 rounded-full transition ${
+          modoOscuro
+            ? "text-gray-300 hover:bg-gray-700"
+            : "text-gray-700 hover:bg-gray-200"
+        }`}
+      >
+        <ChevronRight size={32} />
+      </button>
+
+      {/* Indicadores */}
+      <div className="flex justify-center mt-8 space-x-3">
+        {sections.map((_, i) => (
+          <button
+            key={i}
+            onClick={() => setIndex(i)}
+            className={`w-4 h-4 rounded-full transition-colors ${
+              i === index
+                ? modoOscuro
+                  ? "bg-blue-400"
+                  : "bg-blue-600"
+                : modoOscuro
+                ? "bg-gray-600"
+                : "bg-gray-400"
+            }`}
+            aria-label={`Sección ${i + 1}`}
+          />
+        ))}
       </div>
     </div>
   );
 };
 
-export default FrmContacto;
+export default FrmAbout;

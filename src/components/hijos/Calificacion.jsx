@@ -9,6 +9,8 @@ import calificacionService from "../../services/Calificaciones";
 import tipoCalificacionService from "../../services/TipoCalificacion";
 import { listarPeriodosAcademicos } from "../../services/PeriodoAcademico";
 import FilaEstudiante from "./FilaEstudiante";
+import ReporteNotasPorEstudiante from "./ReporteNotasPorEstudiante";
+
 const Calificacion = ({
   filtroGeneral,
   onMostrarListaEstudiantes,
@@ -22,6 +24,7 @@ const Calificacion = ({
   const rol = useSelector((state) => state.auth.rol);
   const rolLower = rol?.toLowerCase() ?? "";
   const esEstudiante = rolLower === "estudiante";
+const [estudianteReporte, setEstudianteReporte] = useState(null);
 
   const [asignaciones, setAsignaciones] = useState([]);
   const [estudiantes, setEstudiantes] = useState([]);
@@ -532,24 +535,25 @@ const clasesCardGrid = "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-c
                   </td>
                 </tr>
               )}
-              {estudiantesFiltrados.map((est, index) => (
-              <FilaEstudiante
-                key={est.iD_Inscripcion}
-                estudiante={est}
-                index={index}
-                tiposCalificacion={tiposCalificacion}
-                calificaciones={calificaciones}
-                setCalificaciones={setCalificaciones}
-                obtenerNota={obtenerNota}
-                guardarNota={guardarNota}
-                claseStatusInput={claseStatusInput}
-                acumuladoPorEstudiante={acumuladoPorEstudiante}
-                porcentajePorEstudiante={porcentajePorEstudiante}
-                aprobadoPorEstudiante={aprobadoPorEstudiante}
-                esEstudiante={esEstudiante} 
-                modoOscuro={modoOscuro}
-              />
-            ))}
+             {estudiantesFiltrados.map((est, index) => (
+  <FilaEstudiante
+    key={est.iD_Inscripcion}
+    estudiante={est}
+    index={index}
+    tiposCalificacion={tiposCalificacion}
+    calificaciones={calificaciones}
+    setCalificaciones={setCalificaciones}
+    obtenerNota={obtenerNota}
+    guardarNota={guardarNota}
+    claseStatusInput={claseStatusInput}
+    acumuladoPorEstudiante={acumuladoPorEstudiante}
+    porcentajePorEstudiante={porcentajePorEstudiante}
+    aprobadoPorEstudiante={aprobadoPorEstudiante}
+    esEstudiante={esEstudiante} 
+    modoOscuro={modoOscuro}
+  />
+))}
+
 
             </tbody>
           </table>

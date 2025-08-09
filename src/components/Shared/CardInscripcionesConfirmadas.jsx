@@ -1,4 +1,3 @@
-// CardInscripcionesConfirmadas.jsx
 import React, { useEffect, useState } from "react";
 import inscripcionService from "../../services/Inscripcion";
 import periodoService from "../../services/PeriodoAcademico";
@@ -66,131 +65,115 @@ const CardInscripcionesConfirmadas = ({ modoOscuro }) => {
   const labelColor = modoOscuro ? "#dddddd" : "#222222";
 
   return (
-    <div
-      className={`rounded-2xl shadow-md p-3 mx-auto w-full max-w-sm backdrop-blur-md bg-opacity-80 border transition-colors ${
-        modoOscuro
-          ? "bg-gray-900 border-gray-700 text-white"
-          : "bg-white border-gray-300 text-gray-900"
-      }`}
-      style={{
-        userSelect: "none",
-        backgroundColor: modoOscuro
-          ? "rgba(31, 41, 55, 0.9)"
-          : "rgba(255, 255, 255, 0.95)",
-      }}
-    >
-      <div className="flex items-center justify-between mb-3">
-        <h3 className="text-sm font-semibold">Inscripciones Confirmadas</h3>
-        <FaCheckCircle className="text-green-500 text-base" />
-      </div>
+<div
+  className={`rounded-2xl shadow-md p-2 sm:p-3 mx-auto w-full max-w-xs sm:max-w-sm border transition-colors overflow-hidden
+    ${modoOscuro ? "bg-gray-900 border-gray-700 text-white" : "bg-white border-gray-300 text-gray-900"}`}
+  style={{
+    userSelect: "none",
+    minHeight: "180px",
+    backgroundColor: modoOscuro
+      ? "rgba(31, 41, 55, 0.9)"
+      : "rgba(255, 255, 255, 0.95)",
+  }}
+>
+  {/* Título + periodo + porcentaje */}
+  <div className="mb-1">
+    <div className="flex justify-between items-center text-xs font-semibold">
+      <span>Inscripciones Confirmadas</span>
+      <FaCheckCircle className="text-green-500 text-sm" />
+    </div>
+    <div className="text-[10px] text-gray-400 mt-1 truncate">
+      {periodoActivo
+        ? `Período: ${periodoActivo.nombrePeriodo}`
+        : "Sin período activo"}
+    </div>
+    <div className="text-[11px] font-bold text-center mt-1">
+      {porcentaje}% ({totalConfirmadas} de {totalInscripciones})
+    </div>
+  </div>
 
-      <div className="h-40">
-        <ResponsiveBar
-          data={data}
-          layout="vertical"
-          keys={["Confirmadas", "Total"]}
-          indexBy="tipo"
-          margin={{ top: 10, right: 30, bottom: 40, left: 50 }}
-          padding={0.25}
-          innerPadding={8}
-          groupMode="grouped"
-          colors={({ id }) =>
-            id === "Confirmadas" ? "url(#gradientConfirmadas)" : "url(#gradientTotal)"
-          }
-          borderColor={{ from: "color", modifiers: [["darker", 1.6]] }}
-          theme={{
-            axis: {
-              domain: { line: { stroke: textColor } },
-              ticks: {
-                line: { stroke: textColor },
-                text: { fill: textColor, fontSize: 10 },
-              },
-              legend: {
-                text: { fill: textColor, fontSize: 11 },
-              },
-            },
-            legends: {
-              text: { fill: textColor, fontSize: 10 },
-            },
-            tooltip: {
-              container: {
-                fontSize: 12,
-                fontWeight: "600",
-              },
-            },
-          }}
-          axisBottom={{
-            tickSize: 3,
-            tickPadding: 6,
-            tickRotation: 0,
-            legend: "Tipo",
-            legendPosition: "middle",
-            legendOffset: 30,
-            format: () => "Inscripciones",
-          }}
-          axisLeft={{
-            tickSize: 3,
-            tickPadding: 6,
-            tickRotation: 0,
-            legend: "Cantidad",
-            legendPosition: "middle",
-            legendOffset: -40,
-          }}
-          enableGridY={true}
-          enableGridX={false}
-          labelSkipWidth={16}
-          labelSkipHeight={12}
-          labelTextColor={labelColor}
-          borderRadius={6}
-          defs={[
-            {
-              id: "gradientConfirmadas",
-              type: "linearGradient",
-              colors: [
-                { offset: 0, color: "#10B981" },
-                { offset: 100, color: "#34D399" },
-              ],
-            },
-            {
-              id: "gradientTotal",
-              type: "linearGradient",
-              colors: [
-                { offset: 0, color: "#3B82F6" },
-                { offset: 100, color: "#60A5FA" },
-              ],
-            },
-          ]}
-          fill={[
+  {/* Gráfico */}
+  <div className="h-[120px] sm:h-[135px]">
+    <ResponsiveBar
+      data={data}
+      layout="vertical"
+      keys={["Confirmadas", "Total"]}
+      indexBy="tipo"
+      margin={{ top: 5, bottom: 10, left: 30, right: 5 }}
+      padding={0.1}
+      innerPadding={5}
+      groupMode="grouped"
+      colors={({ id }) =>
+        id === "Confirmadas"
+          ? "url(#gradientConfirmadas)"
+          : "url(#gradientTotal)"
+      }
+      borderColor={{ from: "color", modifiers: [["darker", 1.4]] }}
+      theme={{
+        axis: {
+          domain: { line: { stroke: textColor } },
+          ticks: {
+            line: { stroke: textColor },
+            text: { fill: textColor, fontSize: 8 },
+          },
+        },
+        legends: { text: { fill: textColor, fontSize: 8 } },
+      }}
+      axisBottom={{
+        tickSize: 3,
+        tickPadding: 4,
+        format: () => "",
+      }}
+      axisLeft={{
+        tickSize: 3,
+        tickPadding: 4,
+      }}
+      enableGridY={false}
+      enableGridX={false}
+      labelSkipWidth={20}
+      labelSkipHeight={14}
+      labelTextColor={"#fff"}
+      borderRadius={4}
+      defs={[
+        {
+          id: "gradientConfirmadas",
+          type: "linearGradient",
+          colors: [
+            { offset: 0, color: "#127f45ff" },
+            { offset: 100, color: "#0c0b0bff" },
+          ],
+        },
+        {
+          id: "gradientTotal",
+          type: "linearGradient",
+          colors: [
+            { offset: 0, color: "#0960a8ff" },
+            { offset: 100, color: "#20262dff" },
+          ],
+        },
+      ]}
+       fill={[
             { match: { id: "Confirmadas" }, id: "gradientConfirmadas" },
             { match: { id: "Total" }, id: "gradientTotal" },
           ]}
           tooltip={({ id, value, color }) => (
             <div
               style={{
-                padding: "6px 12px",
-                color: "#fff",
+                padding: "4px 10px",
+                color: "color",
                 background: color,
                 borderRadius: 4,
                 fontWeight: "600",
-                fontSize: 12,
+                fontSize: 11,
               }}
             >
               {id}: {value}
             </div>
           )}
-        />
-      </div>
+    />
+  </div>
+</div>
 
-      <div className="text-center mt-4 select-none">
-        <div className="text-lg font-bold">{porcentaje}%</div>
-        <div className={`mt-1 text-sm ${modoOscuro ? "text-gray-300" : "text-gray-500"}`}>
-          ({totalConfirmadas} de {totalInscripciones} confirmadas)
-        </div>
-        <div className="text-xs mt-1 font-medium">
-          {periodoActivo ? `Período: ${periodoActivo.nombrePeriodo}` : "Sin período activo"}
-        </div>
-      </div>
-    </div>
   );
 };
 

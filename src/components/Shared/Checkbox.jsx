@@ -34,6 +34,7 @@ const StyledWrapper = styled.div`
     cursor: pointer;
   }
 
+  /* Por defecto, para desktop: */
   .hamburger .bar {
     width: 100%;
     height: 4px;
@@ -41,6 +42,13 @@ const StyledWrapper = styled.div`
     border-radius: 10px;
     transition: transform 0.3s ease, opacity 0.3s ease;
     position: relative;
+  }
+
+  /* Cambiar color a negro en modo claro y móvil (max-width 768px) */
+  @media (max-width: 768px) {
+    .hamburger .bar {
+      background-color: ${({ $modoOscuro }) => ($modoOscuro ? "#eee" : "#000")};
+    }
   }
 
   .toggle-checkbox:checked + .hamburger .bar:nth-child(2) {
@@ -64,5 +72,7 @@ const StyledWrapper = styled.div`
     transition-delay: 0.2s;
   }
 `;
+
+
 
 export default Checkbox;

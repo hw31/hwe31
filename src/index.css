@@ -98,18 +98,21 @@ input, textarea, select {
 }
 
 /* Dashboard container */
-.dashboard-container {
-  display: flex;
-  min-height: 100vh;
-  width: 100%;
+.dashboard-main {
+  top: 50%;
+  flex-grow: 1;        /* que crezca en el espacio disponible */
+  min-height: 100vh;   /* o min-height: auto para que crezca con contenido */
+  overflow-y: auto;    /* para scroll interno si hay mucho contenido */
+  padding-top: 4rem;   /* para dejar espacio al header fijo */
+  transition: margin-left 0.3s ease;
   background-color: var(--bg-light);
   color: var(--text-light);
 }
-
-.dark .dashboard-container {
+.dark .dashboard-main {
   background-color: var(--bg-dark);
   color: var(--text-dark);
 }
+
 
 /* Sidebar */
 .dashboard-sidebar {
@@ -195,6 +198,15 @@ input, textarea, select {
 .dashboard-sidebar.closed .system-name {
   opacity: 0;
   pointer-events: none;
+}
+.dashboard-container {
+  display: flex;
+  flex-direction: row;
+  min-height: 100vh;
+  width: 100%;
+  background-color: var(--bg-light);
+  color: var(--text-light);
+  align-items: stretch;
 }
 
 /* Main */
