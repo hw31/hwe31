@@ -70,12 +70,17 @@ const CardInscripcionesConfirmadas = ({ modoOscuro }) => {
     ${modoOscuro ? "bg-gray-900 border-gray-700 text-white" : "bg-white border-gray-300 text-gray-900"}`}
   style={{
     userSelect: "none",
-    minHeight: "180px",
+    minHeight: "220px", // altura mínima fija
+    maxHeight: "220px", // altura máxima fija
+    display: "flex",
+    flexDirection: "column",
+    justifyContent: "space-between",
     backgroundColor: modoOscuro
       ? "rgba(31, 41, 55, 0.9)"
       : "rgba(255, 255, 255, 0.95)",
   }}
 >
+
   {/* Título + periodo + porcentaje */}
   <div className="mb-1">
     <div className="flex justify-between items-center text-xs font-semibold">
