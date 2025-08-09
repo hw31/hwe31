@@ -279,35 +279,41 @@ console.log("ROL:", rol, "ROL LOWER:", rolLower, "LOADING:", loading);
   >
 Asignaciones
   </h2>
- {rolLower === "administrador" && (
+
+{rolLower === "administrador" && (
   <input
     type="text"
     placeholder="Buscar..."
     value={busqueda}
     onChange={handleBusquedaChange}
     style={{
-      width: "380px",
+      width: "100%",          // ocupa todo el ancho disponible
+      maxWidth: "380px",      // máximo ancho en desktop
       padding: "8px 16px",
       fontSize: 16,
       borderRadius: "9999px",
-       border: `1.2px solid ${modoOscuro ? "#444" : "#ccc"}`,
-               outline: "none",
-               boxShadow: modoOscuro
-                 ? "inset 0 1px 4px rgba(234, 227, 227, 0.1)"
-                 : "inset 0 1px 4px rgba(0,0,0,0.1)",
-               color: texto,
-             
-               transition: "border-color 0.3s ease",
-               display: "block",
-               margin: "0 auto",
-             }}
-             onFocus={(e) =>
-               (e.target.style.borderColor = modoOscuro ? "#90caf9" : "#1976d2")
-             }
-             onBlur={(e) =>
-               (e.target.style.borderColor = modoOscuro ? "#444" : "#ccc")
-             }
-  />)}
+      border: `1.2px solid ${modoOscuro ? "#444" : "#ccc"}`,
+      outline: "none",
+      boxShadow: modoOscuro
+        ? "inset 0 1px 4px rgba(234, 227, 227, 0.1)"
+        : "inset 0 1px 4px rgba(0,0,0,0.1)",
+      color: texto,
+      transition: "border-color 0.3s ease",
+      display: "block",
+      marginLeft: "auto",
+      marginRight: "auto",
+      boxSizing: "border-box",  // importante para que padding no agrande ancho
+    }}
+    onFocus={(e) =>
+      (e.target.style.borderColor = modoOscuro ? "#90caf9" : "#1976d2")
+    }
+    onBlur={(e) =>
+      (e.target.style.borderColor = modoOscuro ? "#444" : "#ccc")
+    }
+  />
+)}
+
+
 </div>
 
  {rolLower === "administrador" && (

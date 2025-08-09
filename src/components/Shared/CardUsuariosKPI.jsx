@@ -1,4 +1,3 @@
-// CardUsuariosKPI.jsx
 import React, { useEffect, useState, useRef } from "react";
 import { ResponsivePie } from "@nivo/pie";
 import usuariosRolesService from "../../services/UsuariosRoles";
@@ -49,38 +48,52 @@ const CardUsuariosKPI = ({ modoOscuro }) => {
 
   return (
     <div
-      className={`rounded-3xl shadow-xl p-6 mx-auto w-full max-w-sm backdrop-blur-md bg-opacity-70 border transition-colors ${
-        modoOscuro
-          ? "bg-gray-900 border-gray-700 text-white"
-          : "bg-white border-gray-300 text-gray-900"
-      }`}
+
+  className={`rounded-2xl shadow-md p-2 sm:p-3 mx-auto w-full max-w-xs sm:max-w-sm border transition-colors overflow-hidden
+    ${modoOscuro ? "bg-gray-900 border-gray-700 text-white" : "bg-white border-gray-300 text-gray-900"}`}
+  
       style={{
-        height: "280px",
         userSelect: "none",
+        minHeight: "160px",
         backgroundColor: modoOscuro
-          ? "rgba(31, 41, 55, 0.85)"
-          : "rgba(255, 255, 255, 0.85)",
+          ? "rgba(31, 41, 55, 0.9)"
+          : "rgba(255, 255, 255, 0.95)",
       }}
       onMouseMove={handleMouseMove}
       onMouseLeave={() => setMouseRotation(0)}
     >
-      <h3 className="text-lg font-bold mb-2 text-center">Usuarios Activos</h3>
+      {/* Título */}
+      <h3 className="text-sm font-semibold mb-3 text-center">Usuarios Activos</h3>
 
-      <div style={{ height: "calc(100% - 32px)", width: "100%" }}>
+      {/* Leyenda personalizada sin cantidades */}
+      <div className="flex justify-around mb-2 select-none">
+        {data.map(({ id, label, color }) => (
+          <div key={id} className="flex items-center space-x-2">
+            <span
+              className="w-5 h-5 rounded-full"
+              style={{ backgroundColor: color }}
+            />
+            <span className="text-xs sm:text-sm">{label}</span>
+          </div>
+        ))}
+      </div>
+
+      {/* Gráfico con cantidad dentro */}
+      <div className="h-[90px] sm:h-[140px]">
         <ResponsivePie
           data={data}
-          margin={{ top: 20, right: 20, bottom: 70, left: 20 }}
+          margin={{ top: 5, bottom: 10, left: 30, right: 5 }}
           innerRadius={0.6}
           padAngle={2}
           cornerRadius={5}
           activeOuterRadiusOffset={8}
           colors={(d) => d.data.color}
-          borderWidth={3}
-          borderColor={{ from: "color", modifiers: [["darker", 0.2]] }}
+          borderWidth={2}
+          borderColor={{ from: "color", modifiers: [["darker", 0.3]] }}
           enableArcLinkLabels={false}
           arcLabelsSkipAngle={0}
           arcLabelsTextColor={modoOscuro ? "#FFFFFF" : "#111111"}
-          arcLabel={(d) => `${d.value}`}
+          arcLabel={(d) => `${d.value}`} // Mostrar cantidad dentro del pastel
           tooltip={({ datum }) => (
             <div
               style={{
@@ -96,27 +109,7 @@ const CardUsuariosKPI = ({ modoOscuro }) => {
               {datum.label}: {datum.value}
             </div>
           )}
-          legends={[
-            {
-              anchor: "bottom",
-              direction: "row",
-              justify: false,
-              translateY: 40,
-              itemWidth: 120,
-              itemHeight: 18,
-              itemTextColor: modoOscuro ? "#FFFFFF" : "#111111",
-              symbolSize: 14,
-              symbolShape: "circle",
-              effects: [
-                {
-                  on: "hover",
-                  style: {
-                    itemTextColor: modoOscuro ? "#EEEEEE" : "#000000",
-                  },
-                },
-              ],
-            },
-          ]}
+          legends={[]} // Sin leyenda predeterminada
           theme={{
             labels: {
               text: {
@@ -128,12 +121,6 @@ const CardUsuariosKPI = ({ modoOscuro }) => {
               text: {
                 fill: modoOscuro ? "#FFFFFF" : "#111111",
                 fontWeight: "600",
-              },
-            },
-            tooltip: {
-              container: {
-                color: "#fff",
-                fontWeight: "bold",
               },
             },
           }}

@@ -1,12 +1,10 @@
 import React, { useEffect, useState, useRef } from "react";
 import { useNavigate, Outlet, useLocation } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
-import { Moon, Sun, LogOut } from "lucide-react";
+import { Moon, Sun, LogOut, Settings } from "lucide-react"
 import authService from "../../services/authService";
 import styled from "styled-components";
 import fotoService from "../../services/Profile";
-
-import fotoService from "../../services/Profile"; // <- IMPORTANTE
 
 import { logout as logoutAction } from "../../features/Auth/authSlice";
 import {
@@ -18,10 +16,21 @@ import SidebarMenu from "../Shared/SidebarMenu";
 import DashboardMenuCards from "../Shared/DashboardMenuCards";
 
 import CardInscripcionesConfirmadas from "../Shared/CardInscripcionesConfirmadas";
-import CardUsuariosKPI from "../Shared/CardUsuariosKPI"
+import CardUsuariosKPI from "../Shared/CardUsuariosKPI";
 
-import Checkbox from "../Shared/Checkbox"; // <-- Importa el toggle personalizado
+import Checkbox from "../Shared/Checkbox";
 
+const DashboardWelcome = styled.div`
+  margin-top: 7rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+
+  @media (max-width: 639px) {
+    margin-top: 15rem !important;
+    padding: 1rem;
+  }
+`;
 
 const Dashboard = () => {
   const dispatch = useDispatch();
@@ -39,9 +48,20 @@ const Dashboard = () => {
   const [fotoPerfilUrl, setFotoPerfilUrl] = useState(null);
   const dropdownRef = useRef(null);
   const sidebarRef = useRef(null);
-  const toggleRef = useRef(null); // Referencia exclusiva para el toggle hamburguesa
+  const toggleRef = useRef(null);
+
+  // Estado para controlar si estamos en escritorio o móvil
+  const [isDesktop, setIsDesktop] = useState(window.innerWidth > 768);
 
   const mostrarBienvenida = location.pathname === "/dashboard";
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsDesktop(window.innerWidth > 768);
+    };
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   useEffect(() => {
     (async () => {
@@ -88,7 +108,6 @@ const Dashboard = () => {
     dispatch(toggleModoOscuro(!modoOscuro));
   };
 
-  // Cerrar dropdown usuario si clickeas fuera
   useEffect(() => {
     const handleClickOutsideDropdown = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
@@ -99,7 +118,6 @@ const Dashboard = () => {
     return () => document.removeEventListener("mousedown", handleClickOutsideDropdown);
   }, []);
 
-  // Cerrar sidebar si clickeas fuera DEL SIDEBAR y DEL TOGGLE
   useEffect(() => {
     const handleClickOutsideSidebar = (event) => {
       if (
@@ -116,16 +134,10 @@ const Dashboard = () => {
     return () => document.removeEventListener("mousedown", handleClickOutsideSidebar);
   }, [sidebarOpen]);
 
-  // Ajustar sidebar según ancho de ventana
-  useEffect(() => {
-    const handleResize = () => setSidebarOpen(window.innerWidth > 768);
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
+  const [nombre, apellido] = persona.split(" ");
 
   return (
-    <div className="dashboard-container" style={{ position: "relative" }}>
-      {/* SIDEBAR */}
+    <div className="dashboard-container" style={{ position: "relative", overflowX: "hidden" }}>
       <aside
         ref={sidebarRef}
         className={`dashboard-sidebar ${sidebarOpen ? "open" : "closed"}`}
@@ -142,7 +154,7 @@ const Dashboard = () => {
           boxShadow: modoOscuro
             ? "inset 2px 2px 10px rgba(0,0,0,0.9), inset -1px -1px 5px rgba(255,255,255,0.1), 6px 6px 15px rgba(0,0,0,0.8)"
             : "inset 2px 2px 10px rgba(0,0,0,0.3), inset -1px -1px 5px rgba(255,255,255,0.3), 4px 4px 15px rgba(0,0,0,0.3)",
-          transition: "width 0.3s ease, box-shadow 0.3s ease, background 0.3s ease",
+          transition: "width 0.3s ease",
           zIndex: 1200,
           overflowX: "hidden",
           color: "white",
@@ -156,42 +168,20 @@ const Dashboard = () => {
         </div>
       </aside>
 
-      {/* PANEL SUPERIOR */}
       <div
         className={`fixed top-0 left-0 right-0 flex items-center justify-between px-6 
           backdrop-blur-md bg-white/10 border-b border-white/20
-          ${modoOscuro ? "text-white" : "text-gray-900"} transition-all duration-300`}
-        style={{
-          height: "4rem",
-          zIndex: 1300,
-        }}
+          ${modoOscuro ? "text-white" : "text-gray-900"}`}
+        style={{ height: "4rem", zIndex: 1300 }}
       >
-        {/* Toggle hamburguesa solo checkbox con ref */}
         <div ref={toggleRef}>
           <Checkbox
             checked={sidebarOpen}
-            onChange={() => setSidebarOpen((prev) => !prev)} // alterna el sidebar
+            onChange={() => setSidebarOpen((prev) => !prev)}
             modoOscuro={modoOscuro}
           />
         </div>
 
-
-        {mostrarBienvenida && (
-          <div className="dashboard-welcome flex flex-col items-center" role="region" aria-live="polite">
-            <h1 className="text-2xl sm:text-3xl font-bold mb-6 text-center sm:whitespace-nowrap sm:overflow-hidden sm:text-ellipsis sm:max-w-full">
-              ¡Bienvenido, {persona}!
-            </h1>
-            {rolLower === "administrador" && (
-              <div className="flex flex-wrap justify-center gap-4">
-                <DashboardMenuCards />
-                <CardInscripcionesConfirmadas modoOscuro={modoOscuro} />
-                 <CardUsuariosKPI modoOscuro={modoOscuro} />
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Logo separado sin toggleRef */}
         <div
           className="flex items-center gap-4 cursor-pointer"
           onClick={() => navigate("/dashboard")}
@@ -207,22 +197,33 @@ const Dashboard = () => {
             alt="CAL-I Logo"
             className="w-10 h-10 sm:w-14 sm:h-14 object-contain"
           />
-          <h1 className="font-extrabold text-lg  sm:text-3xl tracking-wide hidden sm:block">
+          <h1 className="font-extrabold text-lg sm:text-3xl tracking-wide hidden sm:block">
             CAL-I
           </h1>
         </div>
 
-
-        {/* Controles del usuario */}
         <div className="ml-auto flex items-center gap-4 pr-4 relative" ref={dropdownRef}>
           <button
             onClick={handleToggleTheme}
             className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition"
             aria-label="Cambiar tema"
-            title={modoOscuro ? "Cambiar a modo claro" : "Cambiar a modo oscuro"}
           >
             {modoOscuro ? <Sun className="text-yellow-400" /> : <Moon className="text-purple-700" />}
           </button>
+<button
+  onClick={() => navigate("/dashboard/aulas")}
+  className={`p-2 rounded-full transition
+    ${modoOscuro
+      ? "text-gray-200 hover:text-black dark:hover:text-black"
+      : "text-gray-700 hover:text-gray-900"
+    }
+    hover:bg-gray-100 dark:hover:bg-gray-700
+  `}
+  aria-label="Configuración"
+>
+  <Settings />
+</button>
+
 
           <div>
             <button
@@ -240,11 +241,11 @@ const Dashboard = () => {
               ) : (
                 <div className="w-8 h-8 rounded-full bg-gray-300 animate-pulse" />
               )}
-              <span className="font-medium"> {persona?.split(" ")[0]} {persona?.split(" ")[1]}!</span>
+              <span className="font-medium">{nombre} {apellido}!</span>
             </button>
 
             {showDropdown && (
-              <div className="dashboard-user-dropdown" role="menu" aria-label="User menu">
+              <div className="dashboard-user-dropdown" role="menu">
                 <div className="flex flex-col items-center mb-4">
                   {fotoPerfilUrl ? (
                     <img
@@ -253,10 +254,7 @@ const Dashboard = () => {
                       className="w-24 h-24 rounded-full object-cover border border-gray-300 shadow-md mb-2"
                     />
                   ) : (
-                    <div
-                      className="w-24 h-24 rounded-full bg-gray-300 animate-pulse mb-2"
-                      aria-hidden="true"
-                    />
+                    <div className="w-24 h-24 rounded-full bg-gray-300 animate-pulse mb-2" />
                   )}
                   <p className="font-semibold text-lg text-center">{persona}</p>
                   <p>{rol}</p>
@@ -270,32 +268,40 @@ const Dashboard = () => {
         </div>
       </div>
 
-      {/* CONTENIDO PRINCIPAL */}
       <main
-        className={`dashboard-main pt-16 ${sidebarOpen ? "" : "sidebar-closed"}`}
+        className={`dashboard-main  ${sidebarOpen ? "" : "sidebar-closed"}`}
         style={{
-          marginLeft: sidebarOpen ? "16rem" : "4.5rem",
+          marginLeft: sidebarOpen && isDesktop ? "16rem" : "4.5rem",
           transition: "margin-left 0.3s ease",
           position: "relative",
           zIndex: 1,
-          minHeight: "100vh",
-          backgroundColor: modoOscuro ? "#181818" : "#fafafa",
+          minHeight: "calc(100vh - 4rem)",
+          backgroundColor: modoOscuro ? "#181818" : "#fdfdfdff",
           color: modoOscuro ? "white" : "black",
+          maxWidth: "100%",
+          width: "auto",
+          overflowX: "hidden",
         }}
       >
-       {mostrarBienvenida && (
-  <div
-    className="dashboard-welcome flex flex-col items-center"
-    role="region"
-    aria-live="polite"
-    style={{ paddingTop: "6rem" }}
-  >
-    <h1 className="text-2xl sm:text-3xl font-bold mb-6 text-center sm:whitespace-nowrap sm:overflow-hidden sm:text-ellipsis sm:max-w-full">
-      ¡Bienvenido, {persona?.split(" ")[0]} {persona?.split(" ")[1]}!
-    </h1>
-    {rolLower === "administrador" && <DashboardMenuCards />}
-  </div>
-)}
+        {mostrarBienvenida && (
+          <DashboardWelcome
+            role="region"
+            aria-live="polite"
+            className="dashboard-welcome"
+          >
+            <h1 className="text-2xl sm:text-3xl font-bold mb-6 text-center">
+              ¡Bienvenido, {nombre} {apellido}!
+            </h1>
+
+            {rolLower === "administrador" && (
+              <div className="flex flex-wrap justify-center gap-6 w-full max-w-7xl px-4">
+                <DashboardMenuCards />
+                <CardInscripcionesConfirmadas modoOscuro={modoOscuro} />
+                <CardUsuariosKPI modoOscuro={modoOscuro} />
+              </div>
+            )}
+          </DashboardWelcome>
+        )}
 
         <Outlet />
       </main>
@@ -304,5 +310,3 @@ const Dashboard = () => {
 };
 
 export default Dashboard;
-
-
