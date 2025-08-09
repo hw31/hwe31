@@ -384,7 +384,7 @@ const FrmUsuarios = ({ busqueda }) => {
             formError={formError}
             formLoading={formLoading}
             modoEdicion={modoEdicion}
-            titulo={modoEdicion ? "Editar Usuario" : "Nuevo Usuario"}
+            titulo={modoEdicion ? "Editar Usuario" : "Usuario"}
           >
             <div className="space-y-4">
               {!modoEdicion && (
