@@ -1,11 +1,11 @@
 import React, { useEffect, useState, useRef } from "react";
 import { useNavigate, Outlet, useLocation } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
-import { Moon, Sun, LogOut, Settings } from "lucide-react"
+import { Moon, Sun, LogOut, Settings } from "lucide-react";
 import authService from "../../services/authService";
 import styled from "styled-components";
-import fotoService from "../../services/Profile";
 
+import { fetchFotoPerfil, selectFotoPerfilUrl } from "../../features/Profile/profileSlice";
 
 import { logout as logoutAction } from "../../features/Auth/authSlice";
 import {
@@ -18,11 +18,11 @@ import DashboardMenuCards from "../Shared/DashboardMenuCards";
 
 import CardInscripcionesConfirmadas from "../Shared/CardInscripcionesConfirmadas";
 import CardUsuariosKPI from "../Shared/CardUsuariosKPI";
+import CardTransacciones from "../Shared/CardTransacciones";
 
 import Checkbox from "../Shared/Checkbox";
 
 const DashboardWelcome = styled.div`
-
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -43,15 +43,14 @@ const Dashboard = () => {
   const rolLower = rol.toLowerCase();
   const idSesion = useSelector((state) => state.auth.idSesion);
   const modoOscuro = useSelector((state) => state.theme.modoOscuro);
+  const fotoPerfilUrl = useSelector(selectFotoPerfilUrl);
 
   const [showDropdown, setShowDropdown] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(window.innerWidth > 768);
-  const [fotoPerfilUrl, setFotoPerfilUrl] = useState(null);
   const dropdownRef = useRef(null);
   const sidebarRef = useRef(null);
   const toggleRef = useRef(null);
 
-  // Estado para controlar si estamos en escritorio o móvil
   const [isDesktop, setIsDesktop] = useState(window.innerWidth > 768);
 
   const mostrarBienvenida = location.pathname === "/dashboard";
@@ -64,6 +63,7 @@ const Dashboard = () => {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
+  // Cargar modoOscuro desde redux persistido o backend
   useEffect(() => {
     (async () => {
       const modoResponse = await dispatch(fetchModoOscuro());
@@ -81,19 +81,10 @@ const Dashboard = () => {
     else root.classList.remove("dark");
   }, [modoOscuro]);
 
+  // Cargar foto perfil con Redux thunk
   useEffect(() => {
-    const obtenerFoto = async () => {
-      try {
-        const data = await fotoService.obtenerMiFoto();
-        if (data.success && data.ruta) {
-          setFotoPerfilUrl(`http://localhost:5292${data.ruta}`);
-        }
-      } catch (error) {
-        console.error("Error al cargar la foto de perfil:", error);
-      }
-    };
-    obtenerFoto();
-  }, []);
+    dispatch(fetchFotoPerfil());
+  }, [dispatch]);
 
   const handleLogout = async () => {
     try {
@@ -211,20 +202,20 @@ const Dashboard = () => {
           >
             {modoOscuro ? <Sun className="text-yellow-400" /> : <Moon className="text-purple-700" />}
           </button>
-<button
-  onClick={() => navigate("/dashboard/aulas")}
-  className={`p-2 rounded-full transition
-    ${modoOscuro
-      ? "text-gray-200 hover:text-black dark:hover:text-black"
-      : "text-gray-700 hover:text-gray-900"
-    }
-    hover:bg-gray-100 dark:hover:bg-gray-700
-  `}
-  aria-label="Configuración"
->
-  <Settings />
-</button>
 
+          <button
+            onClick={() => navigate("/dashboard/aulas")}
+            className={`p-2 rounded-full transition
+              ${modoOscuro
+                ? "text-gray-200 hover:text-black dark:hover:text-black"
+                : "text-gray-700 hover:text-gray-900"
+              }
+              hover:bg-gray-100 dark:hover:bg-gray-700
+            `}
+            aria-label="Configuración"
+          >
+            <Settings />
+          </button>
 
           <div>
             <button
@@ -299,6 +290,7 @@ const Dashboard = () => {
                 <DashboardMenuCards />
                 <CardInscripcionesConfirmadas modoOscuro={modoOscuro} />
                 <CardUsuariosKPI modoOscuro={modoOscuro} />
+                <CardTransacciones modoOscuro={modoOscuro} />
               </div>
             )}
           </DashboardWelcome>

@@ -101,10 +101,26 @@ const listarUsuario = async () => {
   }
 };
 
+/* ACTUALIZAR CONTRASEÑA USUARIO LOGUEADO */
+
+const actualizarContrasenaUsuario = async ({ nuevaContrasena }) => {
+  try {
+    const response = await api.put("/Usuarios/ActualizarContrasena", {
+      nuevaContrasena,
+    });
+    return response.data; 
+  } catch (error) {
+   
+    throw error.response?.data || error;
+  }
+};
+
+
 export default {
   insertarUsuario,
   actualizarUsuario,
   filtrarPorIdUsuario,
   filtrarUsuario,
   listarUsuario,
+  actualizarContrasenaUsuario
 };

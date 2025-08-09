@@ -19,7 +19,7 @@ const Menusetting = () => {
     {
       id: "editarperfil",
       nombre: "Perfil",
-      ruta: "editarperfil",
+      ruta: "tipoCalificacion",
       Icon: User,
     },
     {

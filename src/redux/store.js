@@ -2,6 +2,7 @@ import { configureStore } from '@reduxjs/toolkit';
 import authReducer from '../features/Auth/authSlice';
 import themeReducer from '../features/theme/themeSlice';
 import estadoReducer from '../features/States/estadosSlice';
+import profileReducer from '../features/Profile/profileSlice'; 
 import storageSession from 'redux-persist/lib/storage/session';
 import { persistReducer, persistStore } from 'redux-persist';
 
@@ -18,6 +19,7 @@ export const store = configureStore({
     auth: persistedAuthReducer,  // auth con persistencia en sessionStorage
     theme: themeReducer,         // theme sin persistencia local
     estado: estadoReducer, 
+    profile: profileReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

@@ -32,6 +32,7 @@ const initialState = {
   isAuthenticated: false,
   loading: true,
   rol: null,
+  fotoPerfilUrl: null,
 };
 
 const authSlice = createSlice({
@@ -46,6 +47,7 @@ const authSlice = createSlice({
         persona,
         id_usuario,
         modo_oscuro,
+        fotoPerfilUrl, 
       } = action.payload;
 
       state.usuario = usuario || null;

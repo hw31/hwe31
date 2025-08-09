@@ -46,18 +46,17 @@ const filtrarPorIdContacto = async (idContacto) => {
 };
 
 /**FILTRAR POR NOMBRE */
-const filtrarPorNombreContacto = async (nombre) => {
+const filtrarPorIdPersonaContacto = async (idPersona) => {
   try {
-    const res = await api.get('Contacto/filtrar_por_nombre', {
-      params: { nombre }
+    const res = await api.get('Contacto/filtrar_por_idpersona', {
+      params: { idPersona }
     });
     return res.data;
   } catch (error) {
-    console.error('Error al filtrar por nombre:', error.message);
+    console.error('Error al filtrar por idPersona:', error.message);
     throw error;
   }
 };
-
 /*LISTAR */
 const listarContacto = async () => {
   try {
@@ -73,7 +72,7 @@ export default {
   insertarContacto,
   actualizarContacto,
   filtrarPorIdContacto,
-  filtrarPorNombreContacto,
+  filtrarPorIdPersonaContacto,
   listarContacto
 };
 
