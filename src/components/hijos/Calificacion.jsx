@@ -9,7 +9,7 @@ import calificacionService from "../../services/Calificaciones";
 import tipoCalificacionService from "../../services/TipoCalificacion";
 import { listarPeriodosAcademicos } from "../../services/PeriodoAcademico";
 import FilaEstudiante from "./FilaEstudiante";
-import ReporteNotasPorEstudiante from "./ReporteNotasPorEstudiante";
+import ExportButtons from "./ExportButtons";
 
 const Calificacion = ({
   filtroGeneral,
@@ -24,7 +24,6 @@ const Calificacion = ({
   const rol = useSelector((state) => state.auth.rol);
   const rolLower = rol?.toLowerCase() ?? "";
   const esEstudiante = rolLower === "estudiante";
-const [estudianteReporte, setEstudianteReporte] = useState(null);
 
   const [asignaciones, setAsignaciones] = useState([]);
   const [estudiantes, setEstudiantes] = useState([]);
@@ -32,9 +31,8 @@ const [estudianteReporte, setEstudianteReporte] = useState(null);
   const [calificaciones, setCalificaciones] = useState([]);
   const [statusGuardado, setStatusGuardado] = useState({});
   const [periodo, setPeriodo] = useState({ id: null, nombre: "" });
+  const [inscritosPorMateria, setInscritosPorMateria] = useState({});
 
-
-  
   // Cuando cambia materia o estudiantes actualiza botón mostrar lista
   useEffect(() => {
     if (materiaSeleccionada && estudiantes.length > 0) {
@@ -62,74 +60,89 @@ const [estudianteReporte, setEstudianteReporte] = useState(null);
     cargarPeriodo();
   }, []);
 
+  // Cargar asignaciones, tipos y calcular inscritos por materia
   useEffect(() => {
-    const cargarAsignaciones = async () => {
+    const cargarDatosIniciales = async () => {
       try {
-        const data = await asignacionDocenteService.listarAsignaciones();
-        setAsignaciones(data);
-      } catch (error) {
-        console.error("Error al cargar asignaciones:", error);
-      }
-    };
-    cargarAsignaciones();
+        const asigns = await asignacionDocenteService.listarAsignaciones();
+        setAsignaciones(asigns);
 
-    const cargarTiposCalificacion = async () => {
-      try {
-        const res = await tipoCalificacionService.listarTiposCalificacion();
+        const tipos = await tipoCalificacionService.listarTiposCalificacion();
         setTiposCalificacion(
-          (res.resultado || []).filter((tipo) => tipo.activo === true || tipo.activo === 1)
+          (tipos.resultado || []).filter((tipo) => tipo.activo === true || tipo.activo === 1)
         );
+
+        const inscMat = await inscripcionesMateriasService.listarInscripcionesMaterias();
+        const inscripciones = await inscripcionesService.listarInscripciones();
+
+        // Contar inscritos por materia
+        const inscritosCount = {};
+        asigns.forEach((asig) => {
+          const { idMateria, idGrupo } = asig;
+          const inscritosMateria = inscripciones.filter((insc) =>
+            inscMat.some(
+              (im) =>
+                im.iD_Grupo === idGrupo &&
+                im.idMateria === idMateria &&
+                im.idInscripcion === insc.iD_Inscripcion
+            )
+          );
+          inscritosCount[idMateria] = inscritosMateria.length;
+        });
+
+        setInscritosPorMateria(inscritosCount);
       } catch (error) {
-        console.error("Error al cargar tipos de calificación:", error);
+        console.error("Error al cargar datos iniciales:", error);
       }
     };
-    cargarTiposCalificacion();
+
+    cargarDatosIniciales();
   }, []);
+
+  // Cargar estudiantes y calificaciones cuando cambia materiaSeleccionada
   useEffect(() => {
-  const cargarDatosMateria = async () => {
-    if (!materiaSeleccionada) return;
+    const cargarDatosMateria = async () => {
+      if (!materiaSeleccionada) return;
 
-    setEstudiantes([]);
-    setCalificaciones([]);
-
-    try {
-      const inscMat = await inscripcionesMateriasService.listarInscripcionesMaterias();
-      const inscripciones = await inscripcionesService.listarInscripciones();
-
-      const inscMatFiltradas = inscMat.filter(
-        (im) => im.iD_Grupo === materiaSeleccionada.idGrupo && im.idMateria === materiaSeleccionada.idMateria
-      );
-
-      const inscritos = inscripciones.filter((insc) =>
-        inscMatFiltradas.some((im) => im.idInscripcion === insc.iD_Inscripcion)
-      );
-
-      setEstudiantes(inscritos);
-
-      const resCalifs = await calificacionService.listarCalificacion();
-      if (resCalifs.success) {
-        const califsFiltradas = resCalifs.data.filter(
-          (c) =>
-            c.idMateria === materiaSeleccionada.idMateria &&
-            inscritos.some((e) => e.iD_Inscripcion === c.idInscripcion)
-        );
-        setCalificaciones(califsFiltradas);
-      } else {
-        setCalificaciones([]);
-      }
-    } catch (error) {
-      console.error("Error al cargar inscripciones o calificaciones:", error);
       setEstudiantes([]);
       setCalificaciones([]);
-    }
-  };
 
-  cargarDatosMateria();
-}, [materiaSeleccionada]);
+      try {
+        const inscMat = await inscripcionesMateriasService.listarInscripcionesMaterias();
+        const inscripciones = await inscripcionesService.listarInscripciones();
 
+        const inscMatFiltradas = inscMat.filter(
+          (im) => im.iD_Grupo === materiaSeleccionada.idGrupo && im.idMateria === materiaSeleccionada.idMateria
+        );
 
+        const inscritos = inscripciones.filter((insc) =>
+          inscMatFiltradas.some((im) => im.idInscripcion === insc.iD_Inscripcion)
+        );
 
-  // Extraer grupos únicos filtrando por filtroGeneral solo si no hay grupo seleccionado
+        setEstudiantes(inscritos);
+
+        const resCalifs = await calificacionService.listarCalificacion();
+        if (resCalifs.success) {
+          const califsFiltradas = resCalifs.data.filter(
+            (c) =>
+              c.idMateria === materiaSeleccionada.idMateria &&
+              inscritos.some((e) => e.iD_Inscripcion === c.idInscripcion)
+          );
+          setCalificaciones(califsFiltradas);
+        } else {
+          setCalificaciones([]);
+        }
+      } catch (error) {
+        console.error("Error al cargar inscripciones o calificaciones:", error);
+        setEstudiantes([]);
+        setCalificaciones([]);
+      }
+    };
+
+    cargarDatosMateria();
+  }, [materiaSeleccionada]);
+
+  // Extracción y filtrados de grupos y materias
   const gruposUnicos = [];
   const idsGrupos = new Set();
   asignaciones.forEach((a) => {
@@ -148,28 +161,23 @@ const [estudianteReporte, setEstudianteReporte] = useState(null);
       )
     : [];
 
-  // Materias del grupo seleccionado
   const materiasDelGrupo = grupoSeleccionado
     ? asignaciones.filter((a) => a.idGrupo === grupoSeleccionado.idGrupo)
     : [];
 
-  // Filtrar materias si grupo seleccionado pero sin materia seleccionada
   const materiasFiltradas = grupoSeleccionado && !materiaSeleccionada
     ? materiasDelGrupo.filter((m) =>
         m.nombreMateria.toLowerCase().includes((filtroGeneral || "").toLowerCase())
       )
     : [];
 
-  // Filtrar estudiantes si materia seleccionada
   const estudiantesFiltrados = materiaSeleccionada
     ? estudiantes.filter((est) =>
-        (est.nombreEstudiante || "")
-          .toLowerCase()
-          .includes((filtroGeneral || "").toLowerCase())
+        (est.nombreEstudiante || "").toLowerCase().includes((filtroGeneral || "").toLowerCase())
       )
     : [];
 
-  // Cuando selecciona materia, carga estudiantes y calificaciones
+  // Manejar selección materia
   const handleSeleccionarMateria = async (materia) => {
     setMateriaSeleccionada(materia);
     setEstudiantes([]);
@@ -207,8 +215,7 @@ const [estudianteReporte, setEstudianteReporte] = useState(null);
     }
   };
 
-  // Otras funciones (obtenerNota, guardarNota, acumuladoPorEstudiante, etc) se mantienen igual
-
+  // Funciones para notas y estado guardado (igual que antes)
   const obtenerNota = (idInscripcion, idTipoCalificacion) => {
     const calif = calificaciones.find(
       (c) => c.idInscripcion === idInscripcion && c.idTipoCalificacion === idTipoCalificacion
@@ -330,7 +337,7 @@ const [estudianteReporte, setEstudianteReporte] = useState(null);
   const clasesCard = `rounded-2xl shadow-md p-4 sm:p-6 transition-all duration-300 w-full max-w-full mx-auto ${
     modoOscuro ? "bg-gray-900 text-white" : "bg-white text-gray-800"
   }`;
-const clasesCardGrid = "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mb-6";
+  const clasesCardGrid = "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mb-6";
 
   const clasesCardMateria = `
      bg-gradient-to-tr from-indigo-400 via-blue-500 to-pink-500 
@@ -348,6 +355,23 @@ const clasesCardGrid = "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-c
       max-w-full
       w-full
       `;
+
+  // Datos para exportar
+  const datosExportar = estudiantesFiltrados.map((est) => {
+    const fila = {
+      Estudiante: est.nombreEstudiante || est.nombre || "N/D",
+    };
+
+    tiposCalificacion.forEach((tipo) => {
+      fila[tipo.tipoCalificacionNombre] = obtenerNota(est.iD_Inscripcion, tipo.idTipoCalificacion) || "";
+    });
+
+    fila.Acumulado = acumuladoPorEstudiante(est.iD_Inscripcion).toFixed(2);
+    fila.Porcentaje = porcentajePorEstudiante(est.iD_Inscripcion).toFixed(2) + "%";
+    fila.Aprobado = aprobadoPorEstudiante(est.iD_Inscripcion) ? "Sí" : "No";
+
+    return fila;
+  });
 
   return (
     <>
@@ -409,6 +433,12 @@ const clasesCardGrid = "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-c
                   <p className="flex items-center gap-2 mt-1 opacity-90">
                     <FaChalkboardTeacher /> {m.nombreDocente}
                   </p>
+                  <p className="mt-1 text-sm opacity-80">
+                    Estudiantes inscritos:{" "}
+                    <span className="font-semibold">
+                      {inscritosPorMateria[m.idMateria] ?? 0}
+                    </span>
+                  </p>
                 </div>
                 <button
                   onClick={(e) => {
@@ -423,32 +453,29 @@ const clasesCardGrid = "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-c
             ))}
           </div>
 
-            <button
-              onClick={() => setGrupoSeleccionado(null)}
-              className={`fixed bottom-4 right-4 z-50 flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold shadow-lg transition-all ${
-                modoOscuro
-                  ? "bg-red-600 hover:bg-red-500 text-white"
-                  : "bg-blue-600 hover:bg-blue-700 text-white"
-              }`}
-            >
-              <ArrowLeft className="w-5 h-5" />
-              <span className="hidden sm:inline">Volver</span>
-            </button>
-
+          <button
+            onClick={() => setGrupoSeleccionado(null)}
+            className={`fixed bottom-4 right-4 z-50 flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold shadow-lg transition-all ${
+              modoOscuro
+                ? "bg-red-600 hover:bg-red-500 text-white"
+                : "bg-blue-600 hover:bg-blue-700 text-white"
+            }`}
+          >
+            <ArrowLeft className="w-5 h-5" />
+            <span className="hidden sm:inline">Volver</span>
+          </button>
         </>
       )}
 
-          {materiaSeleccionada && (
-          <div className="overflow-auto max-w-full">
+           {materiaSeleccionada && (
+        <div className="overflow-auto max-w-full">
 
-            {/* Card con fondo degradado */}
-            <div
-              className="mb-6 p-5 rounded-xl shadow-lg text-white"
-              style={{
-                backgroundImage: "linear-gradient(to top right, #7df0a1, #0d78cd, #0c6221)"
-              }}
-            >
-
+          <div
+            className="mb-6 p-5 rounded-xl shadow-lg text-white"
+            style={{
+              backgroundImage: "linear-gradient(to top right, #7df0a1, #0d78cd, #0c6221)"
+            }}
+          >
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
               <div>
                 <h3 className="text-xl font-bold">
@@ -462,6 +489,9 @@ const clasesCardGrid = "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-c
                     Docente: {materiaSeleccionada.nombreDocente}
                   </p>
                 )}
+                <p className="text-sm mt-1 opacity-90">
+                  Estudiantes inscritos: <span className="font-semibold">{estudiantes.length}</span>
+                </p>
               </div>
               <div className="text-sm text-right opacity-90">
                 <p>
@@ -470,6 +500,12 @@ const clasesCardGrid = "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-c
               </div>
             </div>
           </div>
+          {/* BOTONES EXPORTAR */}
+       <ExportButtons
+  data={datosExportar}
+  fileName={`Calificaciones_${grupoSeleccionado.nombreGrupo}_${materiaSeleccionada.nombreMateria}`}
+/>
+
             <div className="overflow-x-auto max-w-full">
               <table
                 className={`w-full border-collapse table-auto text-sm text-left

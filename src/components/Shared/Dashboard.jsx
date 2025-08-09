@@ -27,8 +27,8 @@ const DashboardWelcome = styled.div`
   align-items: center;
 
   @media (max-width: 639px) {
-    margin-top: 2rem !important;
-    padding: 50rem;
+    margin-top: 10rem !important;
+    padding: 10rem;
   }
 `;
 
