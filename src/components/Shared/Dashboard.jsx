@@ -21,14 +21,14 @@ import CardUsuariosKPI from "../Shared/CardUsuariosKPI";
 import Checkbox from "../Shared/Checkbox";
 
 const DashboardWelcome = styled.div`
-  margin-top: 7rem;
+
   display: flex;
   flex-direction: column;
   align-items: center;
 
   @media (max-width: 639px) {
-    margin-top: 15rem !important;
-    padding: 1rem;
+    margin-top: 2rem !important;
+    padding: 50rem;
   }
 `;
 

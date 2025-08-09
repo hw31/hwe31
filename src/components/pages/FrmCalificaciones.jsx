@@ -21,10 +21,11 @@ const GestionCalificaciones = () => {
 
   return (
       <div
-        className={`p-4 min-h-screen rounded-xl ${
-          modoOscuro ? "bg-gray-900 text-white" : "bg-white text-gray-900"
-        }`}
-      >
+  className={`p-4 pb-20 min-h-screen rounded-xl ${
+    modoOscuro ? "bg-gray-900 text-white" : "bg-white text-gray-900"
+  }`}
+>
+
         <div className="mb-6">
               <BuscadorBase
                 placeholder="Buscar grupo, materia o estudiante"

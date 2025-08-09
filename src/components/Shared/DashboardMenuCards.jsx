@@ -48,6 +48,19 @@ const iconMap = {
   university: University,
 };
 
+const EXCLUIDOS = [
+  "configuracion",
+  "catalogo",
+  "menu",
+  "estados",
+  "inscripcionesxmateria",
+  "permiso",
+
+  "roles",
+  "rescate",
+  "tipocalificacion",
+];
+
 const DashboardMenuCards = () => {
   const [menuItems, setMenuItems] = useState([]);
   const navigate = useNavigate();
@@ -72,13 +85,9 @@ const DashboardMenuCards = () => {
       <style>{`
         .auto-fit-grid {
           display: grid;
-          gap: 1rem;
-          grid-template-columns: repeat(3, 1fr);
-        }
-        @media (min-width: 1024px) {
-          .auto-fit-grid {
-            grid-template-columns: repeat(5, 1fr);
-          }
+          grid-template-columns: repeat(6, 1fr);
+          gap: 0.5rem 1rem; /* poca separación vertical y horizontal */
+          white-space: nowrap;
         }
         .card {
           display: flex;
@@ -104,15 +113,12 @@ const DashboardMenuCards = () => {
           text-align: center;
         }
         @media (max-width: 767px) {
+          .auto-fit-grid {
+            grid-template-columns: repeat(2, 1fr); /* En móvil mejor 2 columnas para que no quede apretado */
+            gap: 0.5rem;
+          }
           .card {
-            padding: 0.5rem 0.75rem;
-          }
-          .card svg {
-            width: 24px;
-            height: 24px;
-          }
-          .card-text {
-            font-size: 0.75rem;
+            padding-top: 0.1rem;
           }
         }
         .dark {
@@ -127,12 +133,18 @@ const DashboardMenuCards = () => {
         }
       `}</style>
 
-      <div className="w-full px-4 mt-4 auto-fit-grid">
+     <div className="w-full px-4 auto-fit-grid">
+
         {menuItems
-          .filter(({ icono }) => {
-            if (!icono) return true;
-            const iconLower = icono.toLowerCase();
-            return iconLower !== "home" && iconLower !== "settings";
+          .filter(({ nombre, formulario }) => {
+            const nombreNorm = (nombre || "").toLowerCase().replace(/\s+/g, "");
+            const formularioNorm = (formulario || "").toLowerCase().replace(/\s+/g, "");
+
+            const esExcluido = EXCLUIDOS.some(
+              (excluido) => nombreNorm.includes(excluido) || formularioNorm.includes(excluido)
+            );
+
+            return !esExcluido;
           })
           .map(({ id, nombre, formulario, icono }) => {
             const Icon = iconMap[icono?.toLowerCase()] || null;
@@ -146,7 +158,7 @@ const DashboardMenuCards = () => {
                 role="button"
                 tabIndex={0}
                 onKeyDown={(e) => {
-                  if (e.key === "Enter") navigate(`dashboard/${ruta}`);
+                  if (e.key === "Enter") navigate(`/dashboard/${ruta}`);
                 }}
                 aria-label={nombre}
                 title={nombre}
@@ -168,3 +180,5 @@ const DashboardMenuCards = () => {
 };
 
 export default DashboardMenuCards;
+
+

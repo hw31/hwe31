@@ -21,11 +21,11 @@ const FrmAsignacion = () => {
   const [vista, setVista] = useState("asignacion"); // vista actual
 
   return (
-    <div
-      className={`mx-auto rounded-2xl p-6 max-w-[900px] w-full ${
-        modoOscuro ? "bg-gray-900 text-white" : "bg-white text-gray-900"
-      }`}
-    >
+      <div
+  className={`p-4 pb-20 min-h-screen rounded-xl ${
+    modoOscuro ? "bg-gray-900 text-white" : "bg-white text-gray-900"
+  }`}
+>
       <div
         className={`w-full max-w-5xl mx-auto rounded-2xl shadow-md p-6 ${
           modoOscuro ? "bg-gray-900 shadow-gray-700" : "bg-white shadow-gray-300"

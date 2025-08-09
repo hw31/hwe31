@@ -267,7 +267,7 @@ const FrmCarreras = () => {
   const texto = modoOscuro ? "text-white" : "text-gray-900";
 
   return (
-    <div className={`p-6 min-h-screen ${fondo} ${texto}`}>
+   <div className={`p-6 pt-20 sm:pt-6 min-h-screen ${fondo} ${texto}`}>
       {!carreraSeleccionada ? (
         <>
           <div className="flex justify-between items-center mb-6">
@@ -374,11 +374,16 @@ const FrmCarreras = () => {
                   <tr className="border-b border-gray-300">
                     <th className="px-6 py-4 font-semibold">Código</th>
                     <th className="px-6 py-4 font-semibold">Materia</th>
-                    <th className="px-6 py-4 font-semibold">Creador</th>
-                    <th className="px-6 py-4 font-semibold">Modificador</th>
-                    <th className="px-6 py-4 font-semibold">Fecha Creación</th>
-                    <th className="px-6 py-4 font-semibold">Fecha Modificación</th>
-                    {rolLower === "administrador" && <th className="px-6 py-4 font-semibold">Activo</th>}
+                   
+                   {rolLower === "administrador" && (
+                    <>
+                      <th className="px-6 py-4 font-semibold">Activo</th>
+                      <th className="px-6 py-4 font-semibold">Creador</th>
+                      <th className="px-6 py-4 font-semibold">Modificador</th>
+                      <th className="px-6 py-4 font-semibold">Fecha Creación</th>
+                      <th className="px-6 py-4 font-semibold">Fecha Modificación</th>
+                    </>
+                    )}
                   </tr>
                 </thead>
                 <tbody>
@@ -391,17 +396,20 @@ const FrmCarreras = () => {
                     >
                       <td className="px-6 py-4">{m.codigoMateria}</td>
                       <td className="px-6 py-4">{m.nombreMateria}</td>
-                      <td className="px-6 py-4">{m.creador}</td>
-                      <td className="px-6 py-4">{m.modificador}</td>
-                      <td className="px-6 py-4">{formatearFecha(m.fechaCreacion)}</td>
-                      <td className="px-6 py-4">{formatearFecha(m.fechaModificacion)}</td>
+                      
                       {rolLower === "administrador" && (
-                        <td className="px-6 py-4">
-                          <Switch
-                            checked={m.idEstado === 1}
-                            onChange={() => toggleMateriaCarrera(m)}
-                          />
-                        </td>
+                        <>
+                          <td className="px-6 py-4">
+                            <Switch
+                              checked={m.idEstado === 1}
+                              onChange={() => toggleMateriaCarrera(m)}
+                            />
+                          </td>
+                          <td className="px-6 py-4">{m.creador}</td>
+                          <td className="px-6 py-4">{m.modificador}</td>
+                          <td className="px-6 py-4">{formatearFecha(m.fechaCreacion)}</td>
+                          <td className="px-6 py-4">{formatearFecha(m.fechaModificacion)}</td>
+                        </>
                       )}
                     </tr>
                   ))}
