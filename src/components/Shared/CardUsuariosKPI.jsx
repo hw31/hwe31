@@ -47,21 +47,32 @@ const CardUsuariosKPI = ({ modoOscuro }) => {
   };
 
   return (
-    <div
-
+<div
   className={`rounded-2xl shadow-md p-2 sm:p-3 mx-auto w-full max-w-xs sm:max-w-sm border transition-colors overflow-hidden
     ${modoOscuro ? "bg-gray-900 border-gray-700 text-white" : "bg-white border-gray-300 text-gray-900"}`}
-  
-      style={{
-        userSelect: "none",
-        minHeight: "160px",
-        backgroundColor: modoOscuro
-          ? "rgba(31, 41, 55, 0.9)"
-          : "rgba(255, 255, 255, 0.95)",
-      }}
-      onMouseMove={handleMouseMove}
-      onMouseLeave={() => setMouseRotation(0)}
-    >
+ style={{
+  userSelect: "none",
+  minHeight: "100px",
+  backgroundColor: modoOscuro
+    ? "rgba(31, 41, 55, 0.9)"
+    : "rgba(255, 255, 255, 0.95)",
+  maxWidth: "400px",
+  width: "90%",
+  position: "fixed",    // aquí está el cambio clave
+  top: "350px",          // distancia desde arriba, ajusta para subir/bajar
+  left: "30rem",        // distancia desde la izquierda, ajusta para mover lateralmente
+  zIndex: 9999,         // para que esté encima de otros elementos
+}}
+
+
+
+
+  onMouseMove={handleMouseMove}
+  onMouseLeave={() => setMouseRotation(0)}
+>
+
+
+
       {/* Título */}
       <h3 className="text-sm font-semibold mb-3 text-center">Usuarios Activos</h3>
 

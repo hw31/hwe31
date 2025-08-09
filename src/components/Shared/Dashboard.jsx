@@ -26,9 +26,9 @@ const DashboardWelcome = styled.div`
   display: flex;
   flex-direction: column;
   align-items: center;
-
+ margin-top: 2rem ;
   @media (max-width: 639px) {
-    margin-top: 10rem !important;
+    margin-top: 24rem !important;
     padding: 10rem;
   }
 `;
@@ -307,20 +307,23 @@ const Dashboard = () => {
       </div>
 
       <main
-        className={`dashboard-main  ${sidebarOpen ? "" : "sidebar-closed"}`}
-        style={{
-          marginLeft: sidebarOpen && isDesktop ? "16rem" : "4.5rem",
-          transition: "margin-left 0.3s ease",
-          position: "relative",
-          zIndex: 1,
-          minHeight: "calc(100vh - 4rem)",
-          backgroundColor: modoOscuro ? "#181818" : "#fdfdfdff",
-          color: modoOscuro ? "white" : "black",
-          maxWidth: "100%",
-          width: "auto",
-          overflowX: "hidden",
-        }}
-      >
+  className={`dashboard-main  ${sidebarOpen ? "" : "sidebar-closed"}`}
+  style={{
+    marginLeft: sidebarOpen && isDesktop ? "16rem" : "4.5rem",
+    transition: "margin-left 0.3s ease",
+    position: "relative",  // importante que sea relative para no tapar nada
+    zIndex: 1,             // bajo para que no bloquee otros elementos
+    minHeight: "calc(100vh - 4rem)", // altura full viewport menos header
+    backgroundColor: modoOscuro ? "#181818" : "#fdfdfdff",
+    color: modoOscuro ? "white" : "black",
+    maxWidth: "100%",
+    width: "auto",
+    overflowX: "hidden",
+    padding: "2rem",       // agregamos padding para que sea más espacioso
+    boxSizing: "border-box"// para que el padding no aumente el ancho total
+  }}
+>
+
         {mostrarBienvenida && (
           <DashboardWelcome role="region" aria-live="polite" className="dashboard-welcome">
             <h1 className="text-2xl sm:text-3xl font-bold mb-6 text-center">
@@ -330,9 +333,12 @@ const Dashboard = () => {
             {rolLower === "administrador" && (
               <div className="flex flex-wrap justify-center gap-6 w-full max-w-7xl px-4">
                 <DashboardMenuCards />
+                    <CardTransacciones modoOscuro={modoOscuro} />
                 <CardInscripcionesConfirmadas modoOscuro={modoOscuro} />
+            
                 <CardUsuariosKPI modoOscuro={modoOscuro} />
-                <CardTransacciones modoOscuro={modoOscuro} />
+                
+                
               </div>
             )}
           </DashboardWelcome>
