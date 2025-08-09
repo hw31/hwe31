@@ -32,6 +32,22 @@ const actualizarInscripcion = async (datosInscripcion) => {
   }
 };
 
+/* ACTUALIZAR INSCRIPCIONES LOTE */
+const actualizarInscripcionesLote = async (datosLote) => {
+  try {
+    const res = await api.put('Inscripcion/actualizar-lote', datosLote);
+
+    if (res.data.success) {
+      console.log('Inscripciones actualizadas correctamente en lote');
+    }
+
+    return res.data;
+  } catch (error) {
+    console.error('Error al actualizar Inscripciones en lote:', error.message);
+    throw error;
+  }
+};
+
 /* FILTRAR POR ID */
 const filtrarPorIdInscripcion = async (idInscripcion) => {
   try {
@@ -59,6 +75,7 @@ const listarInscripciones = async () => {
 export default {
   insertarInscripcion,
   actualizarInscripcion,
+  actualizarInscripcionesLote,
   filtrarPorIdInscripcion,
   listarInscripciones, 
 };

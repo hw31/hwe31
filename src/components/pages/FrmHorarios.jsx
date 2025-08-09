@@ -32,6 +32,7 @@ const FrmCarreras = () => {
   const [modalAgregarMateria, setModalAgregarMateria] = useState(false);
   const [busquedaMateriaModal, setBusquedaMateriaModal] = useState("");
   const [sugerenciasModal, setSugerenciasModal] = useState([]);
+  const [filtroCarrerasEstado, setFiltroCarrerasEstado] = useState("Todas");
 
   // Estado para filas presionadas (para efecto "cojin")
   const [filaPresionada, setFilaPresionada] = useState(null);
@@ -87,32 +88,40 @@ const FrmCarreras = () => {
     }
   };
 
+  const carrerasFiltradas = carreras.filter((c) => {
+  if (filtroCarrerasEstado === "Activas") return c.activo;
+  if (filtroCarrerasEstado === "Inactivas") return !c.activo;
+  return true; 
+});
+
   const cargarMaterias = async (idCarrera) => {
-    setLoadingMaterias(true);
-    try {
-      const res = await materiasCarrerasService.listarPorCarrera(idCarrera);
-      const materiasData = res.map((mc) => ({
-        idRelacion: mc.iD_MateriaCarrera,
-        idMateria: mc.iD_Materia,
-        nombreMateria: mc.nombreMateria,
-        codigoMateria: mc.codigoMateria,
-        idEstado: mc.iD_Estado,
-        activo: mc.iD_Estado === 1,
-        creador: mc.creador,
-        modificador: mc.modificador,
-        fechaCreacion: mc.fecha_Creacion,
-        fechaModificacion: mc.fecha_Modificacion,
-      }));
-      setMaterias(materiasData);
-      setCarreraSeleccionada(carreras.find((c) => c.idCarrera === idCarrera));
-      setFiltroTabla(""); // reset filtro tabla al cargar nuevas materias
-    } catch {
-      Swal.fire("Error", "No se pudieron cargar las materias", "error");
-      setMaterias([]);
-    } finally {
-      setLoadingMaterias(false);
-    }
-  };
+  setLoadingMaterias(true);
+  try {
+    const res = await materiasCarrerasService.listarPorCarrera(idCarrera);
+    const materiasData = res.map((mc) => ({
+      idRelacion: mc.iD_MateriaCarrera,
+      idMateria: mc.iD_Materia,
+      nombreMateria: mc.nombreMateria,
+      codigoMateria: mc.codigoMateria,
+      idEstado: mc.iD_Estado,
+      activo: mc.iD_Estado === 1,
+      creador: mc.creador,
+      modificador: mc.modificador,
+      fechaCreacion: mc.fecha_Creacion,
+      fechaModificacion: mc.fecha_Modificacion,
+    }));
+    setMaterias(materiasData);
+    setCarreraSeleccionada(carreras.find((c) => c.idCarrera === idCarrera));
+    setFiltroTabla(""); 
+    setFiltroEstado("Todas"); 
+  } catch {
+   
+    Swal.fire("Error", "No se pudieron cargar las materias", "error");
+    setMaterias([]);
+  } finally {
+    setLoadingMaterias(false);
+  }
+};
 
   const handleSeleccionarCarrera = (idCarrera) => {
     cargarMaterias(idCarrera);
@@ -308,13 +317,27 @@ const FrmCarreras = () => {
             )}
           </div>
 
+          <div className="mb-4 flex items-center gap-3">
+            <label htmlFor="filtroEstado" className="font-semibold">Filtrar por estado:</label>
+            <select
+              id="filtroEstado"
+              value={filtroCarrerasEstado}
+              onChange={(e) => setFiltroCarrerasEstado(e.target.value)}
+              className="border rounded px-3 py-1"
+            >
+              <option value="Todas">Todas</option>
+              <option value="Activas">Activas</option>
+              <option value="Inactivas">Inactivas</option>
+            </select>
+          </div>
+
           {loading ? (
             <p className="text-center font-medium text-lg">Cargando carreras...</p>
           ) : carreras.length === 0 ? (
             <p className="text-center font-medium text-lg">No hay carreras disponibles.</p>
           ) : (
             <div className="grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-              {carreras.map((carrera) => (
+              {carrerasFiltradas.map((carrera) => (
                 <div
                   key={carrera.idCarrera}
                   className={`rounded-xl p-6 shadow-md border transition-transform transform hover:scale-105 cursor-pointer ${
