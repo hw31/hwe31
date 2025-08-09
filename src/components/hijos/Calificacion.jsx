@@ -32,6 +32,9 @@ const Calificacion = ({
   const [statusGuardado, setStatusGuardado] = useState({});
   const [periodo, setPeriodo] = useState({ id: null, nombre: "" });
   const [inscritosPorMateria, setInscritosPorMateria] = useState({});
+  const [filtroAprobado, setFiltroAprobado] = useState("");
+  const [filasPorPagina, setFilasPorPagina] = useState(10); // default 10 filas
+  const [paginaActual, setPaginaActual] = useState(1);
 
   // Cuando cambia materia o estudiantes actualiza botón mostrar lista
   useEffect(() => {
@@ -168,12 +171,6 @@ const Calificacion = ({
   const materiasFiltradas = grupoSeleccionado && !materiaSeleccionada
     ? materiasDelGrupo.filter((m) =>
         m.nombreMateria.toLowerCase().includes((filtroGeneral || "").toLowerCase())
-      )
-    : [];
-
-  const estudiantesFiltrados = materiaSeleccionada
-    ? estudiantes.filter((est) =>
-        (est.nombreEstudiante || "").toLowerCase().includes((filtroGeneral || "").toLowerCase())
       )
     : [];
 
@@ -320,6 +317,25 @@ const Calificacion = ({
 
   const aprobadoPorEstudiante = (idInscripcion) =>
     porcentajePorEstudiante(idInscripcion) >= 60;
+
+  const estudiantesFiltrados = materiaSeleccionada
+  ? estudiantes
+      .filter((est) =>
+        (est.nombreEstudiante || "").toLowerCase().includes((filtroGeneral || "").toLowerCase())
+      )
+      .filter((est) => {
+        if (filtroAprobado === "") return true; // Sin filtro
+        const aprobado = aprobadoPorEstudiante(est.iD_Inscripcion);
+        return filtroAprobado === "si" ? aprobado : !aprobado;
+      })
+  : [];
+
+  const indiceUltimaFila = paginaActual * filasPorPagina;
+  const indicePrimeraFila = indiceUltimaFila - filasPorPagina;
+
+// Extraer solo las filas para la página actual
+  const estudiantesPaginados = estudiantesFiltrados.slice(indicePrimeraFila, indiceUltimaFila);
+
 
   const claseStatusInput = (clave) => {
     switch (statusGuardado[clave]) {
@@ -505,6 +521,48 @@ const Calificacion = ({
   data={datosExportar}
   fileName={`Calificaciones_${grupoSeleccionado.nombreGrupo}_${materiaSeleccionada.nombreMateria}`}
 />
+                              <div className="flex flex-wrap gap-4 mb-4">
+  <div className="flex items-center gap-2">
+    <label htmlFor="filasPorPagina" className="font-semibold">
+      Filas por página:
+    </label>
+    <select
+      id="filasPorPagina"
+      value={filasPorPagina}
+      onChange={(e) => {
+        setFilasPorPagina(Number(e.target.value));
+        setPaginaActual(1);
+      }}
+      className={`border rounded px-2 py-1 ${
+        modoOscuro ? "bg-gray-700 text-white" : "bg-white text-gray-800"
+      }`}
+    >
+      {[5, 10, 20, 50].map((num) => (
+        <option key={num} value={num}>
+          {num}
+        </option>
+      ))}
+    </select>
+  </div>
+
+  <div className="flex items-center gap-2">
+    <label htmlFor="filtroAprobado" className="font-semibold">
+      Filtrar por aprobado:
+    </label>
+    <select
+      id="filtroAprobado"
+      value={filtroAprobado}
+      onChange={(e) => setFiltroAprobado(e.target.value)}
+      className={`border rounded px-2 py-1 ${
+        modoOscuro ? "bg-gray-700 text-white" : "bg-white text-gray-800"
+      }`}
+    >
+      <option value="">Todos</option>
+      <option value="si">Sí</option>
+      <option value="no">No</option>
+    </select>
+  </div>
+</div>
 
             <div className="overflow-x-auto max-w-full">
               <table
@@ -571,7 +629,7 @@ const Calificacion = ({
                   </td>
                 </tr>
               )}
-             {estudiantesFiltrados.map((est, index) => (
+             {estudiantesPaginados.map((est, index) => (
   <FilaEstudiante
     key={est.iD_Inscripcion}
     estudiante={est}
@@ -593,6 +651,31 @@ const Calificacion = ({
 
             </tbody>
           </table>
+
+          <div className="flex justify-between items-center mt-4">
+  <button
+    onClick={() => setPaginaActual((prev) => Math.max(prev - 1, 1))}
+    disabled={paginaActual === 1}
+    className="px-3 py-1 rounded bg-blue-500 text-white disabled:bg-gray-400"
+  >
+    Anterior
+  </button>
+  <span>
+    Página {paginaActual} de {Math.ceil(estudiantesFiltrados.length / filasPorPagina)}
+  </span>
+  <button
+    onClick={() =>
+      setPaginaActual((prev) =>
+        Math.min(prev + 1, Math.ceil(estudiantesFiltrados.length / filasPorPagina))
+      )
+    }
+    disabled={paginaActual === Math.ceil(estudiantesFiltrados.length / filasPorPagina)}
+    className="px-3 py-1 rounded bg-blue-500 text-white disabled:bg-gray-400"
+  >
+    Siguiente
+  </button>
+</div>
+
           </div>
           <button
             onClick={() => {

@@ -11,6 +11,7 @@ import contactoService from "../../services/Contacto";
 
 import { setFotoPerfilUrl } from "../../features/Profile/profileSlice";
 
+
 const Container = styled.div`
   max-width: 480px;
   margin: 2rem auto;
@@ -36,6 +37,11 @@ const ProfileImageWrapper = styled.div`
   border-radius: 50%;
   border: 4px solid #4a90e2;
   overflow: hidden;
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
   &:hover::after {
     content: "Cambiar foto";
     position: absolute;
@@ -50,9 +56,10 @@ const ProfileImageWrapper = styled.div`
   }
 `;
 
+
 const ProfileImage = styled.img`
-  width: 100%;
-  height: 100%;
+  max-width: 100%;
+  max-height: 100%;
   object-fit: cover;
   display: block;
 `;
@@ -116,12 +123,12 @@ const Label = styled.label`
 const SmallText = styled.p`
   font-size: 0.9rem;
   color: #666;
-  margin-top: -1rem;
+  margin-top: 1rem;
   margin-bottom: 1rem;
   text-align: center;
 `;
 
-// Aquí agregamos efecto hover dinámico a la card de contactos
+// Contact item card
 const ContactItem = styled.div`
   background: ${({ theme }) => (theme.dark ? "#333" : "#f9f9f9")};
   border-radius: 8px;
@@ -148,7 +155,35 @@ const EditIcon = styled.div`
     color: #357abd;
   }
 `;
+const PlaceholderAvatar = styled.div`
+  width: 140px;
+  height: 140px;
+  border-radius: 50%;
+  border: 4px solid #4a90e2;
+  background-color: #4a90e2;
+  color: white;
+  font-size: 64px;
+  font-weight: 700;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  user-select: none;
+  cursor: pointer;
+  position: relative;
 
+  &:hover::after {
+    content: "Cambiar foto";
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    color: white;
+    font-weight: 600;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-radius: 50%;
+  }
+`;
 const PerfilUsuario = () => {
   const dispatch = useDispatch();
 
@@ -158,6 +193,7 @@ const PerfilUsuario = () => {
   const [fotoUrl, setFotoUrl] = useState(null);
   const [fotoFile, setFotoFile] = useState(null);
   const [previewUrl, setPreviewUrl] = useState(null);
+  const [imgError, setImgError] = useState(false); // Para fallback avatar
 
   const [contrasena, setContrasena] = useState("");
   const [confirmarContrasena, setConfirmarContrasena] = useState("");
@@ -178,11 +214,16 @@ const PerfilUsuario = () => {
       .then((res) => {
         if (res.success && res.ruta) {
           setFotoUrl(`http://localhost:5292${res.ruta}`);
+          setImgError(false);
         } else {
           setFotoUrl(null);
+          setImgError(true);
         }
       })
-      .catch(() => setFotoUrl(null));
+      .catch(() => {
+        setFotoUrl(null);
+        setImgError(true);
+      });
 
     contactoService.filtrarPorIdPersonaContacto(idUsuario)
       .then((res) => {
@@ -204,6 +245,7 @@ const PerfilUsuario = () => {
     if (file) {
       setFotoFile(file);
       setPreviewUrl(URL.createObjectURL(file));
+      setImgError(false);
     }
   };
 
@@ -217,6 +259,7 @@ const PerfilUsuario = () => {
       setPreviewUrl(null);
       setFotoFile(null);
       setFotoUrl(nuevaRuta);
+      setImgError(false);
 
       // Actualizamos la foto en Redux para reflejar inmediatamente el cambio
       dispatch(setFotoPerfilUrl(nuevaRuta));
@@ -301,7 +344,10 @@ const PerfilUsuario = () => {
       cancelarEdicion();
     } catch (error) {
       console.error("Error al actualizar contacto:", error);
-      toast.error("❌ Error al actualizar contacto");
+      const mensajeBackend =
+        error.response?.data?.mensaje || error.response?.data?.message || "Error desconocido";
+      toast.error(`❌ ${mensajeBackend}`);
+      cancelarEdicion();
     }
   };
 
@@ -311,10 +357,20 @@ const PerfilUsuario = () => {
         <Title>Perfil de {persona || usuario}</Title>
 
         <ProfileImageWrapper onClick={handleFotoClick} title="Haz click para cambiar la foto">
-          <ProfileImage
-            src={previewUrl || fotoUrl || "/placeholder-profile.png"}
-            alt="Foto de perfil"
-          />
+          {(!previewUrl && !fotoUrl) || imgError ? (
+            <PlaceholderAvatar onClick={handleFotoClick}>
+              {(persona && persona.length > 0
+                ? persona.trim().charAt(0).toUpperCase()
+                : "U"
+              )}
+            </PlaceholderAvatar>
+          ) : (
+            <ProfileImage
+              src={previewUrl || fotoUrl}
+              alt="Foto de perfil"
+              onError={() => setImgError(true)}
+            />
+          )}
         </ProfileImageWrapper>
         <HiddenFileInput
           type="file"
@@ -371,46 +427,48 @@ const PerfilUsuario = () => {
         )}
 
         <Label>Contactos</Label>
-        {contactos.length === 0 && <SmallText>No tienes contactos registrados.</SmallText>}
-
-        {contactos.map((contacto) => (
-          <ContactItem key={contacto.idContacto}>
-            {editandoId === contacto.idContacto ? (
-              <>
-                <Input
-                  type="text"
-                  value={valorEditado}
-                  onChange={(e) => setValorEditado(e.target.value)}
-                />
-                <div style={{ display: "flex", gap: "0.5rem", marginTop: "0.5rem" }}>
-                  <Button type="button" onClick={guardarContactoEditado}>Guardar</Button>
-                  <Button
-                    type="button"
-                    onClick={cancelarEdicion}
-                    style={{ backgroundColor: "#aaa" }}
-                  >
-                    Cancelar
-                  </Button>
-                </div>
-              </>
-            ) : (
-              <>
-                <div style={{ display: "flex", justifyContent: "space-between" }}>
-                  <strong>
-                    {contacto.tipoContacto}
-                    {contacto.idTipoContacto === 23 && " (No editable)"}
-                  </strong>
-                  {contacto.idTipoContacto !== 23 && (
-                    <EditIcon onClick={() => iniciarEdicion(contacto)}>
-                      <Edit2 size={20} />
-                    </EditIcon>
-                  )}
-                </div>
-                <ContactText>{contacto.valorContacto}</ContactText>
-              </>
-            )}
-          </ContactItem>
-        ))}
+        {contactos.length === 0 ? (
+          <SmallText>No tienes contactos registrados.</SmallText>
+        ) : (
+          contactos.map((contacto) => (
+            <ContactItem key={contacto.idContacto}>
+              {editandoId === contacto.idContacto ? (
+                <>
+                  <Input
+                    type="text"
+                    value={valorEditado}
+                    onChange={(e) => setValorEditado(e.target.value)}
+                  />
+                  <div style={{ display: "flex", gap: "0.5rem", marginTop: "0.5rem" }}>
+                    <Button type="button" onClick={guardarContactoEditado}>Guardar</Button>
+                    <Button
+                      type="button"
+                      onClick={cancelarEdicion}
+                      style={{ backgroundColor: "#aaa" }}
+                    >
+                      Cancelar
+                    </Button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div style={{ display: "flex", justifyContent: "space-between" }}>
+                    <strong>
+                      {contacto.tipoContacto}
+                      {contacto.idTipoContacto === 23 && " (No editable)"}
+                    </strong>
+                    {contacto.idTipoContacto !== 23 && (
+                      <EditIcon onClick={() => iniciarEdicion(contacto)}>
+                        <Edit2 size={20} />
+                      </EditIcon>
+                    )}
+                  </div>
+                  <ContactText>{contacto.valorContacto}</ContactText>
+                </>
+              )}
+            </ContactItem>
+          ))
+        )}
 
         <ToastContainer position="bottom-right" autoClose={3000} hideProgressBar />
       </Container>
@@ -419,4 +477,3 @@ const PerfilUsuario = () => {
 };
 
 export default PerfilUsuario;
-``

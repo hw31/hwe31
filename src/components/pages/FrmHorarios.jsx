@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import Swal from "sweetalert2";
-import { GraduationCap, PlusCircle, Edit3 } from "lucide-react";
+import { GraduationCap, PlusCircle, Edit3, Plus } from "lucide-react";
 
 import carreraService from "../../services/Carreras";
 import estudianteCarreraService from "../../services/EstudiantesCarreras";
@@ -24,13 +24,24 @@ const FrmCarreras = () => {
   const [estados, setEstados] = useState([]);
   const [todasMaterias, setTodasMaterias] = useState([]);
   const [carreraSeleccionada, setCarreraSeleccionada] = useState(null);
-  const [materiaBusqueda, setMateriaBusqueda] = useState("");
-  const [sugerencias, setSugerencias] = useState([]);
-  const [mostrarSugerencias, setMostrarSugerencias] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [loadingMaterias, setLoadingMaterias] = useState(false);
+
+  // Nuevo filtro para la tabla materias
+  const [filtroTabla, setFiltroTabla] = useState("");
+
+  // Estado modal para agregar materia
+  const [modalAgregarMateria, setModalAgregarMateria] = useState(false);
+  const [busquedaMateriaModal, setBusquedaMateriaModal] = useState("");
+  const [sugerenciasModal, setSugerenciasModal] = useState([]);
+
+  // Estado para filas presionadas (para efecto "cojin")
+  const [filaPresionada, setFilaPresionada] = useState(null);
+
+  // Modal para carreras (editar/crear)
   const [modal, setModal] = useState(false);
   const inputRef = useRef(null);
+
+  const [loading, setLoading] = useState(false);
+  const [loadingMaterias, setLoadingMaterias] = useState(false);
 
   const [formData, setFormData] = useState({
     idCarrera: null,
@@ -60,7 +71,7 @@ const FrmCarreras = () => {
       } else {
         const res = await estudianteCarreraService.listarPorUsuario(idUsuario);
         data = res
-          .filter((ec) => ec.iD_Estado === 1) // sool carreras activas
+          .filter((ec) => ec.iD_Estado === 1) // solo carreras activas
           .map((ec) => ({
             idCarrera: ec.iD_Carrera,
             nombreCarrera: ec.nombreCarrera,
@@ -94,6 +105,7 @@ const FrmCarreras = () => {
       }));
       setMaterias(materiasData);
       setCarreraSeleccionada(carreras.find((c) => c.idCarrera === idCarrera));
+      setFiltroTabla(""); // reset filtro tabla al cargar nuevas materias
     } catch {
       Swal.fire("Error", "No se pudieron cargar las materias", "error");
       setMaterias([]);
@@ -109,10 +121,10 @@ const FrmCarreras = () => {
   const volverACarreras = () => {
     setCarreraSeleccionada(null);
     setMaterias([]);
-    setMateriaBusqueda("");
-    setSugerencias([]);
+    setFiltroTabla("");
   };
 
+  // Modal carreras
   const abrirModal = (carrera = null) => {
     if (carrera) {
       setFormData({ ...carrera });
@@ -126,7 +138,6 @@ const FrmCarreras = () => {
     }
     setModal(true);
   };
-
   const cerrarModal = () => setModal(false);
 
   const handleChange = (e) => {
@@ -140,7 +151,11 @@ const FrmCarreras = () => {
   const guardarCarrera = async () => {
     try {
       if (!formData.nombreCarrera || !formData.codigoCarrera) {
-        return Swal.fire("Campos incompletos", "Completa todos los campos", "warning");
+        return Swal.fire(
+          "Campos incompletos",
+          "Completa todos los campos",
+          "warning"
+        );
       }
 
       if (formData.idCarrera) {
@@ -159,32 +174,48 @@ const FrmCarreras = () => {
   };
 
   const formatearFecha = (fecha) => {
-  if (!fecha) return "-";
-  const d = new Date(fecha);
-  return d.toLocaleDateString("es-NI", {
-    year: "numeric",
-    month: "short",
-    day: "2-digit",
-  });
-};
-
-
-  const handleBusquedaChange = (e) => {
-    const valor = e.target.value;
-    setMateriaBusqueda(valor);
-    if (valor.trim() === "") {
-      setSugerencias([]);
-      return;
-    }
-    const sugerenciasFiltradas = todasMaterias.filter((m) =>
-      m.nombreMateria.toLowerCase().includes(valor.toLowerCase())
-    );
-    setSugerencias(sugerenciasFiltradas);
-    setMostrarSugerencias(true);
+    if (!fecha) return "-";
+    const d = new Date(fecha);
+    return d.toLocaleDateString("es-NI", {
+      year: "numeric",
+      month: "short",
+      day: "2-digit",
+    });
   };
 
+  // FILTRADO EN LA TABLA DE MATERIAS (por nombre, codigo o estado)
+  const materiasFiltradas = materias.filter((m) => {
+    const filtro = filtroTabla.toLowerCase().trim();
+    if (!filtro) return true;
+    const nombre = m.nombreMateria.toLowerCase();
+    const codigo = m.codigoMateria.toLowerCase();
+    const estadoTexto = m.activo ? "activo" : "inactivo";
+    return (
+      nombre.includes(filtro) ||
+      codigo.includes(filtro) ||
+      estadoTexto.includes(filtro)
+    );
+  });
 
-  const handleSeleccionarMateria = async (materia) => {
+  // MODAL AGREGAR MATERIA: FILTRAR SUGERENCIAS
+  useEffect(() => {
+    if (!busquedaMateriaModal.trim()) {
+      setSugerenciasModal([]);
+      return;
+    }
+    const filtro = busquedaMateriaModal.toLowerCase();
+    // Para evitar agregar materias ya asignadas
+    const materiasExistentesIds = new Set(materias.map((m) => m.idMateria));
+    const sugerencias = todasMaterias.filter(
+      (m) =>
+        (m.nombreMateria.toLowerCase().includes(filtro) ||
+          m.codigoMateria.toLowerCase().includes(filtro)) &&
+        !materiasExistentesIds.has(m.iD_Materia)
+    );
+    setSugerenciasModal(sugerencias);
+  }, [busquedaMateriaModal, todasMaterias, materias]);
+
+  const handleSeleccionarMateriaModal = async (materia) => {
     const confirm = await Swal.fire({
       title: "Confirmar inserción",
       text: `¿Seguro que quieres ingresar: "${materia.nombreMateria}" a "${carreraSeleccionada.nombreCarrera}"?`,
@@ -204,10 +235,10 @@ const FrmCarreras = () => {
       });
       Swal.fire("Éxito", "Materia agregada correctamente", "success");
       cargarMaterias(carreraSeleccionada.idCarrera);
-      setMateriaBusqueda("");
-      setSugerencias([]);
+      setBusquedaMateriaModal("");
+      setSugerenciasModal([]);
+      setModalAgregarMateria(false);
     } catch (error) {
-      // Intentamos obtener el mensaje específico de error de la API
       const msgError =
         error?.response?.data?.mensaje ||
         error?.message ||
@@ -216,23 +247,10 @@ const FrmCarreras = () => {
     }
   };
 
-  const handleOutsideClick = (e) => {
-    if (inputRef.current && !inputRef.current.contains(e.target)) {
-      setMostrarSugerencias(false);
-    }
-  };
-
-  useEffect(() => {
-    document.addEventListener("click", handleOutsideClick);
-    return () => document.removeEventListener("click", handleOutsideClick);
-  }, []);
-
   const toggleMateriaCarrera = async (relacion) => {
     const nuevoEstado = relacion.idEstado === 1 ? 2 : 1;
-    // Guardamos el estado previo para revertir en caso de error
     const estadoPrevio = materias.find((m) => m.idRelacion === relacion.idRelacion);
 
-    // Actualizamos UI inmediatamente
     setMaterias((prev) =>
       prev.map((m) =>
         m.idRelacion === relacion.idRelacion
@@ -252,7 +270,6 @@ const FrmCarreras = () => {
         error?.message ||
         "No se pudo cambiar el estado";
       Swal.fire("Error", msgError, "error");
-      // Revertimos el cambio local
       setMaterias((prev) =>
         prev.map((m) =>
           m.idRelacion === relacion.idRelacion
@@ -263,11 +280,19 @@ const FrmCarreras = () => {
     }
   };
 
+  // Efecto "cojín" en fila: agregamos evento mouse down/up
+  const manejarPresionarFila = (idRelacion) => {
+    setFilaPresionada(idRelacion);
+  };
+  const manejarSoltarFila = () => {
+    setFilaPresionada(null);
+  };
+
   const fondo = modoOscuro ? "bg-gray-900" : "bg-white";
   const texto = modoOscuro ? "text-white" : "text-gray-900";
 
   return (
-   <div className={`p-6 pt-20 sm:pt-6 min-h-screen ${fondo} ${texto}`}>
+    <div className={`p-6 pt-20 sm:pt-6 min-h-screen ${fondo} ${texto}`}>
       {!carreraSeleccionada ? (
         <>
           <div className="flex justify-between items-center mb-6">
@@ -292,26 +317,32 @@ const FrmCarreras = () => {
               {carreras.map((carrera) => (
                 <div
                   key={carrera.idCarrera}
-                  className={`rounded-xl p-6 shadow-md border transition-transform transform hover:scale-105 ${
+                  className={`rounded-xl p-6 shadow-md border transition-transform transform hover:scale-105 cursor-pointer ${
                     modoOscuro
                       ? "bg-gray-800 border-gray-700"
                       : "bg-gradient-to-br from-blue-100 to-white border-blue-200"
                   }`}
+                  onClick={() => handleSeleccionarCarrera(carrera.idCarrera)}
+                  title="Ver plan de estudio"
                 >
-                  <div
-                    className="cursor-pointer flex items-center gap-3"
-                    onClick={() => handleSeleccionarCarrera(carrera.idCarrera)}
-                  >
+                  <div className="flex items-center gap-3">
                     <GraduationCap size={26} className="text-blue-500" />
                     <h3 className="text-xl font-semibold">{carrera.nombreCarrera}</h3>
                   </div>
                   <p className="mt-2 text-sm text-gray-600">Código: {carrera.codigoCarrera}</p>
-                  <p className={`text-sm mt-1 ${carrera.activo ? "text-green-600" : "text-red-500"}`}>
+                  <p
+                    className={`text-sm mt-1 ${
+                      carrera.activo ? "text-green-600" : "text-red-500"
+                    }`}
+                  >
                     {carrera.activo ? "Activo" : "Inactivo"}
                   </p>
                   {rolLower === "administrador" && (
                     <button
-                      onClick={() => abrirModal(carrera)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        abrirModal(carrera);
+                      }}
                       className="mt-4 text-sm flex items-center gap-1 text-blue-600 hover:underline"
                     >
                       <Edit3 size={18} /> Editar
@@ -336,79 +367,88 @@ const FrmCarreras = () => {
           </h2>
 
           {rolLower === "administrador" && (
-            <div className="mb-6 w-full max-w-md mx-auto relative" ref={inputRef}>
+            <div className="flex justify-center mb-4 gap-3 flex-wrap">
+              <button
+                onClick={() => setModalAgregarMateria(true)}
+                className="flex items-center gap-2 bg-green-600 text-white px-5 py-2 rounded-full hover:bg-green-700 shadow-md transition"
+              >
+                <Plus size={18} />
+                Agregar Materia
+              </button>
               <input
-                value={materiaBusqueda}
-                onChange={handleBusquedaChange}
-                placeholder="Buscar materia para agregar..."
-                className="w-full max-w-md rounded-full border border-gray-300 px-5 py-3 text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition shadow-md"
+                type="text"
+                placeholder="Filtrar materias por nombre, código o estado..."
+                value={filtroTabla}
+                onChange={(e) => setFiltroTabla(e.target.value)}
+                className="max-w-md w-full rounded-full border border-gray-300 px-5 py-2 text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition shadow-md"
               />
-              {mostrarSugerencias && sugerencias.length > 0 && (
-                <ul className="absolute z-30 mt-1 max-h-60 w-full overflow-auto rounded-xl border border-gray-300 bg-white shadow-lg scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
-                  {sugerencias.map((m) => (
-                    <li
-                      key={m.iD_Materia}
-                      onClick={() => handleSeleccionarMateria(m)}
-                      className="cursor-pointer px-5 py-3 text-gray-800 hover:bg-blue-500 hover:text-white transition rounded-lg"
-                    >
-                      {m.nombreMateria}
-                    </li>
-                  ))}
-                </ul>
-              )}
             </div>
           )}
 
           {loadingMaterias ? (
             <p className="text-center font-medium text-lg">Cargando materias...</p>
-          ) : materias.length === 0 ? (
+          ) : materiasFiltradas.length === 0 ? (
             <p className="text-center font-medium text-lg">No hay materias para esta carrera.</p>
           ) : (
             <div className="overflow-x-auto">
               <table
-                className={`mx-auto w-full max-w-5xl border-collapse text-left ${
-                  modoOscuro ? "bg-gray-800 text-white" : "bg-white text-black"
+                className={`mx-auto w-full max-w-5xl border-collapse text-left rounded-xl shadow-lg ${
+                  modoOscuro
+                    ? "bg-gray-800 text-white"
+                    : "bg-white text-black border border-gray-300"
                 }`}
               >
                 <thead>
                   <tr className="border-b border-gray-300">
                     <th className="px-6 py-4 font-semibold">Código</th>
                     <th className="px-6 py-4 font-semibold">Materia</th>
-                   
-                   {rolLower === "administrador" && (
-                    <>
-                      <th className="px-6 py-4 font-semibold">Activo</th>
-                      <th className="px-6 py-4 font-semibold">Creador</th>
-                      <th className="px-6 py-4 font-semibold">Modificador</th>
-                      <th className="px-6 py-4 font-semibold">Fecha Creación</th>
-                      <th className="px-6 py-4 font-semibold">Fecha Modificación</th>
-                    </>
+
+                    {rolLower === "administrador" && (
+                      <>
+                        <th className="px-6 py-4 font-semibold">Creador</th>
+                        <th className="px-6 py-4 font-semibold">Modificador</th>
+                        <th className="px-6 py-4 font-semibold">Fecha Creación</th>
+                        <th className="px-6 py-4 font-semibold">Fecha Modificación</th>
+                        <th className="px-6 py-4 font-semibold">Activo</th>
+                      </>
                     )}
                   </tr>
                 </thead>
                 <tbody>
-                  {materias.map((m) => (
+                  {materiasFiltradas.map((m) => (
                     <tr
                       key={m.idRelacion}
-                      className={`border-b border-gray-300 transition hover:bg-blue-100 ${
-                        modoOscuro ? "hover:bg-blue-700" : ""
-                      }`}
+                      className={`border-b border-gray-300 cursor-pointer rounded-xl transition
+                        ${
+                          modoOscuro
+                            ? "hover:bg-blue-700"
+                            : "hover:bg-blue-100"
+                        }
+                        ${
+                          filaPresionada === m.idRelacion
+                            ? "shadow-inner shadow-blue-400/60"
+                            : ""
+                        }
+                      `}
+                      onMouseDown={() => manejarPresionarFila(m.idRelacion)}
+                      onMouseUp={manejarSoltarFila}
+                      onMouseLeave={manejarSoltarFila}
                     >
                       <td className="px-6 py-4">{m.codigoMateria}</td>
                       <td className="px-6 py-4">{m.nombreMateria}</td>
-                      
+
                       {rolLower === "administrador" && (
-                        <>
+                        <>                        
+                          <td className="px-6 py-4">{m.creador}</td>
+                          <td className="px-6 py-4">{m.modificador}</td>
+                          <td className="px-6 py-4">{formatearFecha(m.fechaCreacion)}</td>
+                          <td className="px-6 py-4">{formatearFecha(m.fechaModificacion)}</td>
                           <td className="px-6 py-4">
                             <Switch
                               checked={m.idEstado === 1}
                               onChange={() => toggleMateriaCarrera(m)}
                             />
                           </td>
-                          <td className="px-6 py-4">{m.creador}</td>
-                          <td className="px-6 py-4">{m.modificador}</td>
-                          <td className="px-6 py-4">{formatearFecha(m.fechaCreacion)}</td>
-                          <td className="px-6 py-4">{formatearFecha(m.fechaModificacion)}</td>
                         </>
                       )}
                     </tr>
@@ -458,10 +498,7 @@ const FrmCarreras = () => {
               </label>
             </div>
             <div className="flex justify-end gap-3 mt-6">
-              <button
-                onClick={cerrarModal}
-                className="px-4 py-2 bg-gray-300 rounded-lg"
-              >
+              <button onClick={cerrarModal} className="px-4 py-2 bg-gray-300 rounded-lg">
                 Cancelar
               </button>
               <button
@@ -469,6 +506,58 @@ const FrmCarreras = () => {
                 className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
               >
                 Guardar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL AGREGAR MATERIA */}
+      {modalAgregarMateria && (
+        <div
+          className="fixed inset-0 flex items-center justify-center z-50"
+          style={{ backdropFilter: "blur(5px)" }}
+          onClick={() => setModalAgregarMateria(false)}
+        >
+          <div
+            className="bg-white rounded-xl p-6 w-full max-w-md shadow-lg"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 className="text-xl font-bold mb-4">Agregar Materia</h2>
+            <input
+              type="text"
+              value={busquedaMateriaModal}
+              onChange={(e) => setBusquedaMateriaModal(e.target.value)}
+              placeholder="Buscar materia por nombre o código..."
+              className="w-full rounded-full border border-gray-300 px-5 py-3 text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition shadow-md mb-3"
+              autoFocus
+            />
+            <div
+              className="max-h-60 overflow-auto rounded-lg border border-gray-300"
+              style={{ scrollbarWidth: "thin" }}
+            >
+              {sugerenciasModal.length === 0 ? (
+                <p className="text-center text-gray-500 p-4">No hay materias que coincidan.</p>
+              ) : (
+                <ul>
+                  {sugerenciasModal.map((m) => (
+                    <li
+                      key={m.iD_Materia}
+                      onClick={() => handleSeleccionarMateriaModal(m)}
+                      className="cursor-pointer px-5 py-3 text-gray-800 hover:bg-blue-500 hover:text-white transition rounded-lg"
+                    >
+                      <strong>{m.codigoMateria}</strong> - {m.nombreMateria}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+            <div className="flex justify-end mt-6">
+              <button
+                onClick={() => setModalAgregarMateria(false)}
+                className="px-4 py-2 bg-gray-300 rounded-lg hover:bg-gray-400 transition"
+              >
+                Cancelar
               </button>
             </div>
           </div>

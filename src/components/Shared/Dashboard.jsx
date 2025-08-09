@@ -33,6 +33,45 @@ const DashboardWelcome = styled.div`
   }
 `;
 
+// Componente para avatar con inicial
+const AvatarInicial = ({ nombre, size = 32 }) => {
+  const inicial = nombre ? nombre.charAt(0).toUpperCase() : "?";
+
+  const coloresFondo = [
+    "#ef4444", // rojo
+    "#3b82f6", // azul
+    "#10b981", // verde
+    "#f59e0b", // amarillo
+    "#8b5cf6", // morado
+    "#ec4899", // rosa
+  ];
+
+  const colorIndex = inicial.charCodeAt(0) % coloresFondo.length;
+  const bgColor = coloresFondo[colorIndex];
+
+  return (
+    <div
+      style={{
+        width: size,
+        height: size,
+        borderRadius: "50%",
+        backgroundColor: bgColor,
+        color: "white",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        fontWeight: "bold",
+        fontSize: size / 1.5,
+        userSelect: "none",
+        textTransform: "uppercase",
+      }}
+      aria-label={`Avatar de ${nombre}`}
+    >
+      {inicial}
+    </div>
+  );
+};
+
 const Dashboard = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -196,19 +235,24 @@ const Dashboard = () => {
 
         <div className="ml-auto flex items-center gap-4 pr-4 relative" ref={dropdownRef}>
           <button
+            className="flex items-center gap-2 focus:outline-none"
             onClick={handleToggleTheme}
-            className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition"
             aria-label="Cambiar tema"
           >
-            {modoOscuro ? <Sun className="text-yellow-400" /> : <Moon className="text-purple-700" />}
+            {modoOscuro ? (
+              <Sun className="text-yellow-400" />
+            ) : (
+              <Moon className="text-purple-700" />
+            )}
           </button>
 
           <button
             onClick={() => navigate("/dashboard/aulas")}
             className={`p-2 rounded-full transition
-              ${modoOscuro
-                ? "text-gray-200 hover:text-black dark:hover:text-black"
-                : "text-gray-700 hover:text-gray-900"
+              ${
+                modoOscuro
+                  ? "text-gray-200 hover:text-black dark:hover:text-black"
+                  : "text-gray-700 hover:text-gray-900"
               }
               hover:bg-gray-100 dark:hover:bg-gray-700
             `}
@@ -231,9 +275,11 @@ const Dashboard = () => {
                   className="w-8 h-8 rounded-full object-cover"
                 />
               ) : (
-                <div className="w-8 h-8 rounded-full bg-gray-300 animate-pulse" />
+                <AvatarInicial nombre={persona} size={32} />
               )}
-              <span className="font-medium">{nombre} {apellido}!</span>
+              <span className="font-medium">
+                {nombre} {apellido}!
+              </span>
             </button>
 
             {showDropdown && (
@@ -246,7 +292,7 @@ const Dashboard = () => {
                       className="w-24 h-24 rounded-full object-cover border border-gray-300 shadow-md mb-2"
                     />
                   ) : (
-                    <div className="w-24 h-24 rounded-full bg-gray-300 animate-pulse mb-2" />
+                    <AvatarInicial nombre={persona} size={96} />
                   )}
                   <p className="font-semibold text-lg text-center">{persona}</p>
                   <p>{rol}</p>
@@ -276,11 +322,7 @@ const Dashboard = () => {
         }}
       >
         {mostrarBienvenida && (
-          <DashboardWelcome
-            role="region"
-            aria-live="polite"
-            className="dashboard-welcome"
-          >
+          <DashboardWelcome role="region" aria-live="polite" className="dashboard-welcome">
             <h1 className="text-2xl sm:text-3xl font-bold mb-6 text-center">
               ¡Bienvenido, {nombre} {apellido}!
             </h1>
