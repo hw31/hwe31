@@ -282,7 +282,7 @@ const UserRol = ({ busqueda }) => {
           formError={formError}
           formLoading={formLoading}
           modoEdicion={modoEdicion}
-          titulo={modoEdicion ? "Editar Relación Usuario-Rol" : "Nueva Relación Usuario-Rol"}
+          titulo={modoEdicion ? "Editar Relación Usuario-Rol" : "Relación Usuario-Rol"}
         >
           <div className="space-y-4">
             <div className="relative">

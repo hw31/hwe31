@@ -6,7 +6,6 @@ import authService from "../../services/authService";
 import styled from "styled-components";
 import fotoService from "../../services/Profile";
 
-import fotoService from "../../services/Profile"; // <- IMPORTANTE
 
 import { logout as logoutAction } from "../../features/Auth/authSlice";
 import {
