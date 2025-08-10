@@ -1,6 +1,26 @@
 import React, { useEffect, useState, useRef } from "react";
 import { ResponsivePie } from "@nivo/pie";
+import styled from "styled-components";
 import usuariosRolesService from "../../services/UsuariosRoles";
+
+
+const Wrapper = styled.div`
+  position: absolute;
+  top: 430px;
+  right: 48px; /* menos a la derecha */
+  width: 450px; /* más ancho */
+  z-index: 10;
+
+  @media (max-width: 640px) {
+    position: relative;
+    top: 0;
+    right: 0;
+    width: 100%;
+    background: none;
+  }
+`;
+
+
 
 const CardUsuariosKPI = ({ modoOscuro }) => {
   const [data, setData] = useState([
@@ -46,101 +66,103 @@ const CardUsuariosKPI = ({ modoOscuro }) => {
     setMouseRotation(x * 0.2);
   };
 
+  const textColor = modoOscuro ? "#ffffff" : "#111111";
+
   return (
-<div
-  className={`rounded-2xl shadow-md p-2 sm:p-3 mx-auto w-full max-w-xs sm:max-w-sm border transition-colors overflow-hidden
-    ${modoOscuro ? "bg-gray-900 border-gray-700 text-white" : "bg-white border-gray-300 text-gray-900"}`}
- style={{
+    <Wrapper>
+    <div
+      className={`rounded-2xl shadow-md p-2 sm:p-3 mx-auto max-w-xs sm:max-w-sm border transition-colors overflow-hidden
+        ${modoOscuro ? "bg-gray-900 border-gray-700 text-white" : "bg-white border-gray-300 text-gray-900"}`}
+  style={{
   userSelect: "none",
-  minHeight: "100px",
+  minHeight: "150px",    // menos alto
+  maxHeight: "190px",    // menos alto
+  width: "100%",         // ancho sigue igual
+  maxWidth: "450px",
+  display: "flex",
+  flexDirection: "column",
+  justifyContent: "space-between",
   backgroundColor: modoOscuro
     ? "rgba(31, 41, 55, 0.9)"
     : "rgba(255, 255, 255, 0.95)",
-  maxWidth: "400px",
-  width: "90%",
-  position: "fixed",    // aquí está el cambio clave
-  top: "350px",          // distancia desde arriba, ajusta para subir/bajar
-  left: "30rem",        // distancia desde la izquierda, ajusta para mover lateralmente
-  zIndex: 9999,         // para que esté encima de otros elementos
+  position: "relative",
+  zIndex: 1000,
 }}
 
 
 
+      onMouseMove={handleMouseMove}
+      onMouseLeave={() => setMouseRotation(0)}
+      aria-label="Indicadores clave de usuarios activos"
+    >
+        {/* Título */}
+        <h3 className="text-sm font-semibold mb-3 text-center">Usuarios Activos</h3>
 
-  onMouseMove={handleMouseMove}
-  onMouseLeave={() => setMouseRotation(0)}
->
-
-
-
-      {/* Título */}
-      <h3 className="text-sm font-semibold mb-3 text-center">Usuarios Activos</h3>
-
-      {/* Leyenda personalizada sin cantidades */}
-      <div className="flex justify-around mb-2 select-none">
-        {data.map(({ id, label, color }) => (
-          <div key={id} className="flex items-center space-x-2">
-            <span
-              className="w-5 h-5 rounded-full"
-              style={{ backgroundColor: color }}
-            />
-            <span className="text-xs sm:text-sm">{label}</span>
-          </div>
-        ))}
-      </div>
-
-      {/* Gráfico con cantidad dentro */}
-      <div className="h-[90px] sm:h-[140px]">
-        <ResponsivePie
-          data={data}
-          margin={{ top: 5, bottom: 10, left: 30, right: 5 }}
-          innerRadius={0.6}
-          padAngle={2}
-          cornerRadius={5}
-          activeOuterRadiusOffset={8}
-          colors={(d) => d.data.color}
-          borderWidth={2}
-          borderColor={{ from: "color", modifiers: [["darker", 0.3]] }}
-          enableArcLinkLabels={false}
-          arcLabelsSkipAngle={0}
-          arcLabelsTextColor={modoOscuro ? "#FFFFFF" : "#111111"}
-          arcLabel={(d) => `${d.value}`} // Mostrar cantidad dentro del pastel
-          tooltip={({ datum }) => (
-            <div
-              style={{
-                padding: "6px 12px",
-                background: datum.data.color,
-                color: "#fff",
-                borderRadius: 6,
-                fontWeight: "700",
-                fontSize: 13,
-                userSelect: "none",
-              }}
-            >
-              {datum.label}: {datum.value}
+        {/* Leyenda personalizada */}
+        <div className="flex justify-around mb-2 select-none">
+          {data.map(({ id, label, color }) => (
+            <div key={id} className="flex items-center space-x-2">
+              <span className="w-5 h-5 rounded-full" style={{ backgroundColor: color }} />
+              <span className="text-xs sm:text-sm">{label}</span>
             </div>
-          )}
-          legends={[]} // Sin leyenda predeterminada
-          theme={{
-            labels: {
-              text: {
-                fill: modoOscuro ? "#FFFFFF" : "#111111",
-                fontWeight: "700",
-              },
-            },
-            legends: {
-              text: {
-                fill: modoOscuro ? "#FFFFFF" : "#111111",
-                fontWeight: "600",
-              },
-            },
-          }}
-          animate={true}
-          motionConfig="gentle"
-          rotation={rotation + mouseRotation}
-        />
+          ))}
+        </div>
+
+        {/* Gráfico */}
+  <div className="h-[240px] sm:h-[280px]"> {/* más alto */}
+  <ResponsivePie
+    data={data}
+    margin={{ top: 5, right: 5, bottom: 5, left: 5 }} // márgenes reducidos para más espacio
+    innerRadius={0.5}   // menos agujero central, pastel más grande
+    padAngle={0.7}      // separaciones entre sectores
+    cornerRadius={5}
+    activeOuterRadiusOffset={12}
+    colors={(d) => d.data.color}
+    borderWidth={2}
+    borderColor={{ from: "color", modifiers: [["darker", 0.3]] }}
+    enableArcLinkLabels={false}
+    arcLabelsSkipAngle={10}
+    arcLabelsTextColor={textColor}
+    arcLabel={(d) => `${d.value}`}
+    tooltip={({ datum }) => (
+      <div
+        style={{
+          padding: "6px 12px",
+          background: datum.data.color,
+          color: "#fff",
+          borderRadius: 6,
+          fontWeight: "700",
+          fontSize: 13,
+          userSelect: "none",
+        }}
+      >
+        {datum.label}: {datum.value}
       </div>
-    </div>
+    )}
+    legends={[]}
+    theme={{
+      labels: {
+        text: {
+          fill: textColor,
+          fontWeight: "700",
+        },
+      },
+      legends: {
+        text: {
+          fill: textColor,
+          fontWeight: "600",
+        },
+      },
+    }}
+    animate={true}
+    motionConfig="gentle"
+    rotation={rotation + mouseRotation}
+  />
+</div>
+
+
+      </div>
+    </Wrapper>
   );
 };
 

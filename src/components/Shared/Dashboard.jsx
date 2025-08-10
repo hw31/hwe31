@@ -26,10 +26,11 @@ const DashboardWelcome = styled.div`
   display: flex;
   flex-direction: column;
   align-items: center;
- margin-top: 2rem ;
+  margin-top: 4rem;
+
   @media (max-width: 639px) {
-    margin-top: 24rem !important;
-    padding: 10rem;
+    margin-top: 15rem; /* menos espacio en móvil */
+    padding: 2rem;
   }
 `;
 
@@ -38,12 +39,12 @@ const AvatarInicial = ({ nombre, size = 32 }) => {
   const inicial = nombre ? nombre.charAt(0).toUpperCase() : "?";
 
   const coloresFondo = [
-    "#ef4444", // rojo
-    "#3b82f6", // azul
-    "#10b981", // verde
-    "#f59e0b", // amarillo
-    "#8b5cf6", // morado
-    "#ec4899", // rosa
+    "#ef4444",
+    "#3b82f6",
+    "#10b981",
+    "#f59e0b",
+    "#8b5cf6",
+    "#ec4899",
   ];
 
   const colorIndex = inicial.charCodeAt(0) % coloresFondo.length;
@@ -90,9 +91,8 @@ const Dashboard = () => {
   const sidebarRef = useRef(null);
   const toggleRef = useRef(null);
 
+  // Detectar si es escritorio o móvil
   const [isDesktop, setIsDesktop] = useState(window.innerWidth > 768);
-
-  const mostrarBienvenida = location.pathname === "/dashboard";
 
   useEffect(() => {
     const handleResize = () => {
@@ -102,7 +102,7 @@ const Dashboard = () => {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  // Cargar modoOscuro desde redux persistido o backend
+  // Cargar modoOscuro desde persistencia o backend
   useEffect(() => {
     (async () => {
       const modoResponse = await dispatch(fetchModoOscuro());
@@ -139,6 +139,7 @@ const Dashboard = () => {
     dispatch(toggleModoOscuro(!modoOscuro));
   };
 
+  // Cerrar dropdown si clic fuera
   useEffect(() => {
     const handleClickOutsideDropdown = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
@@ -149,6 +150,7 @@ const Dashboard = () => {
     return () => document.removeEventListener("mousedown", handleClickOutsideDropdown);
   }, []);
 
+  // Cerrar sidebar si clic fuera (solo en móvil)
   useEffect(() => {
     const handleClickOutsideSidebar = (event) => {
       if (
@@ -166,6 +168,19 @@ const Dashboard = () => {
   }, [sidebarOpen]);
 
   const [nombre, apellido] = persona.split(" ");
+
+  // Z-indexes para que sidebar y header se superpongan bien en móvil y escritorio
+  const sidebarZIndex = isDesktop ? 1200 : 1000;
+  const headerZIndex = isDesktop ? 1300 : 1100;
+
+  // Margen main: 0 en móvil para que el contenido ocupe todo el ancho
+  const mainMarginLeft = isDesktop
+    ? sidebarOpen
+      ? "16rem"
+      : "4.5rem"
+    : "0";
+
+  const mostrarBienvenida = location.pathname === "/dashboard";
 
   return (
     <div className="dashboard-container" style={{ position: "relative", overflowX: "hidden" }}>
@@ -186,7 +201,7 @@ const Dashboard = () => {
             ? "inset 2px 2px 10px rgba(0,0,0,0.9), inset -1px -1px 5px rgba(255,255,255,0.1), 6px 6px 15px rgba(0,0,0,0.8)"
             : "inset 2px 2px 10px rgba(0,0,0,0.3), inset -1px -1px 5px rgba(255,255,255,0.3), 4px 4px 15px rgba(0,0,0,0.3)",
           transition: "width 0.3s ease",
-          zIndex: 1200,
+          zIndex: sidebarZIndex,
           overflowX: "hidden",
           color: "white",
           display: "flex",
@@ -203,7 +218,7 @@ const Dashboard = () => {
         className={`fixed top-0 left-0 right-0 flex items-center justify-between px-6 
           backdrop-blur-md bg-white/10 border-b border-white/20
           ${modoOscuro ? "text-white" : "text-gray-900"}`}
-        style={{ height: "4rem", zIndex: 1300 }}
+        style={{ height: "4rem", zIndex: headerZIndex }}
       >
         <div ref={toggleRef}>
           <Checkbox
@@ -307,23 +322,22 @@ const Dashboard = () => {
       </div>
 
       <main
-  className={`dashboard-main  ${sidebarOpen ? "" : "sidebar-closed"}`}
-  style={{
-    marginLeft: sidebarOpen && isDesktop ? "16rem" : "4.5rem",
-    transition: "margin-left 0.3s ease",
-    position: "relative",  // importante que sea relative para no tapar nada
-    zIndex: 1,             // bajo para que no bloquee otros elementos
-    minHeight: "calc(100vh - 4rem)", // altura full viewport menos header
-    backgroundColor: modoOscuro ? "#181818" : "#fdfdfdff",
-    color: modoOscuro ? "white" : "black",
-    maxWidth: "100%",
-    width: "auto",
-    overflowX: "hidden",
-    padding: "2rem",       // agregamos padding para que sea más espacioso
-    boxSizing: "border-box"// para que el padding no aumente el ancho total
-  }}
->
-
+        className={`dashboard-main  ${sidebarOpen ? "" : "sidebar-closed"}`}
+        style={{
+          marginLeft: mainMarginLeft,
+          transition: "margin-left 0.3s ease",
+          position: "relative",  // importante para que el main esté encima del fondo pero debajo de header y sidebar
+          zIndex: 1,
+          minHeight: "calc(100vh - 4rem)",
+          backgroundColor: modoOscuro ? "#181818" : "#fdfdfdff",
+          color: modoOscuro ? "white" : "black",
+          maxWidth: "100%",
+          width: "auto",
+          overflowX: "hidden",
+          padding: "2rem",
+          boxSizing: "border-box",
+        }}
+      >
         {mostrarBienvenida && (
           <DashboardWelcome role="region" aria-live="polite" className="dashboard-welcome">
             <h1 className="text-2xl sm:text-3xl font-bold mb-6 text-center">
@@ -331,14 +345,11 @@ const Dashboard = () => {
             </h1>
 
             {rolLower === "administrador" && (
-              <div className="flex flex-wrap justify-center gap-6 w-full max-w-7xl px-4">
-                <DashboardMenuCards />
-                    <CardTransacciones modoOscuro={modoOscuro} />
-                <CardInscripcionesConfirmadas modoOscuro={modoOscuro} />
-            
-                <CardUsuariosKPI modoOscuro={modoOscuro} />
-                
-                
+              <div className="flex flex-wrap justify-center gap-6 w-full max-w-screen-xl px-4 md:px-8 mx-auto">
+                <DashboardMenuCards className="flex-grow min-w-[280px]" />
+                <CardTransacciones modoOscuro={modoOscuro} className="flex-grow min-w-[280px]" />
+                <CardInscripcionesConfirmadas modoOscuro={modoOscuro} className="flex-grow min-w-[280px]" />
+                <CardUsuariosKPI modoOscuro={modoOscuro} className="flex-grow min-w-[280px]" />
               </div>
             )}
           </DashboardWelcome>
