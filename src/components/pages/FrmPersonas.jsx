@@ -11,6 +11,7 @@ import Contactos from "../hijos/Contacto";
 import EstudianteCarrera from "../hijos/EstudianteCarrera";
 
 import BuscadorBase from "../Shared/BuscadorBase";
+import WizardForm from "../Shared/WizardPersonas"; // IMPORTA tu wizardForm aquí
 
 // Iconos
 import {
@@ -22,16 +23,17 @@ import {
   Award,
   User,
   GraduationCap,
+  PlusCircle,
 } from "lucide-react";
 
 const FrmPersonasDireccionesContactos = () => {
   const modoOscuro = useSelector((state) => state.theme.modoOscuro);
   const [busqueda, setBusqueda] = useState("");
   const [vista, setVista] = useState("personas");
+  const [wizardOpen, setWizardOpen] = useState(false); // Estado para abrir/cerrar wizard
 
   const botonClase = (color) =>
-   `flex items-center justify-center gap-2 h-12 w-full min-w-[150px] rounded text-sm text-white transition font-medium ${color} hover:brightness-110`;
-
+    `flex items-center justify-center gap-2 h-12 w-full min-w-[150px] rounded text-sm text-white transition font-medium ${color} hover:brightness-110`;
 
   return (
     <div
@@ -45,49 +47,83 @@ const FrmPersonasDireccionesContactos = () => {
           modoOscuro ? "bg-gray-900 shadow-gray-700" : "bg-white shadow-gray-300"
         }`}
       >
+        {/* Botón para abrir el WizardForm */}
+        <div className="mb-5 flex justify-end">
+          <button
+            onClick={() => setWizardOpen(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+          >
+            <PlusCircle size={20} /> Nuevo Registro Completo
+          </button>
+        </div>
+
         {/* Botones de navegación */}
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
-  {vista !== "personas" && (
-    <button onClick={() => setVista("personas")} className={botonClase("bg-indigo-600")}>
-      <Users size={20} /> Personas
-    </button>
-  )}
-  {vista !== "direcciones" && (
-    <button onClick={() => setVista("direcciones")} className={botonClase("bg-green-600")}>
-      <MapPin size={20} /> Direcciones
-    </button>
-  )}
-  {vista !== "contactos" && (
-    <button onClick={() => setVista("contactos")} className={botonClase("bg-blue-600")}>
-      <Phone size={20} /> Contactos
-    </button>
-  )}
-  {vista !== "titulo" && (
-    <button onClick={() => setVista("titulo")} className={botonClase("bg-sky-500")}>
-      <Award size={20} /> Título Académico
-    </button>
-  )}
-  {vista !== "usuarios" && (
-    <button onClick={() => setVista("usuarios")} className={botonClase("bg-gray-600")}>
-      <User size={20} /> Usuarios
-    </button>
-  )}
-  {vista !== "usuariosroles" && (
-    <button onClick={() => setVista("usuariosroles")} className={botonClase("bg-green-700")}>
-      <KeyRound size={20} /> Usuarios Roles
-    </button>
-  )}
-  {vista !== "estudiantes-carrera" && (
-    <button onClick={() => setVista("estudiantes-carrera")} className={botonClase("bg-rose-700")}>
-      <GraduationCap size={20} /> Estudiantes-Carrera
-    </button>
-  )}
-  {vista !== "permisos" && (
-    <button onClick={() => setVista("permisos")} className={botonClase("bg-purple-700")}>
-      <ShieldCheck size={20} /> Usuarios Permisos
-    </button>
-  )}
-</div>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
+          {vista !== "personas" && (
+            <button
+              onClick={() => setVista("personas")}
+              className={botonClase("bg-indigo-600")}
+            >
+              <Users size={20} /> Personas
+            </button>
+          )}
+          {vista !== "direcciones" && (
+            <button
+              onClick={() => setVista("direcciones")}
+              className={botonClase("bg-green-600")}
+            >
+              <MapPin size={20} /> Direcciones
+            </button>
+          )}
+          {vista !== "contactos" && (
+            <button
+              onClick={() => setVista("contactos")}
+              className={botonClase("bg-blue-600")}
+            >
+              <Phone size={20} /> Contactos
+            </button>
+          )}
+          {vista !== "titulo" && (
+            <button
+              onClick={() => setVista("titulo")}
+              className={botonClase("bg-sky-500")}
+            >
+              <Award size={20} /> Título Académico
+            </button>
+          )}
+          {vista !== "usuarios" && (
+            <button
+              onClick={() => setVista("usuarios")}
+              className={botonClase("bg-gray-600")}
+            >
+              <User size={20} /> Usuarios
+            </button>
+          )}
+          {vista !== "usuariosroles" && (
+            <button
+              onClick={() => setVista("usuariosroles")}
+              className={botonClase("bg-green-700")}
+            >
+              <KeyRound size={20} /> Usuarios Roles
+            </button>
+          )}
+          {vista !== "estudiantes-carrera" && (
+            <button
+              onClick={() => setVista("estudiantes-carrera")}
+              className={botonClase("bg-rose-700")}
+            >
+              <GraduationCap size={20} /> Estudiantes-Carrera
+            </button>
+          )}
+          {vista !== "permisos" && (
+            <button
+              onClick={() => setVista("permisos")}
+              className={botonClase("bg-purple-700")}
+            >
+              <ShieldCheck size={20} /> Usuarios Permisos
+            </button>
+          )}
+        </div>
 
         {/* Buscador */}
         <div className="mb-5">
@@ -113,6 +149,13 @@ const FrmPersonasDireccionesContactos = () => {
           )}
         </div>
       </div>
+
+      {/* WizardForm modal */}
+      <WizardForm
+        isOpen={wizardOpen}
+        onClose={() => setWizardOpen(false)}
+        modoOscuro={modoOscuro}
+      />
     </div>
   );
 };

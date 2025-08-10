@@ -221,85 +221,85 @@ const Calificacion = ({
   };
 
   const guardarNota = async (idInscripcion, idTipoCalificacion, nota) => {
-    const clave = `${idInscripcion}_${idTipoCalificacion}`;
-    if (nota === "") return;
+  const clave = `${idInscripcion}_${idTipoCalificacion}`;
+  if (nota === "") return;
 
-    setStatusGuardado((s) => ({ ...s, [clave]: "guardando" }));
+  setStatusGuardado((s) => ({ ...s, [clave]: "guardando" }));
 
-    try {
-      const notaNum = Number(nota);
-      if (isNaN(notaNum) || notaNum < 0) throw new Error("Nota inválida");
-      if (!idUsuario) throw new Error("Usuario no autenticado");
+  try {
+    const notaNum = Number(nota);
+    if (isNaN(notaNum) || notaNum < 0) throw new Error("Nota inválida");
+    if (!idUsuario) throw new Error("Usuario no autenticado");
 
-      const califExistente = calificaciones.find(
-        (c) =>
-          c.idInscripcion === idInscripcion &&
-          c.idTipoCalificacion === idTipoCalificacion &&
-          c.idCalificacion
+    const califExistente = calificaciones.find(
+      (c) =>
+        c.idInscripcion === idInscripcion &&
+        c.idTipoCalificacion === idTipoCalificacion &&
+        c.idMateria === materiaSeleccionada.idMateria &&
+        c.idCalificacion !== undefined &&
+        c.idCalificacion !== null
+    );
+
+    const payload = {
+      IdInscripcion: idInscripcion,
+      IdUsuarioDocente: idUsuario,
+      Calificacion: notaNum,
+      IdMateria: materiaSeleccionada.idMateria,
+      IdTipoCalificacion: idTipoCalificacion,
+      IdEstado: 1,
+      IdPeriodo: periodo.id,
+    };
+
+    if (califExistente) {
+      payload.IdCalificacion = califExistente.idCalificacion;
+
+      await calificacionService.actualizarCalificaciones(payload);
+
+      setCalificaciones((prev) =>
+        prev.map((c) =>
+          c.idCalificacion === califExistente.idCalificacion
+            ? { ...c, calificacion: notaNum }
+            : c
+        )
       );
+    } else {
+      const res = await calificacionService.insertarCalificaciones(payload);
+      const nuevoId = res.idCalificacion || res.data?.idCalificacion;
+      if (!nuevoId) throw new Error("No se recibió idCalificacion tras insertar");
 
-      const payload = {
-        IdInscripcion: idInscripcion,
-        IdUsuarioDocente: idUsuario,
-        Calificacion: notaNum,
-        IdMateria: materiaSeleccionada.idMateria,
-        IdTipoCalificacion: idTipoCalificacion,
-        IdEstado: 1,
-        IdPeriodo: periodo.id,
-      };
-
-      if (califExistente) {
-        payload.IdCalificacion = califExistente.idCalificacion;
-        await calificacionService.actualizarCalificaciones(payload);
-
-        setCalificaciones((prev) =>
-          prev.map((c) =>
-            c.idInscripcion === idInscripcion && c.idTipoCalificacion === idTipoCalificacion
-              ? { ...c, calificacion: notaNum }
-              : c
-          )
-        );
-      } else {
-        const res = await calificacionService.insertarCalificaciones(payload);
-        const nuevoId = res.idCalificacion || res.data?.idCalificacion;
-        if (!nuevoId) throw new Error("No se recibió idCalificacion tras insertar");
-
-        setCalificaciones((prev) => {
-          const sinEsta = prev.filter(
-            (c) =>
-              !(c.idInscripcion === idInscripcion && c.idTipoCalificacion === idTipoCalificacion)
-          );
-          return [
-            ...sinEsta,
-            {
-              ...payload,
-              calificacion: notaNum,
-              idCalificacion: nuevoId,
-            },
-          ];
-        });
-      }
-
-      setStatusGuardado((s) => ({ ...s, [clave]: "ok" }));
-      setTimeout(() => {
-        setStatusGuardado((s) => {
-          const copia = { ...s };
-          delete copia[clave];
-          return copia;
-        });
-      }, 1500);
-    } catch (error) {
-      console.error("Error guardando nota:", error);
-      setStatusGuardado((s) => ({ ...s, [clave]: "error" }));
-      setTimeout(() => {
-        setStatusGuardado((s) => {
-          const copia = { ...s };
-          delete copia[clave];
-          return copia;
-        });
-      }, 3000);
+      setCalificaciones((prev) => [
+        ...prev,
+        {
+          idCalificacion: nuevoId,
+          idInscripcion,
+          idTipoCalificacion,
+          idMateria: materiaSeleccionada.idMateria,
+          calificacion: notaNum,
+          // otros campos opcionales si quieres
+        },
+      ]);
     }
-  };
+
+    setStatusGuardado((s) => ({ ...s, [clave]: "ok" }));
+    setTimeout(() => {
+      setStatusGuardado((s) => {
+        const copia = { ...s };
+        delete copia[clave];
+        return copia;
+      });
+    }, 1500);
+  } catch (error) {
+    console.error("Error guardando nota:", error);
+    setStatusGuardado((s) => ({ ...s, [clave]: "error" }));
+    setTimeout(() => {
+      setStatusGuardado((s) => {
+        const copia = { ...s };
+        delete copia[clave];
+        return copia;
+      });
+    }, 3000);
+  }
+};
 
   const acumuladoPorEstudiante = (idInscripcion) =>
     tiposCalificacion.reduce((acum, tipo) => {

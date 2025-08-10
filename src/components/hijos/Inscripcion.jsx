@@ -260,50 +260,52 @@ const seleccionarEstudiante = (id, nombre) => {
     setModalOpen(true);
   };
 
-  // Guardar inscripción
   const handleGuardar = async () => {
-    if (rolLower === "estudiante" && !form.confirmar)
-      return setFormError("Debe confirmar su inscripción");
+  if (rolLower === "estudiante" && !form.confirmar)
+    return setFormError("Debe confirmar su inscripción");
 
-    if (rolLower !== "estudiante") {
-      if (!form.idUsuario || !form.idPeriodoAcademico)
-        return setFormError("Debe seleccionar usuario y periodo");
-    }
+  if (rolLower !== "estudiante") {
+    if (!form.idUsuario || !form.idPeriodoAcademico)
+      return setFormError("Debe seleccionar usuario y periodo");
+  }
 
-    if (!esFechaValida(form.fechaInscripcion)) {
-      return setFormError("La fecha de inscripción no es válida.");
-    }
+  if (!esFechaValida(form.fechaInscripcion)) {
+    return setFormError("La fecha de inscripción no es válida.");
+  }
 
-    const payload = {
-      idInscripcion: form.idInscripcion,
-      idUsuario: rolLower === "estudiante" ? idUsuarioLogueado : form.idUsuario,
-      idPeriodoAcademico: form.idPeriodoAcademico,
-      fechaInscripcion: form.fechaInscripcion,
-      idEstado: rolLower === "estudiante" ? 10 : form.idEstado,
-    };
-
-    try {
-      setFormLoading(true);
-      const res = form.idInscripcion
-        ? await inscripcionService.actualizarInscripcion(payload)
-        : await inscripcionService.insertarInscripcion(payload);
-
-      if (
-        res?.mensaje?.toLowerCase().includes("exitosamente") ||
-        res?.mensaje?.toLowerCase().includes("correctamente")
-      ) {
-        Swal.fire("¡Éxito!", res.mensaje, "success");
-        cargarInscripciones();
-        cerrarModal();
-      } else {
-        Swal.fire("Error", res.mensaje || "Error al guardar la inscripción.", "error");
-      }
-    } catch (err) {
-      Swal.fire("Error", err.message || "Error al guardar", "error");
-    } finally {
-      setFormLoading(false);
-    }
+  const payload = {
+    idInscripcion: form.idInscripcion,
+    idUsuario: rolLower === "estudiante" ? idUsuarioLogueado : form.idUsuario,
+    idPeriodoAcademico: form.idPeriodoAcademico,
+    fechaInscripcion: form.fechaInscripcion,
+    idEstado: rolLower === "estudiante" ? 10 : form.idEstado,
   };
+
+  try {
+    setFormLoading(true);
+    const res = form.idInscripcion
+      ? await inscripcionService.actualizarInscripcion(payload)
+      : await inscripcionService.insertarInscripcion(payload);
+
+    if (
+      res?.mensaje?.toLowerCase().includes("exitosamente") ||
+      res?.mensaje?.toLowerCase().includes("correctamente")
+    ) {
+      Swal.fire("¡Éxito!", res.mensaje, "success");
+      cargarInscripciones();
+      cerrarModal();
+    } else {
+      Swal.fire("Error", res.mensaje || "Error al guardar la inscripción.", "error");
+    }
+  } catch (err) {
+    const mensajeError =
+      err?.response?.data?.mensaje || err?.message || "Error al guardar";
+
+    Swal.fire("Error", mensajeError, "error");
+  } finally {
+    setFormLoading(false);
+  }
+};
 
   // Columnas tabla
   const columnasAdmin = [
@@ -562,7 +564,7 @@ const seleccionarEstudiante = (id, nombre) => {
                   aria-label="Seleccionar estado"
                   required
                 >
-                  <option value={4}>En Proceso</option>
+                  <option value={4}>Pendiente</option>
                   <option value={10}>Confirmado</option>
                 </select>
               </>
