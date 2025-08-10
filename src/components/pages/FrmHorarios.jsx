@@ -301,11 +301,14 @@ const FrmCarreras = () => {
   const texto = modoOscuro ? "text-white" : "text-gray-900";
 
   return (
-    <div className={`p-6 pt-20 sm:pt-6 min-h-screen ${fondo} ${texto}`}>
+  <div className={`p-6 pt-6 sm:pt-12 md:pt-16 min-h-screen ${fondo} ${texto}`}>
+
+
       {!carreraSeleccionada ? (
         <>
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-3xl font-bold">Carreras</h2>
+         <div className="flex justify-between items-center mb-6">
+          <h2 className="text-3xl font-bold">Carreras</h2>
+          
             {rolLower === "administrador" && (
               <button
                 onClick={() => abrirModal()}
@@ -489,8 +492,15 @@ const FrmCarreras = () => {
           className="fixed inset-0 flex items-center justify-center z-50"
           style={{ backdropFilter: "blur(5px)" }}
         >
-          <div className="bg-white rounded-xl p-6 w-full max-w-md shadow-lg">
-            <h2 className="text-xl font-bold mb-4">
+        <div
+          className="rounded-xl p-6 w-full max-w-md shadow-lg"
+          style={{
+            backgroundColor: modoOscuro ? "#2d2d2d" : "#fff",
+            color: modoOscuro ? "#fff" : "#2d2d2d",
+          }}
+        >
+          <h2 className="text-xl font-bold mb-4">
+
               {formData.idCarrera ? "Editar Carrera" : "Nueva Carrera"}
             </h2>
             <div className="space-y-4">
@@ -521,7 +531,7 @@ const FrmCarreras = () => {
               </label>
             </div>
             <div className="flex justify-end gap-3 mt-6">
-              <button onClick={cerrarModal} className="px-4 py-2 bg-gray-300 rounded-lg">
+              <button onClick={cerrarModal}  className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-blue-700">
                 Cancelar
               </button>
               <button
