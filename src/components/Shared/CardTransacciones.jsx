@@ -10,7 +10,9 @@ import {
   ResponsiveContainer,
   Cell,
 } from "recharts";
-
+const ROW_HEIGHT = 30; // altura aprox de cada fila (ajusta según estilos)
+const VISIBLE_ROWS = 5;
+const COLLAPSIBLE_MAX_HEIGHT = ROW_HEIGHT * VISIBLE_ROWS;
 const CardContainer = styled.div`
   background-color: ${({ $modoOscuro }) =>
     $modoOscuro ? "rgba(31, 41, 55, 0.9)" : "#fff"};
@@ -149,7 +151,7 @@ const SmallText = styled.span`
   margin-top: 0.2rem;
 `;
 const CollapsibleContent = styled.div`
-  max-height: ${({ open, $maxHeight }) => (open ? `${$maxHeight}px` : "0")};
+  max-height: ${({ open }) => (open ? `${COLLAPSIBLE_MAX_HEIGHT}px` : "0")};
   overflow-y: auto;
   transition: max-height 0.4s ease;
   border-top: ${({ open, $modoOscuro }) => (open ? `1px solid ${$modoOscuro ? "#444" : "#ddd"}` : "none")};
