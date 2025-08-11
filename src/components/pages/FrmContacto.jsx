@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useSelector } from "react-redux"; // <-- importado
-import { ChevronLeft, ChevronRight, ArrowLeft } from "lucide-react";
+import { useSelector } from "react-redux";
+import { ChevronLeft, ChevronRight, ArrowLeftCircle, } from "lucide-react";
 
 const sections = [
   {
@@ -50,116 +50,140 @@ const FrmAbout = () => {
   const { title, content, isList, listItems } = sections[index];
 
   const handleVolver = () => {
-    navigate("/dashboard/aulas"); // Cambia según tu ruta correcta
+    navigate("/dashboard/aulas"); // Cambia aquí la ruta si quieres otra
   };
 
   return (
-    <div
-      className={`max-w-3xl mx-auto p-6 mt-10 rounded-lg shadow-lg relative ${
-        modoOscuro
-          ? "bg-gray-900 text-gray-100"
-          : "bg-white text-gray-900"
-      }`}
-    >
-      {/* Botón Volver arriba */}
-      <button
-        onClick={handleVolver}
-        aria-label="Volver al menú"
-        className={`absolute top-4 left-4 flex items-center gap-1 transition ${
-          modoOscuro
-            ? "text-gray-300 hover:text-blue-400"
-            : "text-gray-700 hover:text-blue-600"
+    <>
+      <style>{`
+        /* Estilos para el botón flotante */
+        .btn-volver {
+          position: fixed;
+          bottom: 20px;
+          right: 20px; /* Cambia a left: 20px; si prefieres */
+          background-color: ${modoOscuro ? "#334155" : "#f3f4f6"};
+          color: ${modoOscuro ? "#a5f3fc" : "#2563eb"};
+          border: none;
+          border-radius: 50%;
+          padding: 0.5rem;
+          cursor: pointer;
+          box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transition: background-color 0.2s ease;
+          z-index: 1000;
+        }
+        .btn-volver:hover {
+          background-color: ${modoOscuro ? "#475569" : "#60a5fa"};
+          color: white;
+        }
+      `}</style>
+
+      <div
+        className={`max-w-3xl mx-auto p-6 mt-10 rounded-lg shadow-lg relative ${
+          modoOscuro ? "bg-gray-900 text-gray-100" : "bg-white text-gray-900"
         }`}
       >
-        <ArrowLeft size={24} />
-        Volver
-      </button>
+        {/* Botón Volver arriba (puedes mantenerlo o eliminarlo si quieres) */}
+        
 
-      <h1
-        className={`text-4xl font-extrabold mb-8 text-center ${
-          modoOscuro ? "text-white" : "text-gray-900"
-        }`}
-      >
-        Acerca de CAL-I
-      </h1>
-
-      {/* Flecha izquierda */}
-      <button
-        onClick={prev}
-        aria-label="Anterior"
-        className={`absolute top-1/2 left-0 transform -translate-y-1/2 p-2 rounded-full transition ${
-          modoOscuro
-            ? "text-gray-300 hover:bg-gray-700"
-            : "text-gray-700 hover:bg-gray-200"
-        }`}
-      >
-        <ChevronLeft size={32} />
-      </button>
-
-      {/* Contenido */}
-      <div className="min-h-[220px] px-10">
-        <h2
-          className={`text-2xl font-bold mb-4 ${
+        <h1
+          className={`text-4xl font-extrabold mb-8 text-center ${
             modoOscuro ? "text-white" : "text-gray-900"
           }`}
         >
-          {title}
-        </h2>
+          Acerca de CAL-I
+        </h1>
 
-        {isList ? (
-          <ul
-            className={`list-disc list-inside space-y-2 leading-relaxed ${
-              modoOscuro ? "text-gray-300" : "text-gray-700"
+        {/* Flecha izquierda */}
+        <button
+          onClick={prev}
+          aria-label="Anterior"
+          className={`absolute top-1/2 left-0 transform -translate-y-1/2 p-2 rounded-full transition ${
+            modoOscuro
+              ? "text-gray-300 hover:bg-gray-700"
+              : "text-gray-700 hover:bg-gray-200"
+          }`}
+        >
+          <ChevronLeft size={32} />
+        </button>
+
+        {/* Contenido */}
+        <div className="min-h-[220px] px-10">
+          <h2
+            className={`text-2xl font-bold mb-4 ${
+              modoOscuro ? "text-white" : "text-gray-900"
             }`}
           >
-            {listItems.map((item, idx) => (
-              <li key={idx}>{item}</li>
-            ))}
-          </ul>
-        ) : (
-          <p
-            className={`leading-relaxed ${
-              modoOscuro ? "text-gray-300" : "text-gray-700"
-            }`}
-          >
-            {content}
-          </p>
-        )}
+            {title}
+          </h2>
+
+          {isList ? (
+            <ul
+              className={`list-disc list-inside space-y-2 leading-relaxed ${
+                modoOscuro ? "text-gray-300" : "text-gray-700"
+              }`}
+            >
+              {listItems.map((item, idx) => (
+                <li key={idx}>{item}</li>
+              ))}
+            </ul>
+          ) : (
+            <p
+              className={`leading-relaxed ${
+                modoOscuro ? "text-gray-300" : "text-gray-700"
+              }`}
+            >
+              {content}
+            </p>
+          )}
+        </div>
+
+        {/* Flecha derecha */}
+        <button
+          onClick={next}
+          aria-label="Siguiente"
+          className={`absolute top-1/2 right-0 transform -translate-y-1/2 p-2 rounded-full transition ${
+            modoOscuro
+              ? "text-gray-300 hover:bg-gray-700"
+              : "text-gray-700 hover:bg-gray-200"
+          }`}
+        >
+          <ChevronRight size={32} />
+        </button>
+
+        {/* Indicadores */}
+        <div className="flex justify-center mt-8 space-x-3">
+          {sections.map((_, i) => (
+            <button
+              key={i}
+              onClick={() => setIndex(i)}
+              className={`w-4 h-4 rounded-full transition-colors ${
+                i === index
+                  ? modoOscuro
+                    ? "bg-blue-400"
+                    : "bg-blue-600"
+                  : modoOscuro
+                  ? "bg-gray-600"
+                  : "bg-gray-400"
+              }`}
+              aria-label={`Sección ${i + 1}`}
+            />
+          ))}
+        </div>
       </div>
 
-      {/* Flecha derecha */}
+      {/* Botón flotante volver */}
       <button
-        onClick={next}
-        aria-label="Siguiente"
-        className={`absolute top-1/2 right-0 transform -translate-y-1/2 p-2 rounded-full transition ${
-          modoOscuro
-            ? "text-gray-300 hover:bg-gray-700"
-            : "text-gray-700 hover:bg-gray-200"
-        }`}
+        className="btn-volver"
+        onClick={handleVolver}
+        aria-label="Volver"
+        title="Volver"
       >
-        <ChevronRight size={32} />
+        <ArrowLeftCircle size={24} />
       </button>
-
-      {/* Indicadores */}
-      <div className="flex justify-center mt-8 space-x-3">
-        {sections.map((_, i) => (
-          <button
-            key={i}
-            onClick={() => setIndex(i)}
-            className={`w-4 h-4 rounded-full transition-colors ${
-              i === index
-                ? modoOscuro
-                  ? "bg-blue-400"
-                  : "bg-blue-600"
-                : modoOscuro
-                ? "bg-gray-600"
-                : "bg-gray-400"
-            }`}
-            aria-label={`Sección ${i + 1}`}
-          />
-        ))}
-      </div>
-    </div>
+    </>
   );
 };
 

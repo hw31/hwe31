@@ -55,11 +55,12 @@ const EXCLUIDOS = [
   "estados",
   "inscripcionesxmateria",
   "permiso",
-
   "roles",
   "rescate",
   "tipocalificacion",
+  "transacciones",  // <-- aquí lo agregas
 ];
+
 
 const DashboardMenuCards = () => {
   const [menuItems, setMenuItems] = useState([]);
@@ -82,56 +83,74 @@ const DashboardMenuCards = () => {
 
   return (
     <>
-      <style>{`
-        .auto-fit-grid {
-          display: grid;
-          grid-template-columns: repeat(6, 1fr);
-          gap: 0.5rem 1rem; /* poca separación vertical y horizontal */
-          white-space: nowrap;
-        }
-        .card {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          gap: 0.5rem;
-          padding: 0.75rem 1rem;
-          border-radius: 0.75rem;
-          cursor: pointer;
-          transition: transform 0.2s ease;
-          white-space: nowrap;
-          border: 1px solid;
-          user-select: none;
-        }
-        .card:hover, .card:focus-visible {
-          transform: scale(1.05);
-          z-index: 10;
-          position: relative;
-        }
-        .card-text {
-          font-weight: 600;
-          font-size: 0.875rem;
-          text-align: center;
-        }
-        @media (max-width: 767px) {
-          .auto-fit-grid {
-            grid-template-columns: repeat(2, 1fr); /* En móvil mejor 2 columnas para que no quede apretado */
-            gap: 0.5rem;
-          }
-          .card {
-            padding-top: 0.1rem;
-          }
-        }
-        .dark {
-          background-color: #1e293b;
-          color: #f9fafb;
-          border-color: #475569;
-        }
-        .light {
-          background-color: #fff;
-          color: #111827;
-          border-color: #d1d5db;
-        }
-      `}</style>
+    <style>{`
+  .auto-fit-grid {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 0.5rem 1rem;
+    white-space: nowrap;
+    max-width: 1000px;
+    margin-left: auto;
+    margin-right: auto;
+    padding-left: 10rem;
+    padding-right: 1rem;
+  }
+
+  @media (max-width: 1200px) {
+    .auto-fit-grid {
+      padding-left: 5rem;
+      grid-template-columns: repeat(4, 1fr);
+    }
+  }
+
+  @media (max-width: 767px) {
+    .auto-fit-grid {
+      padding-left: 1rem;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0.5rem;
+    }
+    .card {
+      padding-top: 1rem;
+    }
+  }
+
+  .card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem;
+    border-radius: 0.75rem;
+    cursor: pointer;
+    transition: transform 0.2s ease;
+    white-space: nowrap;
+    border: 1px solid;
+    user-select: none;
+  }
+  .card:hover,
+  .card:focus-visible {
+    transform: scale(1.05);
+    z-index: 10;
+    position: relative;
+  }
+  .card-text {
+    font-weight: 600;
+    font-size: 0.875rem;
+    text-align: center;
+  }
+
+  .dark {
+    background-color: #1e293b;
+    color: #f9fafb;
+    border-color: #475569;
+  }
+  .light {
+    background-color: #fff;
+    color: #111827;
+    border-color: #d1d5db;
+  }
+`}</style>
+
 
      <div className="w-full px-4 auto-fit-grid">
 
@@ -180,5 +199,4 @@ const DashboardMenuCards = () => {
 };
 
 export default DashboardMenuCards;
-
 

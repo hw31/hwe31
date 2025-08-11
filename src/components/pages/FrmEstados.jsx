@@ -9,7 +9,8 @@ import BuscadorBase from "../Shared/BuscadorBase";
 import ContadoresBase from "../Shared/Contadores";
 import ModalBase from "../Shared/ModalBase";
 import FormularioBase from "../Shared/FormularioBase";
-
+import { ArrowLeftCircle } from "lucide-react";
+import { useNavigate } from "react-router-dom"; 
 const FrmEstados = () => {
   const modoOscuro = useSelector((state) => state.theme.modoOscuro);
   const fondo = modoOscuro ? "bg-gray-900" : "bg-white";
@@ -195,8 +196,36 @@ const FrmEstados = () => {
         ),
     },
   ];
-
+   const navigate = useNavigate();
+  const handleVolver = () => {
+    navigate("/dashboard/aulas"); // Ajusta la ruta aquí
+  };
   return (
+      <>
+      <style>{`
+        /* Estilos para el botón flotante */
+        .btn-volver {
+          position: fixed;
+          bottom: 20px;
+          right: 20px;
+          background-color: ${modoOscuro ? "#334155" : "#f3f4f6"};
+          color: ${modoOscuro ? "#a5f3fc" : "#2563eb"};
+          border: none;
+          border-radius: 50%;
+          padding: 0.5rem;
+          cursor: pointer;
+          box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transition: background-color 0.2s ease;
+          z-index: 1000;
+        }
+        .btn-volver:hover {
+          background-color: ${modoOscuro ? "#475569" : "#60a5fa"};
+          color: white;
+        }
+      `}</style>
     <div    className={`mx-auto rounded-2xl p-6 max-w-[900px] w-full ${
         modoOscuro ? "bg-gray-900 text-white" : "bg-white text-gray-900"
       }`}
@@ -332,7 +361,18 @@ const FrmEstados = () => {
           </div>
         </FormularioBase>
       </ModalBase>
+      
     </div>
+       {/* Botón flotante volver */}
+          <button
+            className="btn-volver"
+            onClick={handleVolver}
+            aria-label="Volver"
+            title="Volver"
+          >
+            <ArrowLeftCircle size={24} />
+          </button>
+        </>
   );
 };
 

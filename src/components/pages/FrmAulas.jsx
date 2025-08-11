@@ -8,7 +8,8 @@ import {
   User,
   Info,
   ToggleRight,
-} from "lucide-react";
+  ArrowLeftCircle,
+} from "lucide-react"; // Importamos un ícono para el botón volver
 
 const Menusetting = () => {
   const navigate = useNavigate();
@@ -31,7 +32,7 @@ const Menusetting = () => {
     {
       id: "estado",
       nombre: "Estado",
-      ruta: "estados",  // <-- Aquí cambié la ruta a frmestados
+      ruta: "estados",
       Icon: ToggleRight,
     },
     {
@@ -52,81 +53,106 @@ const Menusetting = () => {
       ruta: "catalogos",
       Icon: FileText,
     },
+    {
+      id: "transacciones",
+      nombre: "Transacciones",
+      ruta: "transacciones",
+      Icon: FileText,
+    },
   ];
 
   return (
     <>
-  <style>{`
-    .auto-fit-grid {
-      display: grid;
-      gap: 1.8rem 2rem; /* más espacio vertical y horizontal */
-      grid-template-columns: repeat(3, max-content);
-      justify-content: center;
-    }
-    @media (max-width: 767px) {
-      .auto-fit-grid {
-        grid-template-columns: repeat(2, max-content);
-        gap: 1.5rem 1.5rem;
-        justify-content: center;
-      }
-    }
-   .card {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;   /* Centrar verticalmente */
-  padding: 1rem 1.25rem;
-  border-radius: 0.6rem;
-  cursor: pointer;
-  transition: transform 0.15s ease;
-  white-space: nowrap;
-  border: 1px solid;
-  user-select: none;
-  max-width: 220px;
-  width: 220px;              /* ancho fijo */
-  height: 140px;             /* alto fijo */
-  text-align: center;
-}
+      <style>{`
+        .auto-fit-grid {
+          display: grid;
+          gap: 1.2rem 1.5rem;
+          grid-template-columns: repeat(3, max-content);
+          justify-content: center;
+        }
+        @media (max-width: 767px) {
+          .auto-fit-grid {
+            grid-template-columns: repeat(2, max-content);
+            gap: 1rem 1rem;
+            justify-content: center;
+          }
+        }
+        .card {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          padding: 0.8rem 1rem;
+          border-radius: 0.5rem;
+          cursor: pointer;
+          transition: transform 0.15s ease;
+          white-space: nowrap;
+          border: 1px solid;
+          user-select: none;
+          max-width: 160px;
+          width: 160px;
+          height: 110px;
+          text-align: center;
+        }
+        .card-text {
+          font-weight: 600;
+          font-size: 1rem;
+          margin-top: 0.4rem;
+        }
+        @media (max-width: 767px) {
+          .card {
+            max-width: 140px;
+            width: 140px;
+            height: 90px;
+            padding: 0.6rem 0.8rem;
+          }
+          .card-text {
+            font-size: 0.85rem;
+          }
+          .card svg {
+            width: 22px;
+            height: 22px;
+          }
+        }
+        .dark {
+          background-color: #1e293b;
+          color: #f9fafb;
+          border-color: #475569;
+        }
+        .light {
+          background-color: #fff;
+          color: #111827;
+          border-color: #d1d5db;
+        }
 
-.card-text {
-  font-weight: 600;
-  font-size: 1.1rem;
-  margin-top: 0.6rem;        /* espacio entre icono y texto */
-}
-
-/* Ajustes responsivos */
-@media (max-width: 767px) {
-  .card {
-    max-width: 180px;
-    width: 180px;            /* ancho fijo responsivo */
-    height: 120px;           /* alto fijo responsivo */
-  }
-  .card-text {
-    font-size: 0.95rem;
-  }
-  .card svg {
-    width: 26px;
-    height: 26px;
-  }
-}
-
-    .dark {
-      background-color: #1e293b;
-      color: #f9fafb;
-      border-color: #475569;
-    }
-    .light {
-      background-color: #fff;
-      color: #111827;
-      border-color: #d1d5db;
-    }
-  `}</style>
-
+        /* Estilos para el botón flotante */
+        .btn-volver {
+          position: fixed;
+          bottom: 20px;
+          right: 20px; /* Cambia a left: 20px; si prefieres a la izquierda */
+          background-color: ${modoOscuro ? "#334155" : "#f3f4f6"};
+          color: ${modoOscuro ? "#a5f3fc" : "#2563eb"};
+          border: none;
+          border-radius: 50%;
+          padding: 0.5rem;
+          cursor: pointer;
+          box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transition: background-color 0.2s ease;
+          z-index: 1000;
+        }
+        .btn-volver:hover {
+          background-color: ${modoOscuro ? "#475569" : "#60a5fa"};
+          color: white;
+        }
+      `}</style>
 
       <div className="w-full px-4 mt-16 md:mt-20 auto-fit-grid">
         {botonesFijos.map(({ id, nombre, ruta, Icon }) => {
           if (
-            ["permisos", "roles", "catalogos", "estado"].includes(id) &&
+            ["permisos", "roles", "catalogos", "estado", "transacciones"].includes(id) &&
             rol !== "administrador"
           )
             return null;
@@ -157,6 +183,16 @@ const Menusetting = () => {
           );
         })}
       </div>
+
+      {/* Botón flotante para volver */}
+      <button
+        className="btn-volver"
+        aria-label="Volver al menú de configuración"
+        title="Volver"
+        onClick={() => navigate("/dashboard/setting")} // Cambia la ruta si es diferente
+      >
+        <ArrowLeftCircle size={28} />
+      </button>
     </>
   );
 };

@@ -37,13 +37,11 @@ const Calificacion = ({
   const [paginaActual, setPaginaActual] = useState(1);
 
   // Cuando cambia materia o estudiantes actualiza botón mostrar lista
-  useEffect(() => {
+    useEffect(() => {
     if (materiaSeleccionada && estudiantes.length > 0) {
-      onMostrarListaEstudiantes(true);
-    } else {
-      onMostrarListaEstudiantes(false);
+      
     }
-  }, [materiaSeleccionada, estudiantes, onMostrarListaEstudiantes]);
+  }, [estudiantes, materiaSeleccionada]);
 
   useEffect(() => {
     const cargarPeriodo = async () => {
@@ -318,17 +316,34 @@ const Calificacion = ({
   const aprobadoPorEstudiante = (idInscripcion) =>
     porcentajePorEstudiante(idInscripcion) >= 60;
 
-  const estudiantesFiltrados = materiaSeleccionada
-  ? estudiantes
-      .filter((est) =>
-        (est.nombreEstudiante || "").toLowerCase().includes((filtroGeneral || "").toLowerCase())
-      )
-      .filter((est) => {
-        if (filtroAprobado === "") return true; // Sin filtro
+ const estudiantesFiltrados = materiaSeleccionada
+    ? estudiantes.filter((est) => {
+        if (esEstudiante) {
+          // Cambia 'iD_Usuario' por la propiedad correcta que veas en el console.log
+          const estId = String(est.iD_Usuario || est.idUsuario || est.ID_Usuario || est.userId || "");
+          const coincide = estId === String(idUsuario);
+
+     
+
+          if (!coincide) return false;
+        }
+
+        // Filtro por nombre según filtroGeneral
+        if (!est.nombreEstudiante.toLowerCase().includes((filtroGeneral || "").toLowerCase())) {
+          return false;
+        }
+
+      if (filtroAprobado !== "") {
         const aprobado = aprobadoPorEstudiante(est.iD_Inscripcion);
-        return filtroAprobado === "si" ? aprobado : !aprobado;
-      })
+        if (filtroAprobado === "si" && !aprobado) return false;
+        if (filtroAprobado === "no" && aprobado) return false;
+      }
+
+      return true;
+    })
   : [];
+
+
 
   const indiceUltimaFila = paginaActual * filasPorPagina;
   const indicePrimeraFila = indiceUltimaFila - filasPorPagina;
@@ -516,52 +531,58 @@ const Calificacion = ({
               </div>
             </div>
           </div>
-          {/* BOTONES EXPORTAR */}
-       <ExportButtons
-  data={datosExportar}
-  fileName={`Calificaciones_${grupoSeleccionado.nombreGrupo}_${materiaSeleccionada.nombreMateria}`}
-/>
-                              <div className="flex flex-wrap gap-4 mb-4">
-  <div className="flex items-center gap-2">
-    <label htmlFor="filasPorPagina" className="font-semibold">
-      Filas por página:
-    </label>
-    <select
-      id="filasPorPagina"
-      value={filasPorPagina}
-      onChange={(e) => {
-        setFilasPorPagina(Number(e.target.value));
-        setPaginaActual(1);
-      }}
-      className={`border rounded px-2 py-1 ${
-        modoOscuro ? "bg-gray-700 text-white" : "bg-white text-gray-800"
-      }`}
-    >
-      {[5, 10, 20, 50].map((num) => (
-        <option key={num} value={num}>
-          {num}
-        </option>
-      ))}
-    </select>
+        <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
+  {/* Controles de filtrado (izquierda) */}
+  <div className="flex flex-wrap gap-4">
+    <div className="flex items-center gap-2">
+      <label htmlFor="filasPorPagina" className="font-semibold">
+        Filas por página:
+      </label>
+      <select
+        id="filasPorPagina"
+        value={filasPorPagina}
+        onChange={(e) => {
+          setFilasPorPagina(Number(e.target.value));
+          setPaginaActual(1);
+        }}
+        className={`border rounded px-2 py-1 ${
+          modoOscuro ? "bg-gray-700 text-white" : "bg-white text-gray-800"
+        }`}
+      >
+        {[5, 10, 20, 50].map((num) => (
+          <option key={num} value={num}>
+            {num}
+          </option>
+        ))}
+      </select>
+    </div>
+
+    <div className="flex items-center gap-2">
+      <label htmlFor="filtroAprobado" className="font-semibold">
+        Filtrar por aprobado:
+      </label>
+      <select
+        id="filtroAprobado"
+        value={filtroAprobado}
+        onChange={(e) => setFiltroAprobado(e.target.value)}
+        className={`border rounded px-2 py-1 ${
+          modoOscuro ? "bg-gray-700 text-white" : "bg-white text-gray-800"
+        }`}
+      >
+        <option value="">Todos</option>
+        <option value="si">Sí</option>
+        <option value="no">No</option>
+      </select>
+    </div>
   </div>
 
-  <div className="flex items-center gap-2">
-    <label htmlFor="filtroAprobado" className="font-semibold">
-      Filtrar por aprobado:
-    </label>
-    <select
-      id="filtroAprobado"
-      value={filtroAprobado}
-      onChange={(e) => setFiltroAprobado(e.target.value)}
-      className={`border rounded px-2 py-1 ${
-        modoOscuro ? "bg-gray-700 text-white" : "bg-white text-gray-800"
-      }`}
-    >
-      <option value="">Todos</option>
-      <option value="si">Sí</option>
-      <option value="no">No</option>
-    </select>
-  </div>
+  {/* Botones exportar (derecha) */}
+  {rolLower === "administrador" && (
+    <ExportButtons
+      data={datosExportar}
+      fileName={`Calificaciones_${grupoSeleccionado.nombreGrupo}_${materiaSeleccionada.nombreMateria}`}
+    />
+  )}
 </div>
 
             <div className="overflow-x-auto max-w-full">

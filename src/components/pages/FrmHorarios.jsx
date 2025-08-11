@@ -32,7 +32,6 @@ const FrmCarreras = () => {
   const [modalAgregarMateria, setModalAgregarMateria] = useState(false);
   const [busquedaMateriaModal, setBusquedaMateriaModal] = useState("");
   const [sugerenciasModal, setSugerenciasModal] = useState([]);
-  const [filtroCarrerasEstado, setFiltroCarrerasEstado] = useState("Todas");
 
   // Estado para filas presionadas (para efecto "cojin")
   const [filaPresionada, setFilaPresionada] = useState(null);
@@ -88,40 +87,32 @@ const FrmCarreras = () => {
     }
   };
 
-  const carrerasFiltradas = carreras.filter((c) => {
-  if (filtroCarrerasEstado === "Activas") return c.activo;
-  if (filtroCarrerasEstado === "Inactivas") return !c.activo;
-  return true; 
-});
-
   const cargarMaterias = async (idCarrera) => {
-  setLoadingMaterias(true);
-  try {
-    const res = await materiasCarrerasService.listarPorCarrera(idCarrera);
-    const materiasData = res.map((mc) => ({
-      idRelacion: mc.iD_MateriaCarrera,
-      idMateria: mc.iD_Materia,
-      nombreMateria: mc.nombreMateria,
-      codigoMateria: mc.codigoMateria,
-      idEstado: mc.iD_Estado,
-      activo: mc.iD_Estado === 1,
-      creador: mc.creador,
-      modificador: mc.modificador,
-      fechaCreacion: mc.fecha_Creacion,
-      fechaModificacion: mc.fecha_Modificacion,
-    }));
-    setMaterias(materiasData);
-    setCarreraSeleccionada(carreras.find((c) => c.idCarrera === idCarrera));
-    setFiltroTabla(""); 
-    setFiltroEstado("Todas"); 
-  } catch {
-   
-    Swal.fire("Error", "No se pudieron cargar las materias", "error");
-    setMaterias([]);
-  } finally {
-    setLoadingMaterias(false);
-  }
-};
+    setLoadingMaterias(true);
+    try {
+      const res = await materiasCarrerasService.listarPorCarrera(idCarrera);
+      const materiasData = res.map((mc) => ({
+        idRelacion: mc.iD_MateriaCarrera,
+        idMateria: mc.iD_Materia,
+        nombreMateria: mc.nombreMateria,
+        codigoMateria: mc.codigoMateria,
+        idEstado: mc.iD_Estado,
+        activo: mc.iD_Estado === 1,
+        creador: mc.creador,
+        modificador: mc.modificador,
+        fechaCreacion: mc.fecha_Creacion,
+        fechaModificacion: mc.fecha_Modificacion,
+      }));
+      setMaterias(materiasData);
+      setCarreraSeleccionada(carreras.find((c) => c.idCarrera === idCarrera));
+      setFiltroTabla(""); // reset filtro tabla al cargar nuevas materias
+    } catch {
+      Swal.fire("Error", "No se pudieron cargar las materias", "error");
+      setMaterias([]);
+    } finally {
+      setLoadingMaterias(false);
+    }
+  };
 
   const handleSeleccionarCarrera = (idCarrera) => {
     cargarMaterias(idCarrera);
@@ -301,14 +292,12 @@ const FrmCarreras = () => {
   const texto = modoOscuro ? "text-white" : "text-gray-900";
 
   return (
-  <div className={`p-6 pt-6 sm:pt-12 md:pt-16 min-h-screen ${fondo} ${texto}`}>
-
+    <div className={`p-4 pt-10 sm:p-6 sm:pt-6 min-h-screen ${fondo} ${texto}`}>
 
       {!carreraSeleccionada ? (
         <>
-         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-3xl font-bold">Carreras</h2>
-          
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-3xl font-bold">Carreras</h2>
             {rolLower === "administrador" && (
               <button
                 onClick={() => abrirModal()}
@@ -320,27 +309,13 @@ const FrmCarreras = () => {
             )}
           </div>
 
-          <div className="mb-4 flex items-center gap-3">
-            <label htmlFor="filtroEstado" className="font-semibold">Filtrar por estado:</label>
-            <select
-              id="filtroEstado"
-              value={filtroCarrerasEstado}
-              onChange={(e) => setFiltroCarrerasEstado(e.target.value)}
-              className="border rounded px-3 py-1"
-            >
-              <option value="Todas">Todas</option>
-              <option value="Activas">Activas</option>
-              <option value="Inactivas">Inactivas</option>
-            </select>
-          </div>
-
           {loading ? (
             <p className="text-center font-medium text-lg">Cargando carreras...</p>
           ) : carreras.length === 0 ? (
             <p className="text-center font-medium text-lg">No hay carreras disponibles.</p>
           ) : (
             <div className="grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-              {carrerasFiltradas.map((carrera) => (
+              {carreras.map((carrera) => (
                 <div
                   key={carrera.idCarrera}
                   className={`rounded-xl p-6 shadow-md border transition-transform transform hover:scale-105 cursor-pointer ${
@@ -447,8 +422,8 @@ const FrmCarreras = () => {
                       className={`border-b border-gray-300 cursor-pointer rounded-xl transition
                         ${
                           modoOscuro
-                            ? "hover:bg-blue-700"
-                            : "hover:bg-blue-100"
+                            ? "hover:bg-blue-400"
+                            : "hover:bg-blue-200"
                         }
                         ${
                           filaPresionada === m.idRelacion
@@ -487,63 +462,77 @@ const FrmCarreras = () => {
       )}
 
       {/* MODAL DE CARRERA */}
-      {modal && (
-        <div
-          className="fixed inset-0 flex items-center justify-center z-50"
-          style={{ backdropFilter: "blur(5px)" }}
+   {/* MODAL DE CARRERA */}
+{modal && (
+  <div
+    className="fixed inset-0 flex items-center justify-center z-50"
+    style={{ backdropFilter: "blur(5px)" }}
+  >
+    <div
+      className={`rounded-xl p-6 w-full max-w-md shadow-lg ${
+        modoOscuro ? "bg-gray-900 text-white" : "bg-white text-black"
+      }`}
+    >
+      <h2 className="text-xl font-bold mb-4">
+        {formData.idCarrera ? "Editar Carrera" : "Nueva Carrera"}
+      </h2>
+      <div className="space-y-4">
+        <input
+          type="text"
+          name="nombreCarrera"
+          value={formData.nombreCarrera}
+          onChange={handleChange}
+          placeholder="Nombre de la carrera"
+          className={`w-full border rounded-lg p-2 ${
+            modoOscuro
+              ? "bg-gray-800 text-white border-gray-700 placeholder-gray-400"
+              : "bg-white text-black border-gray-300 placeholder-gray-600"
+          }`}
+        />
+        <input
+          type="text"
+          name="codigoCarrera"
+          value={formData.codigoCarrera}
+          onChange={handleChange}
+          placeholder="Código de la carrera"
+          className={`w-full border rounded-lg p-2 ${
+            modoOscuro
+              ? "bg-gray-800 text-white border-gray-700 placeholder-gray-400"
+              : "bg-white text-black border-gray-300 placeholder-gray-600"
+          }`}
+        />
+        <label className="flex items-center gap-2 text-sm">
+          <input
+            type="checkbox"
+            name="activo"
+            checked={formData.activo}
+            onChange={handleChange}
+          />
+          Activo
+        </label>
+      </div>
+      <div className="flex justify-end gap-3 mt-6">
+        <button
+          onClick={cerrarModal}
+          className={`px-4 py-2 rounded-lg ${
+            modoOscuro
+              ? "bg-red-700 text-white hover:bg-gray-600"
+              : "bg-red-300 text-black hover:bg-gray-400"
+          }`}
         >
-        <div
-          className="rounded-xl p-6 w-full max-w-md shadow-lg"
-          style={{
-            backgroundColor: modoOscuro ? "#2d2d2d" : "#fff",
-            color: modoOscuro ? "#fff" : "#2d2d2d",
-          }}
+          Cancelar
+        </button>
+        <button
+          onClick={guardarCarrera}
+          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
         >
-          <h2 className="text-xl font-bold mb-4">
+          Guardar
+        </button>
+      </div>
+    </div>
+  </div>
+)}
 
-              {formData.idCarrera ? "Editar Carrera" : "Nueva Carrera"}
-            </h2>
-            <div className="space-y-4">
-              <input
-                type="text"
-                name="nombreCarrera"
-                value={formData.nombreCarrera}
-                onChange={handleChange}
-                placeholder="Nombre de la carrera"
-                className="w-full border rounded-lg p-2"
-              />
-              <input
-                type="text"
-                name="codigoCarrera"
-                value={formData.codigoCarrera}
-                onChange={handleChange}
-                placeholder="Código de la carrera"
-                className="w-full border rounded-lg p-2"
-              />
-              <label className="flex items-center gap-2 text-sm">
-                <input
-                  type="checkbox"
-                  name="activo"
-                  checked={formData.activo}
-                  onChange={handleChange}
-                />
-                Activo
-              </label>
-            </div>
-            <div className="flex justify-end gap-3 mt-6">
-              <button onClick={cerrarModal}  className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-blue-700">
-                Cancelar
-              </button>
-              <button
-                onClick={guardarCarrera}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-              >
-                Guardar
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* MODAL AGREGAR MATERIA */}
       {modalAgregarMateria && (
@@ -552,10 +541,12 @@ const FrmCarreras = () => {
           style={{ backdropFilter: "blur(5px)" }}
           onClick={() => setModalAgregarMateria(false)}
         >
-          <div
-            className="bg-white rounded-xl p-6 w-full max-w-md shadow-lg"
-            onClick={(e) => e.stopPropagation()}
-          >
+           <div
+      className={`rounded-xl p-6 w-full max-w-md shadow-lg ${
+        modoOscuro ? "bg-gray-900 text-white" : "bg-white text-black"
+      }`}
+      onClick={(e) => e.stopPropagation()}
+    >
             <h2 className="text-xl font-bold mb-4">Agregar Materia</h2>
             <input
               type="text"
@@ -588,7 +579,7 @@ const FrmCarreras = () => {
             <div className="flex justify-end mt-6">
               <button
                 onClick={() => setModalAgregarMateria(false)}
-                className="px-4 py-2 bg-gray-300 rounded-lg hover:bg-gray-400 transition"
+                className="px-4 py-2 bg-red-600 rounded-lg hover:bg-gray-400 transition"
               >
                 Cancelar
               </button>
@@ -601,3 +592,5 @@ const FrmCarreras = () => {
 };
 
 export default FrmCarreras;
+
+

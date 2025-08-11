@@ -10,9 +10,11 @@ import {
   ResponsiveContainer,
   Cell,
 } from "recharts";
+
 const ROW_HEIGHT = 30; // altura aprox de cada fila (ajusta según estilos)
 const VISIBLE_ROWS = 5;
 const COLLAPSIBLE_MAX_HEIGHT = ROW_HEIGHT * VISIBLE_ROWS;
+
 const CardContainer = styled.div`
   background-color: ${({ $modoOscuro }) =>
     $modoOscuro ? "rgba(31, 41, 55, 0.9)" : "#fff"};
@@ -24,21 +26,16 @@ const CardContainer = styled.div`
       ? "0 4px 10px rgba(0,0,0,0.6)"
       : "0 4px 10px rgba(0,0,0,0.12)"};
   width: 100%;
-  max-width: 430px;
-
+  max-width: 100%; /* Cambiado para que ocupe todo el ancho disponible */
+  margin: 0 auto; /* centra */
   display: flex;
   flex-direction: column;
   min-height: 400px;
 
-  margin-left: -95px; /* Mueve a la izquierda en escritorio */
-
   @media (max-width: 640px) {
-    margin-left: auto;  /* Centra en móvil */
-    margin-right: auto;
-    padding: 1rem;      /* Más espacio interno en móvil */
+    padding: 1rem;
   }
 `;
-
 
 const ContentWrapper = styled.div`
   flex: 1 1 auto;
@@ -150,6 +147,7 @@ const SmallText = styled.span`
   display: block;
   margin-top: 0.2rem;
 `;
+
 const CollapsibleContent = styled.div`
   max-height: ${({ open }) => (open ? `${COLLAPSIBLE_MAX_HEIGHT}px` : "0")};
   overflow-y: auto;
@@ -158,8 +156,6 @@ const CollapsibleContent = styled.div`
   margin-top: ${({ open }) => (open ? "0.5rem" : "0")};
   border-radius: 0 0 8px 8px;
 `;
-
-
 
 const ToggleHeader = styled.div`
   user-select: none;
@@ -328,7 +324,7 @@ const CardTransaccionesAvanzado = ({ modoOscuro }) => {
 
             <div
               style={{
-                minHeight: "150px",
+                height: 200, // fija la altura
                 marginBottom: 8,
                 backgroundColor: modoOscuro
                   ? "rgba(31, 41, 55, 0.9)"
@@ -340,7 +336,8 @@ const CardTransaccionesAvanzado = ({ modoOscuro }) => {
                 <BarChart
                   data={dataPorTipo}
                   margin={{ top: 3, right: 20, left: 0, bottom: 5 }}
-                  barCategoryGap="10%"
+                  barCategoryGap="20%" // un poco más de espacio entre barras
+                  barSize={30} // ancho de cada barra
                 >
                   <XAxis dataKey="tipo" hide />
                   <YAxis
@@ -351,7 +348,7 @@ const CardTransaccionesAvanzado = ({ modoOscuro }) => {
                     tick={{ fontSize: 10 }}
                   />
                   <Tooltip content={<CustomTooltip />} />
-                  <Bar dataKey="cantidad" maxBarSize={20}>
+                  <Bar dataKey="cantidad">
                     {dataPorTipo.map(({ tipo }, index) => (
                       <Cell
                         key={`cell-${index}`}
@@ -387,11 +384,16 @@ const CardTransaccionesAvanzado = ({ modoOscuro }) => {
               $modoOscuro={modoOscuro}
               aria-hidden={!open}
             >
-
-              <List $modoOscuro={modoOscuro} aria-label="Lista de transacciones recientes">
+              <List
+                $modoOscuro={modoOscuro}
+                aria-label="Lista de transacciones recientes"
+              >
                 {transacciones
                   .slice()
-                  .sort((a, b) => new Date(b.fechaCreacion) - new Date(a.fechaCreacion))
+                  .sort(
+                    (a, b) =>
+                      new Date(b.fechaCreacion) - new Date(a.fechaCreacion)
+                  )
                   .slice(0, 30)
                   .map(
                     ({

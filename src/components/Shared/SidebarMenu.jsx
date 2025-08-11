@@ -61,7 +61,8 @@ const SidebarMenu = ({ isSidebarOpen }) => {
     "frmtipocalificacion",
     "frmcatalogos",
     "frminscripcionesmaterias",
-      "frmrescate"
+      "frmrescate",
+ "frmtransacciones",
   ];
 
   useEffect(() => {
