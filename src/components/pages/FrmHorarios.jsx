@@ -32,7 +32,6 @@ const FrmCarreras = () => {
   const [modalAgregarMateria, setModalAgregarMateria] = useState(false);
   const [busquedaMateriaModal, setBusquedaMateriaModal] = useState("");
   const [sugerenciasModal, setSugerenciasModal] = useState([]);
-  const [filtroCarrerasEstado, setFiltroCarrerasEstado] = useState("Todas");
 
   // Estado para filas presionadas (para efecto "cojin")
   const [filaPresionada, setFilaPresionada] = useState(null);
@@ -88,40 +87,32 @@ const FrmCarreras = () => {
     }
   };
 
-  const carrerasFiltradas = carreras.filter((c) => {
-  if (filtroCarrerasEstado === "Activas") return c.activo;
-  if (filtroCarrerasEstado === "Inactivas") return !c.activo;
-  return true; 
-});
-
   const cargarMaterias = async (idCarrera) => {
-  setLoadingMaterias(true);
-  try {
-    const res = await materiasCarrerasService.listarPorCarrera(idCarrera);
-    const materiasData = res.map((mc) => ({
-      idRelacion: mc.iD_MateriaCarrera,
-      idMateria: mc.iD_Materia,
-      nombreMateria: mc.nombreMateria,
-      codigoMateria: mc.codigoMateria,
-      idEstado: mc.iD_Estado,
-      activo: mc.iD_Estado === 1,
-      creador: mc.creador,
-      modificador: mc.modificador,
-      fechaCreacion: mc.fecha_Creacion,
-      fechaModificacion: mc.fecha_Modificacion,
-    }));
-    setMaterias(materiasData);
-    setCarreraSeleccionada(carreras.find((c) => c.idCarrera === idCarrera));
-    setFiltroTabla(""); 
-    setFiltroEstado("Todas"); 
-  } catch {
-   
-    Swal.fire("Error", "No se pudieron cargar las materias", "error");
-    setMaterias([]);
-  } finally {
-    setLoadingMaterias(false);
-  }
-};
+    setLoadingMaterias(true);
+    try {
+      const res = await materiasCarrerasService.listarPorCarrera(idCarrera);
+      const materiasData = res.map((mc) => ({
+        idRelacion: mc.iD_MateriaCarrera,
+        idMateria: mc.iD_Materia,
+        nombreMateria: mc.nombreMateria,
+        codigoMateria: mc.codigoMateria,
+        idEstado: mc.iD_Estado,
+        activo: mc.iD_Estado === 1,
+        creador: mc.creador,
+        modificador: mc.modificador,
+        fechaCreacion: mc.fecha_Creacion,
+        fechaModificacion: mc.fecha_Modificacion,
+      }));
+      setMaterias(materiasData);
+      setCarreraSeleccionada(carreras.find((c) => c.idCarrera === idCarrera));
+      setFiltroTabla(""); // reset filtro tabla al cargar nuevas materias
+    } catch {
+      Swal.fire("Error", "No se pudieron cargar las materias", "error");
+      setMaterias([]);
+    } finally {
+      setLoadingMaterias(false);
+    }
+  };
 
   const handleSeleccionarCarrera = (idCarrera) => {
     cargarMaterias(idCarrera);
@@ -301,14 +292,11 @@ const FrmCarreras = () => {
   const texto = modoOscuro ? "text-white" : "text-gray-900";
 
   return (
-  <div className={`p-6 pt-6 sm:pt-12 md:pt-16 min-h-screen ${fondo} ${texto}`}>
-
-
+    <div className={`p-6 pt-20 sm:pt-6 min-h-screen ${fondo} ${texto}`}>
       {!carreraSeleccionada ? (
         <>
-         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-3xl font-bold">Carreras</h2>
-          
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-3xl font-bold">Carreras</h2>
             {rolLower === "administrador" && (
               <button
                 onClick={() => abrirModal()}
@@ -320,27 +308,13 @@ const FrmCarreras = () => {
             )}
           </div>
 
-          <div className="mb-4 flex items-center gap-3">
-            <label htmlFor="filtroEstado" className="font-semibold">Filtrar por estado:</label>
-            <select
-              id="filtroEstado"
-              value={filtroCarrerasEstado}
-              onChange={(e) => setFiltroCarrerasEstado(e.target.value)}
-              className="border rounded px-3 py-1"
-            >
-              <option value="Todas">Todas</option>
-              <option value="Activas">Activas</option>
-              <option value="Inactivas">Inactivas</option>
-            </select>
-          </div>
-
           {loading ? (
             <p className="text-center font-medium text-lg">Cargando carreras...</p>
           ) : carreras.length === 0 ? (
             <p className="text-center font-medium text-lg">No hay carreras disponibles.</p>
           ) : (
             <div className="grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-              {carrerasFiltradas.map((carrera) => (
+              {carreras.map((carrera) => (
                 <div
                   key={carrera.idCarrera}
                   className={`rounded-xl p-6 shadow-md border transition-transform transform hover:scale-105 cursor-pointer ${
@@ -492,15 +466,8 @@ const FrmCarreras = () => {
           className="fixed inset-0 flex items-center justify-center z-50"
           style={{ backdropFilter: "blur(5px)" }}
         >
-        <div
-          className="rounded-xl p-6 w-full max-w-md shadow-lg"
-          style={{
-            backgroundColor: modoOscuro ? "#2d2d2d" : "#fff",
-            color: modoOscuro ? "#fff" : "#2d2d2d",
-          }}
-        >
-          <h2 className="text-xl font-bold mb-4">
-
+          <div className="bg-white rounded-xl p-6 w-full max-w-md shadow-lg">
+            <h2 className="text-xl font-bold mb-4">
               {formData.idCarrera ? "Editar Carrera" : "Nueva Carrera"}
             </h2>
             <div className="space-y-4">
@@ -531,7 +498,7 @@ const FrmCarreras = () => {
               </label>
             </div>
             <div className="flex justify-end gap-3 mt-6">
-              <button onClick={cerrarModal}  className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-blue-700">
+              <button onClick={cerrarModal} className="px-4 py-2 bg-gray-300 rounded-lg">
                 Cancelar
               </button>
               <button

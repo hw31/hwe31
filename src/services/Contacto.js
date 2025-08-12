@@ -45,7 +45,7 @@ const filtrarPorIdContacto = async (idContacto) => {
   }
 };
 
-/**FILTRAR POR NOMBRE */
+
 const filtrarPorIdPersonaContacto = async (idPersona) => {
   try {
     const res = await api.get('Contacto/filtrar_por_idpersona', {

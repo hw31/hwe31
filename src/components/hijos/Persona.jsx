@@ -24,12 +24,11 @@ const FrmPersonas = ({ busqueda }) => {
   const [formLoading, setFormLoading] = useState(false);
   const [formError, setFormError] = useState("");
   const [estados, setEstados] = useState([]);
-  const [filtros, setFiltros] = useState({ texto: "", genero: "", tipoDocumento: "", nacionalidad: "", nivelAcademico: "", estado: "" });
+  const [filtros, setFiltros] = useState({ texto: "", genero: "", tipoDocumento: "", nacionalidad: "",  estado: "" });
 
   const [generos, setGeneros] = useState([]);
   const [tiposDocumento, setTiposDocumento] = useState([]);
   const [nacionalidades, setNacionalidades] = useState([]);
-  const [nivelAcademico, setNivelAcademico] = useState([]);
   const [paginaActual, setPaginaActual] = useState(1);
   const [itemsPorPagina, setItemsPorPagina] = useState(10);
 
@@ -43,7 +42,6 @@ const FrmPersonas = ({ busqueda }) => {
     idTipoDocumento: "",
     numeroDocumento: "",
     idNacionalidad: "",
-    idNivelAcademico: "",
     estado: "",
   });
 
@@ -63,12 +61,10 @@ const FrmPersonas = ({ busqueda }) => {
       idGenero: p.generoId || "",
       idTipoDocumento: p.tipoDocumentoId || "",
       idNacionalidad: p.nacionalidadId || "",
-      idNivelAcademico: p.nivelAcademicoId || "",
       numeroDocumento: p.numeroDocumento || "-",
       nombreGenero: p.nombreGenero || "-",
       nombreTipoDocumento: p.nombreTipoDocumento || "-",
       nombreNacionalidad: p.nombreNacionalidad || "-",
-      nombreNivelAcademico: p.nombreNivelAcademico || "-",
       activo: p.estado === "Activo",
       estado: p.idEstado || "",
       fechaCreacion: formatearFecha(p.fechaCreacion),
@@ -98,7 +94,6 @@ const FrmPersonas = ({ busqueda }) => {
         setGeneros(catalogo.filter(c => c.idTipoCatalogo === 1));
         setTiposDocumento(catalogo.filter(c => c.idTipoCatalogo === 3));
         setNacionalidades(catalogo.filter(c => c.idTipoCatalogo === 2));
-        setNivelAcademico(catalogo.filter(c => c.idTipoCatalogo === 6));
       } else Swal.fire("Error", "No se pudo cargar el catálogo", "error");
     } catch {
       Swal.fire("Error", "Error al cargar el catálogo", "error");
@@ -114,7 +109,7 @@ const FrmPersonas = ({ busqueda }) => {
   };
 
   const abrirModalNuevo = () => {
-    setForm({ idPersona: 0, primerNombre: "", segundoNombre: "", primerApellido: "", segundoApellido: "", idGenero: "", idTipoDocumento: "", numeroDocumento: "", idNacionalidad: "", idNivelAcademico: "", estado: "" });
+    setForm({ idPersona: 0, primerNombre: "", segundoNombre: "", primerApellido: "", segundoApellido: "", idGenero: "", idTipoDocumento: "", numeroDocumento: "", idNacionalidad: "", estado: "" });
     setFormError(""); setModoEdicion(false); setModalOpen(true);
   };
 
@@ -129,7 +124,6 @@ const FrmPersonas = ({ busqueda }) => {
       idTipoDocumento: persona.idTipoDocumento,
       numeroDocumento: persona.numeroDocumento,
       idNacionalidad: persona.idNacionalidad,
-      idNivelAcademico: persona.idNivelAcademico,
       estado: persona.estado,
     });
     setFormError(""); setModoEdicion(true); setModalOpen(true);
@@ -143,8 +137,8 @@ const FrmPersonas = ({ busqueda }) => {
     if (!form.primerNombre.trim() || !form.primerApellido.trim()) {
       setFormError("El primer nombre y primer apellido son obligatorios."); return;
     }
-    if (!form.idGenero || !form.idTipoDocumento || !form.idNacionalidad || !form.idNivelAcademico) {
-      setFormError("Debe seleccionar Género, Tipo Documento, Nacionalidad y Nivel Acádemico."); return;
+    if (!form.idGenero || !form.idTipoDocumento || !form.idNacionalidad ) {
+      setFormError("Debe seleccionar Género, Tipo Documento y Nacionalidad."); return;
     }
     if (!form.numeroDocumento.trim()) {
       setFormError("El número de documento es obligatorio."); return;
@@ -161,7 +155,6 @@ const FrmPersonas = ({ busqueda }) => {
       tipoDocumentoId: Number(form.idTipoDocumento) || null,
       numeroDocumento: form.numeroDocumento.trim() || null,
       nacionalidadId: Number(form.idNacionalidad) || null,
-      nivelAcademicoId: Number(form.idNivelAcademico) || null,
       idEstado: Number(form.estado),
     };
 
@@ -183,9 +176,8 @@ const FrmPersonas = ({ busqueda }) => {
     const coincideTipoDoc = !filtros.tipoDocumento || p.nombreTipoDocumento === filtros.tipoDocumento;
     const coincideGenero = !filtros.genero || p.nombreGenero === filtros.genero;
     const coincideNacionalidad = !filtros.nacionalidad || p.nombreNacionalidad === filtros.nacionalidad;
-    const coincideNivelAca = !filtros.nivelAcademico || p.nombreNivelAcademico === filtros.nivelAcademico;
     const coincideEstado = !filtros.estado || (filtros.estado === "Activo" ? p.activo : !p.activo);
-    return coincideTexto && coincideTipoDoc && coincideGenero && coincideNacionalidad && coincideNivelAca && coincideEstado;
+    return coincideTexto && coincideTipoDoc && coincideGenero && coincideNacionalidad && coincideEstado;
   });
 
   const inicio = (paginaActual - 1) * itemsPorPagina;
@@ -201,7 +193,6 @@ const FrmPersonas = ({ busqueda }) => {
     { key: "nombreTipoDocumento", label: "Tipo Documento" },
     { key: "numeroDocumento", label: "Número Documento" },
     { key: "nombreNacionalidad", label: "Nacionalidad" },
-    { key: "nombreNivelAcademico", label: "Nivel Academico" },
     { key: "nombreCreador", label: "Creador" },
     { key: "nombreModificador", label: "Modificador" },
     { key: "fechaCreacion", label: "Fecha Creación" },
@@ -268,18 +259,6 @@ const FrmPersonas = ({ busqueda }) => {
               {nacionalidades.map((n) => (
                 <option key={n.idCatalogo} value={n.descripcionCatalogo}>
                   {n.descripcionCatalogo}
-                </option>
-              ))}
-            </select>
-            <select
-              value={filtros.nivelAcademico}
-              onChange={(e) => setFiltros({ ...filtros, nivelAcademico: e.target.value })}
-              className="px-3 py-2 border rounded dark:bg-gray-700 dark:text-white dark:border-gray-600"
-            >
-              <option value="">Nivel_Academico</option>
-              {nivelAcademico.map((c) => (
-                <option key={c.idCatalogo} value={c.descripcionCatalogo}>
-                  {c.descripcionCatalogo}
                 </option>
               ))}
             </select>
@@ -432,21 +411,6 @@ const FrmPersonas = ({ busqueda }) => {
     </option>
   ))}
 </select>
-
-<select
-  name="idNivelAcademico"
-  value={form.idNivelAcademico}
-  onChange={handleInputChange}
-  className="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white dark:border-gray-600"
->
-  <option value="">Seleccione Nivel Academico</option>
-  {nivelAcademico.map((c) => (
-    <option key={c.idCatalogo} value={c.idCatalogo}>
-      {c.descripcionCatalogo}
-    </option>
-  ))}
-</select>
-
 <select
   name="estado"
   value={form.estado}

@@ -46,6 +46,7 @@ const authSlice = createSlice({
         id_sesion,
         persona,
         id_usuario,
+        idPersona,  
         modo_oscuro,
         fotoPerfilUrl, 
       } = action.payload;
@@ -53,6 +54,7 @@ const authSlice = createSlice({
       state.usuario = usuario || null;
       state.token = accessToken || null;
       state.idSesion = id_sesion || null;
+       state.idPersona = idPersona || null; 
       state.persona = persona || null;
       state.idUsuario = id_usuario || null;
       state.modo = modo_oscuro === 1 ? "dark" : "light";
@@ -79,6 +81,7 @@ const authSlice = createSlice({
       state.token = null;
       state.idSesion = null;
       state.persona = null;
+      state.idPersona = null; 
       state.idUsuario = null;
       state.modo = "light";
       state.isAuthenticated = false;
@@ -98,6 +101,7 @@ const authSlice = createSlice({
         state.idSesion = action.payload.idSesion;
         state.persona = action.payload.persona;
         state.idUsuario = action.payload.idUsuario;
+        state.idPersona = action.payload.idPersona || null; 
         state.modo =
           action.payload.modo === "dark" ||
           action.payload.modo_oscuro === 1
