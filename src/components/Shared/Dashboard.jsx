@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, useLayoutEffect } from "react";
 import { useNavigate, Outlet, useLocation } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
 import { Moon, Sun, LogOut, Settings } from "lucide-react";
@@ -21,20 +21,27 @@ import CardUsuariosKPI from "../Shared/CardUsuariosKPI";
 import CardTransacciones from "../Shared/CardTransacciones";
 
 import Checkbox from "../Shared/Checkbox";
-
+import DashboardCards from "./DashboardCards";
 const DashboardWelcome = styled.div`
   display: flex;
   flex-direction: column;
   align-items: center;
-  margin-top: 4rem;
+  margin-top: 10rem;
 
-  @media (max-width: 639px) {
-    margin-top: 15rem; /* menos espacio en móvil */
-    padding: 2rem;
+  @media (max-width: 767px) {
+    margin-top: 12rem; /* más espacio arriba en móvil */
+    padding: 0 2rem;  /* más espacio a los lados en móvil */
   }
+
+  max-width: 1200px;
+  margin-left: auto;
+  margin-right: auto;
+  padding: 0 1rem;
 `;
 
-// Componente para avatar con inicial
+
+// AvatarInicial aquí (igual que tienes)
+
 const AvatarInicial = ({ nombre, size = 32 }) => {
   const inicial = nombre ? nombre.charAt(0).toUpperCase() : "?";
 
@@ -86,21 +93,41 @@ const Dashboard = () => {
   const fotoPerfilUrl = useSelector(selectFotoPerfilUrl);
 
   const [showDropdown, setShowDropdown] = useState(false);
-  const [sidebarOpen, setSidebarOpen] = useState(window.innerWidth > 768);
+  const [sidebarOpen, setSidebarOpen] = useState(() => window.innerWidth > 768);
   const dropdownRef = useRef(null);
   const sidebarRef = useRef(null);
   const toggleRef = useRef(null);
 
   // Detectar si es escritorio o móvil
-  const [isDesktop, setIsDesktop] = useState(window.innerWidth > 768);
+  const [isDesktop, setIsDesktop] = useState(() => window.innerWidth > 768);
 
   useEffect(() => {
+  if (location.pathname === "/dashboard") {
+    if (rolLower === "docente" || rolLower === "estudiante") {
+      navigate("/dashboard/calificaciones", { replace: true });
+    }
+  }
+}, [rolLower, location.pathname, navigate]);
+
+  useLayoutEffect(() => {
     const handleResize = () => {
       setIsDesktop(window.innerWidth > 768);
     };
+
     window.addEventListener("resize", handleResize);
+    handleResize(); // Forzar actualización inicial
+
     return () => window.removeEventListener("resize", handleResize);
   }, []);
+
+  // Abrir o cerrar sidebar automáticamente al cambiar isDesktop
+  useEffect(() => {
+    if (isDesktop) {
+      setSidebarOpen(true); // abierto en desktop
+    } else {
+      setSidebarOpen(false); // cerrado en móvil
+    }
+  }, [isDesktop]);
 
   // Cargar modoOscuro desde persistencia o backend
   useEffect(() => {
@@ -206,6 +233,7 @@ const Dashboard = () => {
           color: "white",
           display: "flex",
           flexDirection: "column",
+          
         }}
       >
         <SidebarMenu isSidebarOpen={sidebarOpen} />
@@ -321,23 +349,26 @@ const Dashboard = () => {
         </div>
       </div>
 
-      <main
-        className={`dashboard-main  ${sidebarOpen ? "" : "sidebar-closed"}`}
-        style={{
-          marginLeft: mainMarginLeft,
-          transition: "margin-left 0.3s ease",
-          position: "relative",  // importante para que el main esté encima del fondo pero debajo de header y sidebar
-          zIndex: 1,
-          minHeight: "calc(100vh - 4rem)",
-          backgroundColor: modoOscuro ? "#181818" : "#fdfdfdff",
-          color: modoOscuro ? "white" : "black",
-          maxWidth: "100%",
-          width: "auto",
-          overflowX: "hidden",
-          padding: "2rem",
-          boxSizing: "border-box",
-        }}
-      >
+   <main
+  className={`dashboard-main  ${sidebarOpen ? "" : "sidebar-closed"}`}
+  style={{
+    marginLeft: mainMarginLeft,
+    transition: "margin-left 0.3s ease",
+    position: "relative",
+    zIndex: 1,
+    minHeight: "calc(100vh - 4rem)",
+    backgroundColor: modoOscuro ? "#181818" : "#fdfdfdff",
+    color: modoOscuro ? "white" : "black",
+    maxWidth: "none",       // cambiar esto
+    width: "100%",          // agregar esto
+    overflowX: "hidden",
+    padding: "1rem 1.5rem", // ajustar padding
+    paddingTop: "4rem",     // para no tapar contenido con header fijo
+    boxSizing: "border-box",
+    
+  }}
+>
+
         {mostrarBienvenida && (
           <DashboardWelcome role="region" aria-live="polite" className="dashboard-welcome">
             <h1 className="text-2xl sm:text-3xl font-bold mb-6 text-center">
@@ -347,9 +378,7 @@ const Dashboard = () => {
             {rolLower === "administrador" && (
               <div className="flex flex-wrap justify-center gap-6 w-full max-w-screen-xl px-4 md:px-8 mx-auto">
                 <DashboardMenuCards className="flex-grow min-w-[280px]" />
-                <CardTransacciones modoOscuro={modoOscuro} className="flex-grow min-w-[280px]" />
-                <CardInscripcionesConfirmadas modoOscuro={modoOscuro} className="flex-grow min-w-[280px]" />
-                <CardUsuariosKPI modoOscuro={modoOscuro} className="flex-grow min-w-[280px]" />
+                <DashboardCards modoOscuro={modoOscuro} />
               </div>
             )}
           </DashboardWelcome>

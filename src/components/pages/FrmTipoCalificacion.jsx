@@ -1,10 +1,10 @@
 import React, { useEffect, useState, useRef } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import styled, { ThemeProvider } from "styled-components";
-import { Eye, EyeOff, Edit2 } from "lucide-react";
+import { Eye, EyeOff, Edit2, ArrowLeftCircle } from "lucide-react";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-
+import { useNavigate } from "react-router-dom";
 import fotoPerfilService from "../../services/Profile";
 import usuarioService from "../../services/Usuario";
 import contactoService from "../../services/Contacto";
@@ -362,8 +362,36 @@ useEffect(() => {
       cancelarEdicion();
     }
   };
-
+   const navigate = useNavigate();
+  const handleVolver = () => {
+    navigate("/dashboard/aulas"); // Ajusta la ruta aquí
+  };
   return (
+     <>
+      <style>{`
+        /* Estilos para el botón flotante */
+        .btn-volver {
+          position: fixed;
+          bottom: 20px;
+          right: 20px;
+          background-color: ${modoOscuro ? "#334155" : "#f3f4f6"};
+          color: ${modoOscuro ? "#a5f3fc" : "#2563eb"};
+          border: none;
+          border-radius: 50%;
+          padding: 0.5rem;
+          cursor: pointer;
+          box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transition: background-color 0.2s ease;
+          z-index: 1000;
+        }
+        .btn-volver:hover {
+          background-color: ${modoOscuro ? "#475569" : "#60a5fa"};
+          color: white;
+        }
+      `}</style>
     <ThemeProvider theme={{ dark: modoOscuro }}>
       <Container>
         <Title>Perfil de {persona || usuario}</Title>
@@ -485,6 +513,16 @@ useEffect(() => {
         <ToastContainer position="bottom-right" autoClose={3000} hideProgressBar />
       </Container>
     </ThemeProvider>
+     {/* Botón flotante volver */}
+      <button
+        className="btn-volver"
+        onClick={handleVolver}
+        aria-label="Volver"
+        title="Volver"
+      >
+        <ArrowLeftCircle size={24} />
+      </button>
+    </>
   );
 };
 

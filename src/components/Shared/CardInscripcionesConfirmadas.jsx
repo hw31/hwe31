@@ -66,28 +66,30 @@ const CardInscripcionesConfirmadas = ({ modoOscuro }) => {
   return (
     <>
       <style>{`
-        .card-inscripciones {
-          user-select: none;
-          min-height: 220px;
-          max-height: 220px;
-          width: 100%;
-          max-width: 450px;
-          display: flex;
-          position: relative;
-          right: -15px;
-          flex-direction: column;
-          justify-content: space-between;
-          background-color: var(--bg-color);
-          transition: right 0.3s ease;
-        }
-        @media (max-width: 640px) {
-          .card-inscripciones {
-            right: 0;
-            max-width: 90vw;
-            width: 100%;
-          }
-        }
-      `}</style>
+  .card-inscripciones {
+    user-select: none;
+    min-height: 220px;
+    max-height: 220px;
+    width: 100%;
+     max-width: none; /* sin límite */
+    margin: 0; /* quitar centrado para que ocupe todo el ancho */
+    display: flex;
+    position: relative;
+    right: 0;
+    flex-direction: column;
+    justify-content: space-between;
+    background-color: var(--bg-color);
+    transition: right 0.3s ease;
+  }
+  @media (max-width: 640px) {
+    .card-inscripciones {
+      right: 0;
+      max-width: 90vw;
+      width: 100%;
+    }
+  }
+`}</style>
+
 
       <div
         className={`card-inscripciones rounded-2xl shadow-md p-2 sm:p-3 mx-auto border transition-colors overflow-hidden ${

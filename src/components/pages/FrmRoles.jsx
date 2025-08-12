@@ -8,7 +8,8 @@ import ContadoresBase from "../Shared/Contadores";
 import ModalBase from "../Shared/ModalBase";
 import FormularioBase from "../Shared/FormularioBase";
 import { FaCheckCircle, FaTimesCircle } from "react-icons/fa";
-
+import { ArrowLeftCircle } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 const FrmRoles = () => {
   const modoOscuro = useSelector((state) => state.theme.modoOscuro);
 
@@ -185,8 +186,36 @@ const FrmRoles = () => {
         ),
     },
   ];
-
+ const navigate = useNavigate();
+  const handleVolver = () => {
+    navigate("/dashboard/aulas"); // Ajusta la ruta aquí
+  };
   return (
+      <>
+      <style>{`
+        /* Estilos para el botón flotante */
+        .btn-volver {
+          position: fixed;
+          bottom: 20px;
+          right: 20px;
+          background-color: ${modoOscuro ? "#334155" : "#f3f4f6"};
+          color: ${modoOscuro ? "#a5f3fc" : "#2563eb"};
+          border: none;
+          border-radius: 50%;
+          padding: 0.5rem;
+          cursor: pointer;
+          box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transition: background-color 0.2s ease;
+          z-index: 1000;
+        }
+        .btn-volver:hover {
+          background-color: ${modoOscuro ? "#475569" : "#60a5fa"};
+          color: white;
+        }
+      `}</style>
     <div className="mx-auto max-w-[900px] w-full rounded-2xl p-6">
       <div
         className={`w-full px-4 rounded-2xl shadow-md p-6 ${
@@ -313,6 +342,16 @@ const FrmRoles = () => {
         </ModalBase>
       </div>
     </div>
+     {/* Botón flotante volver */}
+                  <button
+                    className="btn-volver"
+                    onClick={handleVolver}
+                    aria-label="Volver"
+                    title="Volver"
+                  >
+                    <ArrowLeftCircle size={24} />
+                  </button>
+                </>
   );
 };
 
