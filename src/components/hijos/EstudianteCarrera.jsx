@@ -14,7 +14,7 @@ import ContadoresBase from "../Shared/Contadores";
 import ModalBase from "../Shared/ModalBase";
 import FormularioBase from "../Shared/FormularioBase";
 
-const EstudianteCarrera = () => {
+const EstudianteCarrera = ({ busqueda = "", onResultados }) => {
   const modoOscuro = useSelector((state) => state.theme.modoOscuro);
 
   const [datos, setDatos] = useState([]);
@@ -184,6 +184,23 @@ const EstudianteCarrera = () => {
     });
   };
 
+  // Filtrado global de datos para la tabla, según busqueda (prop)
+  const datosFiltrados = datos.filter((item) => {
+    const usuarioMatch = item.usuario?.toLowerCase().includes(busqueda.toLowerCase());
+    const carreraMatch = item.nombreCarrera?.toLowerCase().includes(busqueda.toLowerCase());
+    return usuarioMatch || carreraMatch;
+  });
+
+  // Paginar sobre datos filtrados
+  const datosPaginados = datosFiltrados.slice(
+    (paginaActual - 1) * filasPorPagina,
+    paginaActual * filasPorPagina
+  );
+
+  const totalPaginas = Math.ceil(datosFiltrados.length / filasPorPagina);
+  const activos = datosFiltrados.filter((d) => d.iD_Estado === 1).length;
+
+  // Autocompletados para modal (sin relación directa con la búsqueda global)
   const usuariosFiltrados = usuarios.filter((u) =>
     u.usuario.toLowerCase().includes(busquedaUsuario.toLowerCase())
   );
@@ -191,9 +208,17 @@ const EstudianteCarrera = () => {
     c.nombreCarrera.toLowerCase().includes(busquedaCarrera.toLowerCase())
   );
 
-  const datosPaginados = datos.slice((paginaActual - 1) * filasPorPagina, paginaActual * filasPorPagina);
-  const totalPaginas = Math.ceil(datos.length / filasPorPagina);
-  const activos = datos.filter((d) => d.iD_Estado === 1).length;
+  // Avisar al padre si hay resultados en tabla filtrada
+  useEffect(() => {
+    if (typeof onResultados === "function") {
+      onResultados(datosFiltrados.length > 0);
+    }
+  }, [datosFiltrados, onResultados]);
+
+  // Si no hay resultados y no está cargando, no mostrar nada
+  if (!loading && datosFiltrados.length === 0) {
+    return null;
+  }
 
   const columnas = [
     {
@@ -232,13 +257,13 @@ const EstudianteCarrera = () => {
   return (
     <>
       <h2 className={`text-2xl font-bold mb-4 ${modoOscuro ? "text-white" : "text-gray-800"}`}>
-        Estudiantes - Carreras
+        Estudiantes Carreras
       </h2>
 
       <ContadoresBase
         activos={activos}
-        inactivos={datos.length - activos}
-        total={datos.length}
+        inactivos={datosFiltrados.length - activos}
+        total={datosFiltrados.length}
         modoOscuro={modoOscuro}
         onNuevo={abrirModalNuevo}
       />

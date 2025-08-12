@@ -6,6 +6,7 @@ const ContadoresBase = ({
   inactivos = 0,
   total = 0,
   onNuevo = () => {},
+  mostrarNuevo = true, // 👈 nuevo prop
   texto = "elementos",
   colorNuevo = "#1976d2",
   colorNuevoHover = "#115293",
@@ -38,14 +39,6 @@ const ContadoresBase = ({
             color: "white",
             boxShadow: "0 3px 8px rgba(2, 79, 33, 0.4)",
           }}
-          onMouseEnter={(e) =>
-            (e.currentTarget.style.background =
-              "linear-gradient(135deg, #0c0b0bff,  #084b27 )")
-          }
-          onMouseLeave={(e) =>
-            (e.currentTarget.style.background =
-              "linear-gradient(135deg, #127f45ff, #0c0b0bff)")
-          }
         >
           <FaUserCheck /> Activos
           <div style={{ fontSize: 26, marginLeft: 8 }}>{activos}</div>
@@ -59,14 +52,6 @@ const ContadoresBase = ({
             color: "white",
             boxShadow: "0 3px 8px rgba(244,67,54,0.4)",
           }}
-          onMouseEnter={(e) =>
-            (e.currentTarget.style.background =
-              "linear-gradient(135deg, #101010ff, #de1717ff)")
-          }
-          onMouseLeave={(e) =>
-            (e.currentTarget.style.background =
-              "linear-gradient(135deg, #ef5350, #0c0b0bff)")
-          }
         >
           <FaUserTimes /> Inactivos
           <div style={{ fontSize: 26, marginLeft: 8 }}>{inactivos}</div>
@@ -80,14 +65,6 @@ const ContadoresBase = ({
             color: "white",
             boxShadow: "0 3px 8px rgba(25,118,210,0.4)",
           }}
-          onMouseEnter={(e) =>
-            (e.currentTarget.style.background =
-              "linear-gradient(135deg, #20262dff, #0d47a1)")
-          }
-          onMouseLeave={(e) =>
-            (e.currentTarget.style.background =
-              "linear-gradient(135deg, #0960a8ff, #20262dff)")
-          }
         >
           <FaUser /> Total
           <div style={{ fontSize: 26, marginLeft: 8 }}>{total}</div>
@@ -95,31 +72,33 @@ const ContadoresBase = ({
       </div>
 
       {/* Botón "Nuevo" */}
-      <button
-        onClick={onNuevo}
-        style={{
-          backgroundColor: colorNuevo,
-          border: "none",
-          color: "#fff",
-          padding: "12px 22px",
-          borderRadius: 8,
-          cursor: "pointer",
-          fontWeight: "600",
-          fontSize: 20,
-          display: "flex",
-          alignItems: "center",
-          gap: 10,
-          userSelect: "none",
-          transition: "background-color 0.3s ease",
-          whiteSpace: "nowrap",
-          marginTop: "8px",
-        }}
-        onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = colorNuevoHover)}
-        onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = colorNuevo)}
-        type="button"
-      >
-        <FaPlus /> Nuevo
-      </button>
+      {mostrarNuevo && (
+        <button
+          onClick={onNuevo}
+          style={{
+            backgroundColor: colorNuevo,
+            border: "none",
+            color: "#fff",
+            padding: "12px 22px",
+            borderRadius: 8,
+            cursor: "pointer",
+            fontWeight: "600",
+            fontSize: 20,
+            display: "flex",
+            alignItems: "center",
+            gap: 10,
+            userSelect: "none",
+            transition: "background-color 0.3s ease",
+            whiteSpace: "nowrap",
+            marginTop: "8px",
+          }}
+          onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = colorNuevoHover)}
+          onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = colorNuevo)}
+          type="button"
+        >
+          <FaPlus /> Nuevo
+        </button>
+      )}
     </div>
   );
 };

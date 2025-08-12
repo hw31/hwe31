@@ -11,7 +11,7 @@ import ModalBase from "../../shared/ModalBase";
 import BuscadorBase from "../../shared/BuscadorBase";
 import ContadoresBase from "../../shared/ContadoresBase";
 
-const FrmUsuariosRoles = () => {
+const FrmUsuariosRoles = ({ busqueda, onResultados }) => {
   const modoOscuro = useSelector((state) => state.tema.modoOscuro);
 
   const [usuariosRoles, setUsuariosRoles] = useState([]);
@@ -126,7 +126,15 @@ const FrmUsuariosRoles = () => {
   const total = usuariosRoles.length;
   const activos = usuariosRoles.filter((u) => u.idEstado === 1).length;
   const inactivos = usuariosRoles.filter((u) => u.idEstado === 2).length;
-
+  // Informar al padre si hay resultados filtrados
+useEffect(() => {
+  if (typeof onResultados === "function") {
+    onResultados(datosFiltrados.length > 0);
+  }
+}, [datosFiltrados, onResultados]);
+if (datosFiltrados.length === 0) {
+  return null; // o podrías retornar un mensaje
+}
   return (
     <div className="p-4 max-w-6xl mx-auto">
       {/* Contadores y botón */}
