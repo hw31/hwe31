@@ -5,9 +5,27 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { FaFileExcel, FaFilePdf } from "react-icons/fa";
 
-const ExportButtons = ({ data = [], fileName = "export", titulo = "" }) => {
+const Exportbtninscripcion = ({ data = [], fileName = "export", titulo = "" }) => {
+  // Limpiar datos para exportar (quitar campos no deseados)
+  const prepararDatosParaExportar = (data) =>
+    data.map(({ 
+      estadoIcono,
+      idCreador,
+      idModificador,
+      modificadorfechaModificacion,
+      idEstado,
+      idInscripcion,
+      idUsuario,
+      idPeriodoAcademico,
+      modificador,
+      fechaModificacion,
+      ...rest 
+    }) => rest);
+
+  const dataParaExportar = prepararDatosParaExportar(data);
+
   const exportToExcel = async () => {
-    if (!data.length) {
+    if (!dataParaExportar.length) {
       alert("No hay datos para exportar");
       return;
     }
@@ -15,16 +33,16 @@ const ExportButtons = ({ data = [], fileName = "export", titulo = "" }) => {
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet("Calificaciones");
 
-    const columns = Object.keys(data[0]);
+    const columns = Object.keys(dataParaExportar[0]);
 
-    // Título fusionado
+    // FILA 1: título fusionado
     worksheet.mergeCells(1, 1, 1, columns.length);
     const titleCell = worksheet.getCell(1, 1);
     titleCell.value = titulo || fileName;
     titleCell.alignment = { horizontal: "center", vertical: "middle" };
     titleCell.font = { size: 16, bold: true, color: { argb: "FF000080" } };
 
-    // Encabezados en fila 3
+    // FILA 3: encabezados
     columns.forEach((col, index) => {
       const cell = worksheet.getCell(3, index + 1);
       cell.value = col;
@@ -42,19 +60,19 @@ const ExportButtons = ({ data = [], fileName = "export", titulo = "" }) => {
         right: { style: "thin" },
       };
 
-      // Ajustar ancho de columna según contenido más largo (encabezado o datos)
+      // Ajustar ancho columna según contenido más largo
       const maxLength = Math.max(
         col.length,
-        ...data.map((item) =>
+        ...dataParaExportar.map((item) =>
           item[col] ? item[col].toString().length : 0
         )
       );
 
-      worksheet.getColumn(index + 1).width = maxLength + 2; // Añade un poco de espacio extra
+      worksheet.getColumn(index + 1).width = maxLength + 2; // Espacio extra
     });
 
-    // Datos desde fila 4
-    data.forEach((item, rowIndex) => {
+    // FILAS DE DATOS desde fila 4
+    dataParaExportar.forEach((item, rowIndex) => {
       columns.forEach((col, colIndex) => {
         const cell = worksheet.getCell(rowIndex + 4, colIndex + 1);
         cell.value = item[col];
@@ -84,19 +102,18 @@ const ExportButtons = ({ data = [], fileName = "export", titulo = "" }) => {
   };
 
   const exportToPDF = () => {
-    if (!data.length) {
+    if (!dataParaExportar.length) {
       alert("No hay datos para exportar");
       return;
     }
 
     const doc = new jsPDF();
 
-    const columns = Object.keys(data[0]).map((key) => ({
+    const columns = Object.keys(dataParaExportar[0]).map((key) => ({
       header: key,
       dataKey: key,
     }));
 
-    // Ajustar columnas para que el texto se ajuste y no se corten
     const columnStyles = {};
     columns.forEach(({ dataKey }) => {
       columnStyles[dataKey] = { cellWidth: "wrap" };
@@ -104,7 +121,7 @@ const ExportButtons = ({ data = [], fileName = "export", titulo = "" }) => {
 
     autoTable(doc, {
       columns,
-      body: data,
+      body: dataParaExportar,
       styles: { fontSize: 8, cellWidth: "wrap" },
       headStyles: { fillColor: [0, 123, 255] },
       margin: { top: 25, left: 10, right: 10 },
@@ -120,26 +137,26 @@ const ExportButtons = ({ data = [], fileName = "export", titulo = "" }) => {
 
   return (
     <div className="flex justify-end gap-3 mb-4">
-      <button
-        onClick={exportToExcel}
-        className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition"
-        title="Exportar a Excel"
-        type="button"
-      >
-        <FaFileExcel />
-        Exportar Excel
-      </button>
-      <button
-        onClick={exportToPDF}
-        className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition"
-        title="Exportar a PDF"
-        type="button"
-      >
-        <FaFilePdf />
-        Exportar PDF
-      </button>
+ <button
+  onClick={exportToExcel}
+  className="flex items-center gap-2 px-2 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition"
+  title="Exportar a Excel"
+  type="button"
+>
+  <FaFileExcel size={25} /> {/* Ícono más grande */}
+</button>
+
+<button
+  onClick={exportToPDF}
+  className="flex items-center gap-2 px-2 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition"
+  title="Exportar a PDF"
+  type="button"
+>
+  <FaFilePdf size={25} /> {/* Ícono más grande */}
+</button>
+
     </div>
   );
 };
 
-export default ExportButtons;
+export default Exportbtninscripcion;

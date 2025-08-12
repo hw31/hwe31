@@ -10,7 +10,8 @@ import tipoCalificacionService from "../../services/TipoCalificacion";
 import { listarPeriodosAcademicos } from "../../services/PeriodoAcademico";
 import FilaEstudiante from "./FilaEstudiante";
 import ExportButtons from "./ExportButtons";
-
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 const Calificacion = ({
   filtroGeneral,
   onMostrarListaEstudiantes,
@@ -218,7 +219,7 @@ const Calificacion = ({
     return calif ? String(calif.calificacion) : "";
   };
 
-  const guardarNota = async (idInscripcion, idTipoCalificacion, nota) => {
+const guardarNota = async (idInscripcion, idTipoCalificacion, nota) => {
   const clave = `${idInscripcion}_${idTipoCalificacion}`;
   if (nota === "") return;
 
@@ -229,6 +230,7 @@ const Calificacion = ({
     if (isNaN(notaNum) || notaNum < 0) throw new Error("Nota inválida");
     if (!idUsuario) throw new Error("Usuario no autenticado");
 
+    // Buscar si la calificación ya existe para actualizar
     const califExistente = calificaciones.find(
       (c) =>
         c.idInscripcion === idInscripcion &&
@@ -238,6 +240,7 @@ const Calificacion = ({
         c.idCalificacion !== null
     );
 
+    // Construir payload estándar
     const payload = {
       IdInscripcion: idInscripcion,
       IdUsuarioDocente: idUsuario,
@@ -249,6 +252,7 @@ const Calificacion = ({
     };
 
     if (califExistente) {
+      // Si existe, actualizar
       payload.IdCalificacion = califExistente.idCalificacion;
 
       await calificacionService.actualizarCalificaciones(payload);
@@ -260,10 +264,16 @@ const Calificacion = ({
             : c
         )
       );
+
+      toast.success("✅ Nota actualizada correctamente");
     } else {
+      // Insertar nueva calificación
       const res = await calificacionService.insertarCalificaciones(payload);
-      const nuevoId = res.idCalificacion || res.data?.idCalificacion;
-      if (!nuevoId) throw new Error("No se recibió idCalificacion tras insertar");
+
+      // Extraer el nuevo id desde la propiedad correcta (numero)
+      const nuevoId = res.idCalificacion || res.data?.idCalificacion || res.numero || res.data?.numero;
+
+      if (!nuevoId) throw new Error("No se recibió id de calificación tras insertar");
 
       setCalificaciones((prev) => [
         ...prev,
@@ -273,9 +283,12 @@ const Calificacion = ({
           idTipoCalificacion,
           idMateria: materiaSeleccionada.idMateria,
           calificacion: notaNum,
-          // otros campos opcionales si quieres
+          // puedes agregar más campos si hace falta
         },
       ]);
+
+      // Mostrar mensaje del backend si existe, sino mensaje por defecto
+      toast.success(`✅ ${res.mensaje || "Nota guardada correctamente"}`);
     }
 
     setStatusGuardado((s) => ({ ...s, [clave]: "ok" }));
@@ -289,6 +302,7 @@ const Calificacion = ({
   } catch (error) {
     console.error("Error guardando nota:", error);
     setStatusGuardado((s) => ({ ...s, [clave]: "error" }));
+    toast.error(`❌ Error guardando nota: ${error.message || error}`);
     setTimeout(() => {
       setStatusGuardado((s) => {
         const copia = { ...s };
@@ -715,7 +729,19 @@ const Calificacion = ({
           </button>
         </div>
       )}
-    </>
+      <ToastContainer
+      position="bottom-right"
+      autoClose={3000}
+      hideProgressBar={false}
+      newestOnTop={false}
+      closeOnClick
+      pauseOnFocusLoss
+      draggable
+      pauseOnHover
+      theme={modoOscuro ? "dark" : "light"}
+    />
+  </>
+
   );
 };
 
