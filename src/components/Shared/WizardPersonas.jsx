@@ -1,584 +1,778 @@
-import React, { useState } from "react";
-import Swal from "sweetalert2";
+import React, { useState, useEffect } from 'react';
+import Swal from 'sweetalert2';
+import { useSelector } from 'react-redux';
 
-import personaService from "../../services/Persona";
-import contactoService from "../../services/Contacto";
-import direccionService from "../../services/Direccion";
-import tituloService from "../../services/TitulosAcademicos";
-import usuarioService from "../../services/Usuario";
-import usuariosRolesService from "../../services/UsuariosRoles";
-import estudianteCarreraService from "../../services/EstudiantesCarreras";
+import personaCompletaService from '../../services/insertarPersonaCompleta';
+import catalogoService from '../../services/Catalogos';
+import rolesService from '../../services/Roles';
+import carrerasService from '../../services/Carreras';
 
-import ModalBase from "../Shared/ModalBase";
-import FormularioBase from "../Shared/FormularioBase";
+export default function FormularioCompleto() {
+  const { modoOscuro } = useSelector(state => state.theme);
+  const { idUsuario } = useSelector(state => state.auth.usuario);
 
-const WizardForm = ({ isOpen, onClose, modoOscuro }) => {
-  const [pasoActual, setPasoActual] = useState(1);
+  // Catálogos
+  const [generos, setGeneros] = useState([]);
+  const [tiposDocumento, setTiposDocumento] = useState([]);
+  const [nacionalidades, setNacionalidades] = useState([]);
+  const [tiposDireccion, setTiposDireccion] = useState([]);
+  const [tiposContacto, setTiposContacto] = useState([]);
+  const [nivelesAcademicos, setNivelesAcademicos] = useState([]);
+  const [roles, setRoles] = useState([]);
+  const [carreras, setCarreras] = useState([]);
+  const [turnos, setTurnos] = useState([]);
+  const [turnoSeleccionado, setTurnoSeleccionado] = useState('');
 
-  // Estado persona completo según JSON esperado
+  // Estados formulario
   const [persona, setPersona] = useState({
-    idPersona: 0,
-    primerNombre: "",
-    segundoNombre: "",
-    primerApellido: "",
-    segundoApellido: "",
-    generoId: 0,
-    tipoDocumentoId: 0,
-    numeroDocumento: "",
-    nacionalidadId: 0,
-    nivelAcademicoId: 0,
-    idEstado: 1, // activo por defecto
+    primerNombre: '',
+    segundoNombre: '',
+    primerApellido: '',
+    segundoApellido: '',
+    generoId: '',
+    tipoDocumentoId: '',
+    numeroDocumento: '',
+    nacionalidadId: '',
+    idEstado: 1,
   });
 
-  // Listas para contactos, direcciones y títulos
-  const [contactos, setContactos] = useState([]);
-  const [direcciones, setDirecciones] = useState([]);
-  const [titulos, setTitulos] = useState([]);
+  const [direccion, setDireccion] = useState({
+    idTipoDireccion: '',
+    detalleDireccion: '',
+    codigoPostal: '',
+    municipio: '',
+    departamento: '',
+    referencia: '',
+    idEstado: 1,
+  });
+
+  const [contactosValores, setContactosValores] = useState({});
+
+  const [titulosPersonales, setTitulosPersonales] = useState([]);
 
   const [usuario, setUsuario] = useState({
-    idUsuario: 0,
-    usuario: "",
-    password: "",
+    usuario: '',
+    contrasena: '',
+    idEstado: 1,
   });
 
-  const [rolAsignado, setRolAsignado] = useState({
-    idUsuarioRol: 0,
-    idUsuario: 0,
-    idRol: "",
-    idEstado: "",
+  const [rolUsuario, setRolUsuario] = useState({
+    idRol: '',
+    idEstado: 1,
   });
 
-  const [carreraAsignada, setCarreraAsignada] = useState({
-    iD_EstudianteCarrera: 0,
-    iD_Usuario: 0,
-    iD_Carrera: "",
-    fecha_Inicio: "",
-    fecha_Fin: "",
-    iD_Estado: "",
+  const [estudianteCarrera, setEstudianteCarrera] = useState({
+    idCarrera: '',
+    fechaInicio: new Date().toISOString().slice(0, 10),
+    fechaFin: new Date(new Date().setFullYear(new Date().getFullYear() + 4)).toISOString().slice(0, 10),
+    idEstado: 1,
   });
 
-  const [loading, setLoading] = useState(false);
-  const [formError, setFormError] = useState("");
-
-  const siguientePaso = () => {
-    if (pasoActual === 6 && Number(rolAsignado.idRol) !== 3) {
-      setPasoActual(8);
-    } else {
-      setPasoActual((p) => p + 1);
-    }
+  const formatearFecha = (fecha) => {
+    if (!fecha) return "-";
+    return new Date(fecha).toLocaleDateString("es-NI", {
+      year: "numeric",
+      month: "short",
+      day: "2-digit",
+    });
   };
 
-  const anteriorPaso = () => {
-    if (pasoActual === 8) {
-      setPasoActual(6);
-    } else {
-      setPasoActual((p) => Math.max(p - 1, 1));
-    }
-  };
-
-  // Guardar persona ajustado
-  const guardarPersona = async () => {
-    if (!persona.primerNombre || !persona.primerApellido) {
-      setFormError("Primer nombre y primer apellido son obligatorios.");
-      return false;
-    }
-    setLoading(true);
-    try {
-      let res;
-      if (persona.idPersona && persona.idPersona > 0) {
-        res = await personaService.actualizarPersona(persona);
-      } else {
-        res = await personaService.insertarPersona(persona);
-      }
-      if (res.success || res.numero > 0) {
-        setPersona((prev) => ({ ...prev, idPersona: res.numero || prev.idPersona }));
-        return true;
-      } else {
-        setFormError(res.mensaje || "Error al guardar persona.");
-        return false;
-      }
-    } catch (error) {
-      setFormError(error.message || "Error inesperado.");
-      return false;
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Guardar contactos, direcciones, títulos (igual que antes)
-  const guardarContactos = async () => {
-    setLoading(true);
-    try {
-      for (const contacto of contactos) {
-        const datos = { ...contacto, idPersona: persona.idPersona };
-        if (contacto.idContacto && contacto.idContacto > 0) {
-          await contactoService.actualizarContacto(datos);
+  // Carga inicial de catálogos y roles
+  useEffect(() => {
+    async function cargarCatalogos() {
+      try {
+        const resCatalogo = await catalogoService.listarCatalogo();
+        if (resCatalogo && Array.isArray(resCatalogo.resultado)) {
+          setGeneros(resCatalogo.resultado.filter(c => c.idTipoCatalogo === 1));
+          setTiposDocumento(resCatalogo.resultado.filter(c => c.idTipoCatalogo === 3));
+          setNacionalidades(resCatalogo.resultado.filter(c => c.idTipoCatalogo === 2));
         } else {
-          await contactoService.insertarContacto(datos);
+          Swal.fire("Error", "No se pudo cargar el catálogo general", "error");
         }
-      }
-      return true;
-    } catch (error) {
-      setFormError(error.message || "Error guardando contactos.");
-      return false;
-    } finally {
-      setLoading(false);
-    }
-  };
 
-  const guardarDirecciones = async () => {
-    setLoading(true);
-    try {
-      for (const direccion of direcciones) {
-        const datos = { ...direccion, idPersona: persona.idPersona };
-        if (direccion.iD_Direccion && direccion.iD_Direccion > 0) {
-          await direccionService.actualizarDireccion(datos);
+        const resDireccion = await catalogoService.filtrarPorTipoCatalogo(9);
+        setTiposDireccion(Array.isArray(resDireccion.resultado) ? resDireccion.resultado : []);
+
+        const resContacto = await catalogoService.filtrarPorTipoCatalogo(7);
+        setTiposContacto(Array.isArray(resContacto.resultado) ? resContacto.resultado : []);
+
+        const resNivel = await catalogoService.filtrarPorTipoCatalogo(6);
+        setNivelesAcademicos(Array.isArray(resNivel.resultado) ? resNivel.resultado : []);
+
+        const resTurnos = await catalogoService.filtrarPorTipoCatalogo(10);
+        setTurnos(Array.isArray(resTurnos.resultado) ? resTurnos.resultado : []);
+
+        const resRoles = await rolesService.listarRoles();
+        if (resRoles && Array.isArray(resRoles.resultado)) {
+          const rolesMapeados = resRoles.resultado
+            .filter(r => r.activo)
+            .map(r => ({
+              id: r.iD_Rol,
+              descripcion: r.nombre_Rol,
+            }));
+          setRoles(rolesMapeados);
         } else {
-          await direccionService.insertarDireccion(datos);
+          Swal.fire("Error", "No se pudo cargar los roles", "error");
         }
-      }
-      return true;
-    } catch (error) {
-      setFormError(error.message || "Error guardando direcciones.");
-      return false;
-    } finally {
-      setLoading(false);
-    }
-  };
 
-  const guardarTitulos = async () => {
-    setLoading(true);
-    try {
-      for (const titulo of titulos) {
-        const datos = { ...titulo, idPersona: persona.idPersona };
-        if (titulo.iD_Titulo && titulo.iD_Titulo > 0) {
-          await tituloService.actualizarTituloAcademico(datos);
+        const resCarreras = await carrerasService.listarCarreras();
+        if (resCarreras && Array.isArray(resCarreras)) {
+          const carrerasAdaptadas = resCarreras.map(c => ({
+            id: c.iD_Carrera,
+            descripcion: c.nombreCarrera,
+            codigoCarrera: c.codigoCarrera,
+            activo: c.activo,
+          }));
+          setCarreras(carrerasAdaptadas);
         } else {
-          await tituloService.insertarTituloAcademico(datos);
+          Swal.fire("Error", "No se pudo cargar las carreras", "error");
         }
+      } catch (error) {
+        Swal.fire("Error", "Error cargando catálogos: " + (error.message || error), "error");
       }
-      return true;
-    } catch (error) {
-      setFormError(error.message || "Error guardando títulos académicos.");
-      return false;
-    } finally {
-      setLoading(false);
     }
+    cargarCatalogos();
+  }, []);
+
+  // Inicializar títulos personales cuando cambian los niveles académicos
+  useEffect(() => {
+    if (nivelesAcademicos.length > 0) {
+      const inicial = nivelesAcademicos.map(t => ({
+        idCatalogo: t.idCatalogo,
+        descripcion: t.descripcionCatalogo,
+        seleccionado: false,
+        especialidad: '',
+      }));
+      setTitulosPersonales(inicial);
+    }
+  }, [nivelesAcademicos]);
+
+  // Manejadores para títulos
+  const toggleSeleccionTitulo = (idCatalogo) => {
+    setTitulosPersonales(prev => prev.map(t =>
+      t.idCatalogo === idCatalogo
+        ? {
+          ...t,
+          seleccionado: !t.seleccionado,
+          especialidad: (!t.seleccionado && idCatalogo === 19) ? 'ninguno' : t.especialidad
+        }
+        : t
+    ));
   };
 
-  // Guardar usuario
-  const guardarUsuario = async () => {
-    if (!usuario.usuario || !usuario.password) {
-      setFormError("Usuario y contraseña son obligatorios.");
-      return false;
-    }
-    setLoading(true);
-    try {
-      let res;
-      if (usuario.idUsuario && usuario.idUsuario > 0) {
-        res = await usuarioService.actualizarUsuario(usuario);
-      } else {
-        res = await usuarioService.insertarUsuario(usuario);
-      }
-      if (res.success || res.numero > 0) {
-        setUsuario((prev) => ({ ...prev, idUsuario: res.numero || prev.idUsuario }));
-        return true;
-      } else {
-        setFormError(res.mensaje || "Error guardando usuario.");
-        return false;
-      }
-    } catch (error) {
-      setFormError(error.message || "Error inesperado.");
-      return false;
-    } finally {
-      setLoading(false);
-    }
+  const handleEspecialidadChange = (idCatalogo, value) => {
+    setTitulosPersonales(prev => prev.map(t =>
+      t.idCatalogo === idCatalogo ? { ...t, especialidad: value } : t
+    ));
   };
 
-  // Guardar rol
-  const guardarRol = async () => {
-    if (!rolAsignado.idUsuario || !rolAsignado.idRol || !rolAsignado.idEstado) {
-      setFormError("Debe asignar rol y estado.");
-      return false;
-    }
-    setLoading(true);
-    try {
-      let res;
-      if (rolAsignado.idUsuarioRol && rolAsignado.idUsuarioRol > 0) {
-        res = await usuariosRolesService.actualizarUsuarioRol(rolAsignado);
-      } else {
-        res = await usuariosRolesService.insertarUsuarioRol(rolAsignado);
-      }
-      if (res.success || res.numero > 0) {
-        setRolAsignado((prev) => ({ ...prev, idUsuarioRol: res.numero || prev.idUsuarioRol }));
-        return true;
-      } else {
-        setFormError(res.mensaje || "Error asignando rol.");
-        return false;
-      }
-    } catch (error) {
-      setFormError(error.message || "Error inesperado.");
-      return false;
-    } finally {
-      setLoading(false);
-    }
+  // Cambio genérico para inputs/select
+  const handleChange = (e, setState) => {
+    const { name, value } = e.target;
+    setState(prev => ({ ...prev, [name]: value }));
   };
 
-  // Guardar carrera
-  const guardarCarrera = async () => {
+  // --- Estilos ---
+  const formStyle = {
+    maxWidth: 900,
+    margin: 'auto',
+    padding: 20,
+    fontFamily: 'Arial, sans-serif',
+    backgroundColor: modoOscuro ? '#121212' : '#fff',
+    color: modoOscuro ? '#e0e0e0' : '#000',
+    borderRadius: 8,
+    boxShadow: modoOscuro ? '0 0 10px #333' : '0 0 10px #ccc',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 25,
+  };
+
+  const fieldsetStyle = {
+    border: '1px solid #ccc',
+    borderRadius: 6,
+    padding: 15,
+    backgroundColor: modoOscuro ? '#1e1e1e' : '#fafafa',
+  };
+
+  const flexRow = {
+    display: 'flex',
+    flexWrap: 'wrap',
+    gap: 15,
+    marginBottom: 10,
+  };
+
+  const inputStyle = {
+    flex: '1 1 45%',
+    padding: 10,
+    borderRadius: 4,
+    border: '1px solid #ccc',
+    backgroundColor: modoOscuro ? '#222' : '#fff',
+    color: modoOscuro ? '#eee' : '#000',
+    minWidth: 160,
+    boxSizing: 'border-box',
+  };
+
+  const selectStyle = {
+    ...inputStyle,
+    minWidth: 180,
+  };
+
+  const labelStyle = {
+    display: 'block',
+    fontWeight: '600',
+    marginBottom: 5,
+  };
+
+  const dateInputWrapper = {
+    display: 'flex',
+    gap: '10%',
+  };
+
+  // --- Fin estilos ---
+const handleSubmit = async (e) => {
+  e.preventDefault();
+
+  try {
+    // Validar campos persona obligatorios
+    const {
+      primerNombre,
+      primerApellido,
+      generoId,
+      tipoDocumentoId,
+      nacionalidadId,
+      numeroDocumento,
+    } = persona;
+
     if (
-      !carreraAsignada.iD_Usuario ||
-      !carreraAsignada.iD_Carrera ||
-      !carreraAsignada.fecha_Inicio ||
-      !carreraAsignada.fecha_Fin ||
-      !carreraAsignada.iD_Estado
+      !primerNombre.trim() ||
+      !primerApellido.trim() ||
+      !generoId ||
+      !tipoDocumentoId ||
+      !nacionalidadId ||
+      !numeroDocumento.trim()
     ) {
-      setFormError("Todos los campos de carrera son obligatorios.");
-      return false;
-    }
-    setLoading(true);
-    try {
-      let res;
-      if (carreraAsignada.iD_EstudianteCarrera && carreraAsignada.iD_EstudianteCarrera > 0) {
-        res = await estudianteCarreraService.actualizarEstudianteCarrera(carreraAsignada);
-      } else {
-        res = await estudianteCarreraService.insertarEstudianteCarrera(carreraAsignada);
-      }
-      if (res.success || res.numero > 0) {
-        setCarreraAsignada((prev) => ({
-          ...prev,
-          iD_EstudianteCarrera: res.numero || prev.iD_EstudianteCarrera,
-        }));
-        return true;
-      } else {
-        setFormError(res.mensaje || "Error asignando carrera.");
-        return false;
-      }
-    } catch (error) {
-      setFormError(error.message || "Error inesperado.");
-      return false;
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleSiguiente = async () => {
-    setFormError("");
-    let exito = true;
-
-    switch (pasoActual) {
-      case 1:
-        exito = await guardarPersona();
-        break;
-      case 2:
-        exito = await guardarContactos();
-        break;
-      case 3:
-        exito = await guardarDirecciones();
-        break;
-      case 4:
-        exito = await guardarTitulos();
-        break;
-      case 5:
-        exito = await guardarUsuario();
-        break;
-      case 6:
-        exito = await guardarRol();
-        break;
-      case 7:
-        exito = await guardarCarrera();
-        break;
-      default:
-        exito = true;
+      Swal.fire("Validación", "Complete todos los campos obligatorios de Persona.", "warning");
+      return;
     }
 
-    if (exito) {
-      if (pasoActual === 8) {
-        Swal.fire("Éxito", "Todo guardado correctamente.", "success");
-        onClose();
-        resetForm();
-      } else {
-        siguientePaso();
+    // Validar campos dirección obligatorios
+    const {
+      idTipoDireccion,
+      detalleDireccion,
+    } = direccion;
+
+    if (!idTipoDireccion || !detalleDireccion.trim()) {
+      Swal.fire("Validación", "Complete todos los campos obligatorios de Dirección.", "warning");
+      return;
+    }
+
+    // Validar usuario y rol obligatorios
+    if (!usuario.usuario.trim() || !usuario.contrasena.trim() || !rolUsuario.idRol) {
+      Swal.fire("Validación", "Complete todos los campos obligatorios de Usuario y Rol.", "warning");
+      return;
+    }
+
+    // Si es estudiante (rol 3), validar campos estudiante-carrera obligatorios
+    if (parseInt(rolUsuario.idRol, 10) === 3) {
+      if (
+        !estudianteCarrera.idCarrera ||
+        !turnoSeleccionado ||
+        !estudianteCarrera.fechaInicio ||
+        !estudianteCarrera.fechaFin
+      ) {
+        Swal.fire("Validación", "Complete todos los campos obligatorios de Estudiante - Carrera.", "warning");
+        return;
       }
     }
-  };
 
-  const resetForm = () => {
-    setPasoActual(1);
+    // Validar títulos académicos: al menos uno seleccionado
+    const titulosSeleccionados = titulosPersonales.filter(t => t.seleccionado);
+
+    if (titulosSeleccionados.length === 0) {
+      Swal.fire("Validación", "Debe seleccionar al menos un título académico.", "warning");
+      return;
+    }
+
+    // Validar que cada título seleccionado tenga especialidad no vacía
+    for (const titulo of titulosSeleccionados) {
+      if (!titulo.especialidad || titulo.especialidad.trim() === "") {
+        Swal.fire("Validación", `Ingrese especialidad para el título "${titulo.descripcion}".`, "warning");
+        return;
+      }
+    }
+
+    // Preparar contactos filtrando y validando (como tenías)
+    const contactos = Object.entries(contactosValores)
+      .filter(([idTipoContacto, valor]) => {
+        const idNum = Number(idTipoContacto);
+        return valor.trim() !== '' && tiposContacto.some(tc => tc.idCatalogo === idNum);
+      })
+      .map(([idTipoContacto, valor]) => ({
+        IdTipoContacto: Number(idTipoContacto),
+        ValorContacto: valor.trim(),
+        IdEstado: 1,
+      }));
+
+    // Construir el objeto personaCompleta (igual que antes)
+    const personaCompleta = {
+      PrimerNombre: persona.primerNombre.trim(),
+      SegundoNombre: persona.segundoNombre.trim() || null,
+      PrimerApellido: persona.primerApellido.trim(),
+      SegundoApellido: persona.segundoApellido.trim() || null,
+      GeneroId: Number(persona.generoId) || null,
+      TipoDocumentoId: Number(persona.tipoDocumentoId) || null,
+      NumeroDocumento: persona.numeroDocumento.trim() || null,
+      NacionalidadId: Number(persona.nacionalidadId) || null,
+      EstadoId: Number(persona.idEstado),
+
+      TipoDireccionId: Number(direccion.idTipoDireccion) || null,
+      DetalleDireccion: direccion.detalleDireccion || null,
+      CodigoPostal: direccion.codigoPostal || null,
+      Municipio: direccion.municipio || null,
+      Departamento: direccion.departamento || null,
+      Referencia: direccion.referencia || null,
+      EstadoDireccionId: Number(direccion.idEstado) || null,
+
+      Contactos: contactos,
+
+      Titulos: titulosSeleccionados.map(t => ({
+        IdNivelAcademico: t.idCatalogo,
+        Especialidad: t.especialidad || null,
+        TituloEstado: 1,
+      })),
+
+      Usuario: usuario.usuario.trim() || null,
+      Contrasena: usuario.contrasena || null,
+      EstadoUsuarioId: Number(usuario.idEstado),
+
+      RolId: Number(rolUsuario.idRol) || null,
+      EstadoRolId: Number(rolUsuario.idEstado),
+
+      CarreraId: Number(estudianteCarrera.idCarrera) || null,
+      FechaInicioCarrera: estudianteCarrera.fechaInicio || null,
+      FechaFinCarrera: estudianteCarrera.fechaFin || null,
+      EstadoEstudianteCarreraId: Number(estudianteCarrera.idEstado),
+    };
+
+    console.log("Objeto enviado:", personaCompleta);
+
+    const respuesta = await personaCompletaService.insertarPersonaCompleta(personaCompleta);
+
+    // Validar mensaje para determinar éxito
+    const mensajeMinuscula = (respuesta?.mensaje || '').toLowerCase();
+    const esExito = mensajeMinuscula.includes('correctamente') || mensajeMinuscula.includes('exitosamente');
+
+    if (!respuesta || respuesta.numero <= 0 || !esExito) {
+      throw new Error(respuesta?.mensaje || "Error al insertar persona completa");
+    }
+
+    Swal.fire("Éxito", "Persona y datos relacionados insertados correctamente", "success");
+
+    // Limpiar estados
     setPersona({
-      idPersona: 0,
-      primerNombre: "",
-      segundoNombre: "",
-      primerApellido: "",
-      segundoApellido: "",
-      generoId: 0,
-      tipoDocumentoId: 0,
-      numeroDocumento: "",
-      nacionalidadId: 0,
-      nivelAcademicoId: 0,
+      primerNombre: '',
+      segundoNombre: '',
+      primerApellido: '',
+      segundoApellido: '',
+      generoId: '',
+      tipoDocumentoId: '',
+      numeroDocumento: '',
+      nacionalidadId: '',
       idEstado: 1,
     });
-    setContactos([]);
-    setDirecciones([]);
-    setTitulos([]);
-    setUsuario({ idUsuario: 0, usuario: "", password: "" });
-    setRolAsignado({ idUsuarioRol: 0, idUsuario: 0, idRol: "", idEstado: "" });
-    setCarreraAsignada({ iD_EstudianteCarrera: 0, iD_Usuario: 0, iD_Carrera: "", fecha_Inicio: "", fecha_Fin: "", iD_Estado: "" });
-    setFormError("");
-  };
 
-  const renderPaso = () => {
-    switch (pasoActual) {
-      case 1:
-        return (
-          <>
-            <h3 className="font-semibold text-lg mb-4">Información Persona</h3>
+    setDireccion({
+      idTipoDireccion: '',
+      detalleDireccion: '',
+      codigoPostal: '',
+      municipio: '',
+      departamento: '',
+      referencia: '',
+      idEstado: 1,
+    });
 
-            <label className="block mb-1">Primer Nombre</label>
-            <input
-              placeholder="Primer Nombre"
-              value={persona.primerNombre}
-              onChange={(e) => setPersona({ ...persona, primerNombre: e.target.value })}
-              className="w-full p-2 border rounded mb-3"
-            />
+    setContactosValores({});
 
-            <label className="block mb-1">Segundo Nombre</label>
-            <input
-              placeholder="Segundo Nombre"
-              value={persona.segundoNombre}
-              onChange={(e) => setPersona({ ...persona, segundoNombre: e.target.value })}
-              className="w-full p-2 border rounded mb-3"
-            />
+    setTitulosPersonales(titulosPersonales.map(t => ({ ...t, seleccionado: false, especialidad: '' })));
 
-            <label className="block mb-1">Primer Apellido</label>
-            <input
-              placeholder="Primer Apellido"
-              value={persona.primerApellido}
-              onChange={(e) => setPersona({ ...persona, primerApellido: e.target.value })}
-              className="w-full p-2 border rounded mb-3"
-            />
+    setUsuario({
+      usuario: '',
+      contrasena: '',
+      idEstado: 1,
+    });
 
-            <label className="block mb-1">Segundo Apellido</label>
-            <input
-              placeholder="Segundo Apellido"
-              value={persona.segundoApellido}
-              onChange={(e) => setPersona({ ...persona, segundoApellido: e.target.value })}
-              className="w-full p-2 border rounded mb-3"
-            />
+    setRolUsuario({
+      idRol: '',
+      idEstado: 1,
+    });
 
-            <label className="block mb-1">Género</label>
-            <select
-              value={persona.generoId}
-              onChange={(e) => setPersona({ ...persona, generoId: Number(e.target.value) })}
-              className="w-full p-2 border rounded mb-3"
-            >
-              <option value={0}>Seleccione Género</option>
-              <option value={1}>Masculino</option>
-              <option value={2}>Femenino</option>
-              <option value={3}>Otro</option>
-            </select>
+    setEstudianteCarrera({
+      idCarrera: '',
+      fechaInicio: new Date().toISOString().slice(0, 10),
+      fechaFin: new Date(new Date().setFullYear(new Date().getFullYear() + 4)).toISOString().slice(0, 10),
+      idEstado: 1,
+    });
 
-            <label className="block mb-1">Tipo Documento</label>
-            <select
-              value={persona.tipoDocumentoId}
-              onChange={(e) => setPersona({ ...persona, tipoDocumentoId: Number(e.target.value) })}
-              className="w-full p-2 border rounded mb-3"
-            >
-              <option value={0}>Seleccione Tipo Documento</option>
-              <option value={1}>DNI</option>
-              <option value={2}>Pasaporte</option>
-            </select>
+    setTurnoSeleccionado('');
 
-            <label className="block mb-1">Número Documento</label>
-            <input
-              placeholder="Número Documento"
-              value={persona.numeroDocumento}
-              onChange={(e) => setPersona({ ...persona, numeroDocumento: e.target.value })}
-              className="w-full p-2 border rounded mb-3"
-            />
-
-            <label className="block mb-1">Nacionalidad</label>
-            <select
-              value={persona.nacionalidadId}
-              onChange={(e) => setPersona({ ...persona, nacionalidadId: Number(e.target.value) })}
-              className="w-full p-2 border rounded mb-3"
-            >
-              <option value={0}>Seleccione Nacionalidad</option>
-              <option value={1}>Nacionalidad 1</option>
-              <option value={2}>Nacionalidad 2</option>
-            </select>
-
-            <label className="block mb-1">Nivel Académico</label>
-            <select
-              value={persona.nivelAcademicoId}
-              onChange={(e) => setPersona({ ...persona, nivelAcademicoId: Number(e.target.value) })}
-              className="w-full p-2 border rounded mb-3"
-            >
-              <option value={0}>Seleccione Nivel Académico</option>
-              <option value={1}>Bachillerato</option>
-              <option value={2}>Licenciatura</option>
-            </select>
-
-            <label className="block mb-1">Estado</label>
-            <select
-              value={persona.idEstado}
-              onChange={(e) => setPersona({ ...persona, idEstado: Number(e.target.value) })}
-              className="w-full p-2 border rounded mb-3"
-            >
-              <option value={0}>Seleccione Estado</option>
-              <option value={1}>Activo</option>
-              <option value={2}>Inactivo</option>
-            </select>
-          </>
-        );
-
-      case 2:
-        return (
-          <>
-            <h3>Contactos</h3>
-            <p>Implementa tu componente contactos aquí</p>
-          </>
-        );
-
-      case 3:
-        return (
-          <>
-            <h3>Direcciones</h3>
-            <p>Implementa tu componente direcciones aquí</p>
-          </>
-        );
-
-      case 4:
-        return (
-          <>
-            <h3>Títulos Académicos</h3>
-            <p>Implementa tu componente títulos académicos aquí</p>
-          </>
-        );
-
-      case 5:
-        return (
-          <>
-            <h3>Usuario</h3>
-            <input
-              placeholder="Usuario"
-              value={usuario.usuario}
-              onChange={(e) => setUsuario({ ...usuario, usuario: e.target.value })}
-              className="w-full p-2 border rounded mb-3"
-            />
-            <input
-              type="password"
-              placeholder="Contraseña"
-              value={usuario.password}
-              onChange={(e) => setUsuario({ ...usuario, password: e.target.value })}
-              className="w-full p-2 border rounded"
-            />
-          </>
-        );
-
-      case 6:
-        return (
-          <>
-            <h3>Asignar Rol</h3>
-            <select
-              value={rolAsignado.idRol}
-              onChange={(e) => setRolAsignado({ ...rolAsignado, idRol: Number(e.target.value), idUsuario: usuario.idUsuario })}
-              className="w-full p-2 border rounded mb-3"
-            >
-              <option value="">Seleccione Rol</option>
-              <option value={1}>Administrador</option>
-              <option value={2}>Docente</option>
-              <option value={3}>Estudiante</option>
-            </select>
-
-            <select
-              value={rolAsignado.idEstado}
-              onChange={(e) => setRolAsignado({ ...rolAsignado, idEstado: Number(e.target.value), idUsuario: usuario.idUsuario })}
-              className="w-full p-2 border rounded"
-            >
-              <option value="">Seleccione Estado</option>
-              <option value={1}>Activo</option>
-              <option value={2}>Inactivo</option>
-            </select>
-          </>
-        );
-
-      case 7:
-        if (Number(rolAsignado.idRol) !== 3) {
-          return <p>Este paso se salta si no es estudiante.</p>;
-        }
-        return (
-          <>
-            <h3>Asignar Carrera (Estudiante)</h3>
-            <input
-              type="date"
-              value={carreraAsignada.fecha_Inicio}
-              onChange={(e) => setCarreraAsignada({ ...carreraAsignada, fecha_Inicio: e.target.value })}
-              className="w-full p-2 border rounded mb-3"
-            />
-            <input
-              type="date"
-              value={carreraAsignada.fecha_Fin}
-              onChange={(e) => setCarreraAsignada({ ...carreraAsignada, fecha_Fin: e.target.value })}
-              className="w-full p-2 border rounded mb-3"
-            />
-            <select
-              value={carreraAsignada.iD_Carrera}
-              onChange={(e) => setCarreraAsignada({ ...carreraAsignada, iD_Carrera: Number(e.target.value) })}
-              className="w-full p-2 border rounded mb-3"
-            >
-              <option value="">Seleccione Carrera</option>
-              <option value={1}>Carrera 1</option>
-              <option value={2}>Carrera 2</option>
-            </select>
-            <select
-              value={carreraAsignada.iD_Estado}
-              onChange={(e) => setCarreraAsignada({ ...carreraAsignada, iD_Estado: Number(e.target.value) })}
-              className="w-full p-2 border rounded"
-            >
-              <option value="">Seleccione Estado</option>
-              <option value={1}>Activo</option>
-              <option value={2}>Inactivo</option>
-            </select>
-          </>
-        );
-
-      case 8:
-        return <p>Finalizado. Presiona Guardar para terminar.</p>;
-
-      default:
-        return null;
-    }
-  };
-
-  return (
-    <ModalBase isOpen={isOpen} onClose={onClose} modoOscuro={modoOscuro} titulo="Wizard Form">
-      <FormularioBase>
-        {formError && (
-          <div className="mb-3 p-2 text-red-700 bg-red-100 rounded">{formError}</div>
-        )}
-
-        {renderPaso()}
-
-        <div className="flex justify-between mt-6">
-          <button
-            onClick={anteriorPaso}
-            disabled={pasoActual === 1}
-            className="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400 disabled:opacity-50"
-          >
-            Anterior
-          </button>
-          <button
-            onClick={handleSiguiente}
-            disabled={loading}
-            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
-          >
-            {pasoActual === 8 ? "Guardar" : "Siguiente"}
-          </button>
-        </div>
-      </FormularioBase>
-    </ModalBase>
-  );
+  } catch (error) {
+    Swal.fire("Error", error.message || "Error inesperado", "error");
+  }
 };
 
-export default WizardForm;
+
+  return (
+    <form onSubmit={handleSubmit} style={formStyle} noValidate>
+      <h1>Nuevo Registro</h1>
+     
+
+      {/* Persona */}
+      <fieldset style={fieldsetStyle}>
+        <legend><strong>Datos Persona</strong></legend>
+         <span style={{ color: 'red', fontSize: 12, fontWeight: 'normal' }}>
+          * Campos obligatorios
+        </span>
+        <div style={flexRow}>
+          <input
+            required
+            name="primerNombre"
+            placeholder="Primer Nombre"
+            value={persona.primerNombre}
+            onChange={e => handleChange(e, setPersona)}
+            style={inputStyle}
+          />
+          <input
+            name="segundoNombre"
+            placeholder="Segundo Nombre"
+            value={persona.segundoNombre}
+            onChange={e => handleChange(e, setPersona)}
+            style={inputStyle}
+          />
+        </div>
+        <div style={flexRow}>
+          <input
+            required
+            name="primerApellido"
+            placeholder="Primer Apellido"
+            value={persona.primerApellido}
+            onChange={e => handleChange(e, setPersona)}
+            style={inputStyle}
+          />
+          <input
+            name="segundoApellido"
+            placeholder="Segundo Apellido"
+            value={persona.segundoApellido}
+            onChange={e => handleChange(e, setPersona)}
+            style={inputStyle}
+          />
+        </div>
+        <div style={flexRow}>
+          <select
+            required
+            name="generoId"
+            value={persona.generoId}
+            onChange={e => handleChange(e, setPersona)}
+            style={selectStyle}
+          >
+            <option value="">Género</option>
+            {generos.map(g => (
+              <option key={g.idCatalogo} value={g.idCatalogo}>{g.descripcionCatalogo}</option>
+            ))}
+          </select>
+          <select
+            required
+            name="tipoDocumentoId"
+            value={persona.tipoDocumentoId}
+            onChange={e => handleChange(e, setPersona)}
+            style={selectStyle}
+          >
+            <option value="">Tipo Documento</option>
+            {tiposDocumento.map(t => (
+              <option key={t.idCatalogo} value={t.idCatalogo}>{t.descripcionCatalogo}</option>
+            ))}
+          </select>
+        </div>
+        <div style={flexRow}>
+          <select
+            required
+            name="nacionalidadId"
+            value={persona.nacionalidadId}
+            onChange={e => handleChange(e, setPersona)}
+            style={selectStyle}
+          >
+            <option value="">Nacionalidad</option>
+            {nacionalidades.map(n => (
+              <option key={n.idCatalogo} value={n.idCatalogo}>{n.descripcionCatalogo}</option>
+            ))}
+          </select>
+          <input
+            required
+            name="numeroDocumento"
+            placeholder="Número Documento"
+            value={persona.numeroDocumento}
+            onChange={e => handleChange(e, setPersona)}
+            style={inputStyle}
+          />
+        </div>
+      </fieldset>
+
+      {/* Dirección */}
+      <fieldset style={fieldsetStyle}>
+        <legend><strong>Dirección</strong></legend>
+         <span style={{ color: 'red', fontSize: 12, fontWeight: 'normal' }}>
+          * Campos obligatorios
+        </span>
+        <div style={flexRow}>
+          <select
+            required
+            name="idTipoDireccion"
+            value={direccion.idTipoDireccion}
+            onChange={e => handleChange(e, setDireccion)}
+            style={selectStyle}
+          >
+            <option value="">Tipo Dirección</option>
+            {tiposDireccion.map(td => (
+              <option key={td.idCatalogo} value={td.idCatalogo}>{td.descripcionCatalogo}</option>
+            ))}
+          </select>
+          <input
+            required
+            name="detalleDireccion"
+            placeholder="Detalle Dirección"
+            value={direccion.detalleDireccion}
+            onChange={e => handleChange(e, setDireccion)}
+            style={inputStyle}
+          />
+        </div>
+        <div style={flexRow}>
+          <input
+            name="codigoPostal"
+            placeholder="Código Postal"
+            value={direccion.codigoPostal}
+            onChange={e => handleChange(e, setDireccion)}
+            style={inputStyle}
+          />
+          <input
+            name="municipio"
+            placeholder="Municipio"
+            value={direccion.municipio}
+            onChange={e => handleChange(e, setDireccion)}
+            style={inputStyle}
+          />
+        </div>
+        <div style={flexRow}>
+          <input
+            name="departamento"
+            placeholder="Departamento"
+            value={direccion.departamento}
+            onChange={e => handleChange(e, setDireccion)}
+            style={inputStyle}
+          />
+          <input
+            name="referencia"
+            placeholder="Referencia"
+            value={direccion.referencia}
+            onChange={e => handleChange(e, setDireccion)}
+            style={{ ...inputStyle, flex: '1 1 100%' }}
+          />
+        </div>
+      </fieldset>
+
+     {/* Contactos */}
+<fieldset style={fieldsetStyle}>
+  <legend><strong>Contactos</strong></legend>
+   <span style={{ color: 'red', fontSize: 12, fontWeight: 'normal' }}>
+      * Campos obligatorios
+    </span>
+  {tiposContacto.map(tc => {
+    const esTelefonoFijo = tc.descripcionCatalogo.toLowerCase().includes('telefono fijo');
+    return (
+      <div key={tc.idCatalogo} style={flexRow}>
+        <label style={{ ...labelStyle, flex: '0 0 180px', alignSelf: 'center' }}>
+          {tc.descripcionCatalogo}
+          {esTelefonoFijo && <span style={{ fontStyle: 'italic', fontWeight: 'normal', marginLeft: 8, fontSize: 12, color: '#666' }}>
+            (opcional)
+          </span>}
+        </label>
+        <input
+          type="text"
+          placeholder={`Ingrese ${tc.descripcionCatalogo}`}
+          value={contactosValores[tc.idCatalogo] || ''}
+          onChange={e => setContactosValores(prev => ({
+            ...prev,
+            [tc.idCatalogo]: e.target.value,
+          }))}
+          style={{ ...inputStyle, flex: '1 1 auto' }}
+          required={!esTelefonoFijo}
+        />
+      </div>
+    );
+  })}
+</fieldset>
+
+      {/* Títulos Académicos */}
+      <fieldset style={fieldsetStyle}>
+        <legend><strong>Títulos Académicos</strong></legend>
+         <span style={{ color: 'red', fontSize: 12, fontWeight: 'normal' }}>
+        * Debe seleccionar al menos un título y proporcionar una especialidad
+      </span>
+        {titulosPersonales.map(titulo => (
+          <div key={titulo.idCatalogo} style={{ marginBottom: 10 }}>
+            <label>
+              <input
+                type="checkbox"
+                checked={titulo.seleccionado}
+                onChange={() => toggleSeleccionTitulo(titulo.idCatalogo)}
+                style={{ marginRight: 8 }}
+              />
+              {titulo.descripcion}
+            </label>
+            {titulo.seleccionado && (
+              <div style={{ marginLeft: 24, marginTop: 4 }}>
+                <input
+                  required={titulo.idCatalogo !== 19}
+                  placeholder={`Especialidad para ${titulo.descripcion}`}
+                  value={titulo.especialidad}
+                  onChange={e => handleEspecialidadChange(titulo.idCatalogo, e.target.value)}
+                  style={inputStyle}
+                />
+                {titulo.idCatalogo === 19 && (
+                  <p style={{ fontSize: 12, color: 'orange', marginTop: 4 }}>
+                    Para "Bachiller" rellene especialidad con "Ninguno"
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+        ))}
+      </fieldset>
+
+      {/* Usuario y Rol */}
+      <fieldset style={fieldsetStyle}>
+        <legend><strong>Usuario y Rol</strong></legend>
+         <span style={{ color: 'red', fontSize: 12, fontWeight: 'normal' }}>
+          * Campos obligatorios
+        </span>
+        <div style={flexRow}>
+          <input
+            required
+            name="usuario"
+            placeholder="Usuario"
+            value={usuario.usuario}
+            onChange={e => handleChange(e, setUsuario)}
+            style={inputStyle}
+          />
+          <input
+            required
+            type="password"
+            name="contrasena"
+            placeholder="Contraseña"
+            value={usuario.contrasena}
+            onChange={e => handleChange(e, setUsuario)}
+            style={inputStyle}
+          />
+        </div>
+        <div style={flexRow}>
+          <select
+            required
+            name="idRol"
+            value={rolUsuario.idRol}
+            onChange={e => setRolUsuario(prev => ({ ...prev, idRol: e.target.value }))}
+            style={selectStyle}
+          >
+            <option value="">Rol Usuario</option>
+            {roles.map(r => (
+              <option key={r.id} value={r.id}>{r.descripcion}</option>
+            ))}
+          </select>
+        </div>
+      </fieldset>
+
+      {/* Estudiante-Carrera si rol 3 */}
+      {parseInt(rolUsuario.idRol, 10) === 3 && (
+        <fieldset style={fieldsetStyle}>
+          <legend><strong>Estudiante - Carrera</strong></legend>
+             <span style={{ color: 'red', fontSize: 12, fontWeight: 'normal' }}>
+            * Si es Estudiante debe asignar carrera , turno y fechas
+          </span>
+          <div style={flexRow}>
+            <select
+              required
+              name="idCarrera"
+              value={estudianteCarrera.idCarrera}
+              onChange={e => setEstudianteCarrera(prev => ({ ...prev, idCarrera: e.target.value }))}
+              style={selectStyle}
+            >
+              <option value="">Carrera</option>
+              {carreras.map(c => (
+                <option key={c.id} value={c.id}>{c.descripcion}</option>
+              ))}
+            </select>
+            <select
+              required
+              name="turno"
+              value={turnoSeleccionado}
+              onChange={e => setTurnoSeleccionado(e.target.value)}
+              style={selectStyle}
+            >
+              <option value="">Turno</option>
+              {turnos.map(t => (
+                <option key={t.idCatalogo} value={t.idCatalogo}>
+                  {t.descripcionCatalogo}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div style={{ ...flexRow, ...dateInputWrapper }}>
+            <label style={labelStyle}>
+              Fecha Inicio
+              <input
+                required
+                type="date"
+                name="fechaInicio"
+                value={estudianteCarrera.fechaInicio}
+                onChange={e => setEstudianteCarrera(prev => ({ ...prev, fechaInicio: e.target.value }))}
+                style={{ ...inputStyle, flex: '1 1 100%' }}
+              />
+              <small style={{ color: '#555', fontStyle: 'italic' }}>
+                {formatearFecha(estudianteCarrera.fechaInicio)}
+              </small>
+            </label>
+
+            <label style={labelStyle}>
+              Fecha Fin
+              <input
+                required
+                type="date"
+                name="fechaFin"
+                value={estudianteCarrera.fechaFin}
+                onChange={e => setEstudianteCarrera(prev => ({ ...prev, fechaFin: e.target.value }))}
+                style={{ ...inputStyle, flex: '1 1 100%' }}
+              />
+              <small style={{ color: '#555', fontStyle: 'italic' }}>
+                {formatearFecha(estudianteCarrera.fechaFin)}
+              </small>
+            </label>
+          </div>
+        </fieldset>
+      )}
+
+      <button
+        type="submit"
+        style={{
+          padding: '12px 25px',
+          borderRadius: 5,
+          cursor: 'pointer',
+          backgroundColor: modoOscuro ? '#4caf50' : '#2e7d32',
+          color: '#fff',
+          fontWeight: '600',
+          border: 'none',
+          alignSelf: 'flex-start',
+          marginTop: 10,
+        }}
+      >
+        Guardar
+      </button>
+    </form>
+  );
+}

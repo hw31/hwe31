@@ -189,6 +189,8 @@ const PerfilUsuario = () => {
   const dispatch = useDispatch();
 
   const { idUsuario, usuario, persona } = useSelector((state) => state.auth || {});
+  const idPersona = useSelector(state => state.auth?.idPersona);
+  console.log('Usuario actual:', { idUsuario, usuario, persona });
   const modoOscuro = useSelector((state) => (state.theme ? state.theme.modoOscuro : false));
 
   const [fotoUrl, setFotoUrl] = useState(null);
@@ -209,33 +211,42 @@ const PerfilUsuario = () => {
   const fileInputRef = useRef();
 
   useEffect(() => {
-    if (!idUsuario) return;
+  if (!idUsuario) return;
 
-    fotoPerfilService.obtenerMiFoto()
-      .then((res) => {
-        if (res.success && res.ruta) {
-          setFotoUrl(`http://localhost:5292${res.ruta}`);
-          setImgError(false);
-        } else {
-          setFotoUrl(null);
-          setImgError(true);
-        }
-      })
-      .catch(() => {
+  fotoPerfilService.obtenerMiFoto(idUsuario)
+    .then((res) => {
+      if (res.success && res.ruta) {
+        setFotoUrl(`http://localhost:5292${res.ruta}`);
+        setImgError(false);
+      } else {
         setFotoUrl(null);
         setImgError(true);
-      });
+      }
+    })
+    .catch(() => {
+      setFotoUrl(null);
+      setImgError(true);
+    });
+}, [idUsuario]);
 
-    contactoService.filtrarPorIdPersonaContacto(idUsuario)
-      .then((res) => {
-        if (res.success && Array.isArray(res.data)) {
-          setContactos(res.data);
-        } else {
-          setContactos([]);
-        }
-      })
-      .catch(() => setContactos([]));
-  }, [idUsuario]);
+useEffect(() => {
+  console.log("idPersona en useEffect contactos:", idPersona);
+  if (!idPersona) return;
+
+  contactoService.filtrarPorIdPersonaContacto(idPersona)
+    .then(({ success, data }) => {
+      console.log("Respuesta contactoService:", { success, data });
+      if (success && Array.isArray(data)) {
+        setContactos(data);
+      } else {
+        setContactos([]);
+      }
+    })
+    .catch((err) => {
+      console.error("Error en contactoService:", err);
+      setContactos([]);
+    });
+}, [idPersona]);
 
   const handleFotoClick = () => {
     fileInputRef.current?.click();
