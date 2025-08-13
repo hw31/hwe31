@@ -64,7 +64,7 @@ const Form = () => {
         <div className="main-content">
           <div className="logo-wrapper">
             <div className="logo-inner">
-              <img src="/images/logo.png" alt="Logo" />
+              <img src="/images/lgo.webp" alt="Logo" />
             </div>
           </div>
 

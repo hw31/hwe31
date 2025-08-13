@@ -119,26 +119,61 @@ const ExportButtons = ({ data = [], fileName = "export", titulo = "" }) => {
   };
 
   return (
-    <div className="flex justify-end gap-3 mb-4">
-      <button
-        onClick={exportToExcel}
-        className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition"
-        title="Exportar a Excel"
-        type="button"
-      >
-        <FaFileExcel />
-        Exportar Excel
-      </button>
-      <button
-        onClick={exportToPDF}
-        className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition"
-        title="Exportar a PDF"
-        type="button"
-      >
-        <FaFilePdf />
-        Exportar PDF
-      </button>
-    </div>
+<div className="flex gap-2 ml-auto">
+           <button
+             onClick={exportToExcel}
+             style={{
+               background: "linear-gradient(135deg, #127f45ff, #0c0b0bff)",
+               color: "white",
+               padding: "6px 12px",
+               borderRadius: 8,
+               fontWeight: 600,
+               fontSize: 14,
+               display: "flex",
+               alignItems: "center",
+               justifyContent: "center",
+               gap: 6,
+               cursor: "pointer",
+               boxShadow: "0 2px 5px rgba(2,79,33,0.4)",
+               transition: "all 0.3s ease",
+             }}
+             onMouseEnter={(e) =>
+               (e.currentTarget.style.background = "linear-gradient(135deg, #0c0b0bff, #127f45ff)")
+             }
+             onMouseLeave={(e) =>
+               (e.currentTarget.style.background = "linear-gradient(135deg, #127f45ff, #080808)")
+             }
+           >
+             <FaFileExcel size={25} />
+           </button>
+   
+           <button
+             onClick={exportToPDF}
+             style={{
+               background: "linear-gradient(135deg, #ef5350, #0c0b0bff)",
+               color: "white",
+               padding: "6px 12px",
+               borderRadius: 8,
+               fontWeight: 600,
+               fontSize: 14,
+               display: "flex",
+               alignItems: "center",
+               justifyContent: "center",
+               gap: 6,
+               cursor: "pointer",
+               boxShadow: "0 2px 5px rgba(244,67,54,0.4)",
+               transition: "all 0.3s ease",
+             }}
+             onMouseEnter={(e) =>
+               (e.currentTarget.style.background = "linear-gradient(135deg, #101010ff, #de1717ff)")
+             }
+             onMouseLeave={(e) =>
+               (e.currentTarget.style.background = "linear-gradient(135deg, #ef5350, #0c0b0bff)")
+             }
+           >
+             <FaFilePdf size={25} />
+           </button>
+         </div>
   );
 };
 

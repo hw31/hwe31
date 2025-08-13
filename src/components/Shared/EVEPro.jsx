@@ -8,7 +8,7 @@ export default function EVEPro(props) {
   const group = useRef();
   const { scene } = useGLTF('/models/eve.glb');
 
-  const logoTexture = useLoader(THREE.TextureLoader, '/images/iconologo.png');
+  const logoTexture = useLoader(THREE.TextureLoader, '/images/logoicono.webp');
   const [rotationY, setRotationY] = useState(0);
 
   // Brillo tipo neón

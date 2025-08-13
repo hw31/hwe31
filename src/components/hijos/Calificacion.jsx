@@ -13,6 +13,7 @@ import ExportButtons from "./ExportButtons";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import ResumenFinal from "./ResumenFinal";
+
 const Calificacion = ({
   filtroGeneral,
   onMostrarListaEstudiantes,
@@ -170,7 +171,6 @@ useEffect(() => {
       });
     }
   });
-
   
   const gruposFiltrados = !grupoSeleccionado
     ? gruposUnicos.filter((grupo) =>
@@ -561,8 +561,8 @@ const calificacionesFiltradas = (() => {
                   <p className="mt-1 text-sm opacity-80">
                     Estudiantes inscritos:{" "}
                    <span className="font-semibold">
-  {inscritosPorMateria[`${grupoSeleccionado.idGrupo}_${m.idMateria}`] ?? 0}
-</span>
+                    {inscritosPorMateria[`${grupoSeleccionado.idGrupo}_${m.idMateria}`] ?? 0}
+                  </span>
 
                   </p>
                 </div>
@@ -746,50 +746,50 @@ const calificacionesFiltradas = (() => {
                 </tr>
               )}
            {estudiantesPaginados.map((est, index) => (
-  <FilaEstudiante
-    key={est.iD_Inscripcion}
-    estudiante={est}
-    index={index}
-    tiposCalificacion={tiposCalificacion}
-    calificaciones={calificacionesFiltradas} // <--- uso filtrado aquí
-    setCalificaciones={setCalificaciones}
-    obtenerNota={obtenerNota}
-    guardarNota={guardarNota}
-    claseStatusInput={claseStatusInput}
-    acumuladoPorEstudiante={acumuladoPorEstudiante}
-    porcentajePorEstudiante={porcentajePorEstudiante}
-    aprobadoPorEstudiante={aprobadoPorEstudiante}
-    esEstudiante={esEstudiante} 
-    modoOscuro={modoOscuro}
-  />
-))}
+                <FilaEstudiante
+                  key={est.iD_Inscripcion}
+                  estudiante={est}
+                  index={index}
+                  tiposCalificacion={tiposCalificacion}
+                  calificaciones={calificacionesFiltradas} // <--- uso filtrado aquí
+                  setCalificaciones={setCalificaciones}
+                  obtenerNota={obtenerNota}
+                  guardarNota={guardarNota}
+                  claseStatusInput={claseStatusInput}
+                  acumuladoPorEstudiante={acumuladoPorEstudiante}
+                  porcentajePorEstudiante={porcentajePorEstudiante}
+                  aprobadoPorEstudiante={aprobadoPorEstudiante}
+                  esEstudiante={esEstudiante} 
+                  modoOscuro={modoOscuro}
+                />
+              ))}
 
             </tbody>
           </table>
 
           <div className="flex justify-between items-center mt-4">
-  <button
-    onClick={() => setPaginaActual((prev) => Math.max(prev - 1, 1))}
-    disabled={paginaActual === 1}
-    className="px-3 py-1 rounded bg-blue-500 text-white disabled:bg-gray-400"
-  >
-    Anterior
-  </button>
-  <span>
-    Página {paginaActual} de {Math.ceil(estudiantesFiltrados.length / filasPorPagina)}
-  </span>
-  <button
-    onClick={() =>
-      setPaginaActual((prev) =>
-        Math.min(prev + 1, Math.ceil(estudiantesFiltrados.length / filasPorPagina))
-      )
-    }
-    disabled={paginaActual === Math.ceil(estudiantesFiltrados.length / filasPorPagina)}
-    className="px-3 py-1 rounded bg-blue-500 text-white disabled:bg-gray-400"
-  >
-    Siguiente
-  </button>
-</div>
+            <button
+              onClick={() => setPaginaActual((prev) => Math.max(prev - 1, 1))}
+              disabled={paginaActual === 1}
+              className="px-3 py-1 rounded bg-blue-500 text-white disabled:bg-gray-400"
+            >
+              Anterior
+            </button>
+            <span>
+              Página {paginaActual} de {Math.ceil(estudiantesFiltrados.length / filasPorPagina)}
+            </span>
+            <button
+              onClick={() =>
+                setPaginaActual((prev) =>
+                  Math.min(prev + 1, Math.ceil(estudiantesFiltrados.length / filasPorPagina))
+                )
+              }
+              disabled={paginaActual === Math.ceil(estudiantesFiltrados.length / filasPorPagina)}
+              className="px-3 py-1 rounded bg-blue-500 text-white disabled:bg-gray-400"
+            >
+              Siguiente
+            </button>
+          </div>
 
           </div>
           <button
@@ -820,9 +820,7 @@ const calificacionesFiltradas = (() => {
       pauseOnHover
       theme={modoOscuro ? "dark" : "light"}
     />
-{!grupoSeleccionado &&
- !materiaSeleccionada &&
- periodo.id && (
+  {!grupoSeleccionado && !materiaSeleccionada && periodo?.id && (
   <ResumenFinal
     estudiantes={estudiantes}
     calificaciones={calificaciones}
@@ -831,7 +829,7 @@ const calificacionesFiltradas = (() => {
     modoOscuro={modoOscuro}
     idUsuario={idUsuario}
     rol={rolLower}
-    periodoId={periodo.id} // 👈 aquí pasas el id
+    periodoId={periodo.id} // pasa el id correcto
   />
 )}
 

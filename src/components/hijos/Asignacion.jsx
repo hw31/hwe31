@@ -543,8 +543,8 @@ Asignaciones
               
             </td>
               <td className={`px-4 py-2 text-sm ${texto}`}>
-  {asig.nombrePeriodo || "N/D"}
-</td>
+              {asig.nombrePeriodo || "N/D"}
+            </td>
 
             {rolLower === "administrador" && (
               <td className="px-4 py-2 text-center">
@@ -572,7 +572,6 @@ Asignaciones
     </table>
   </div>
 )}
-
 
         {/* Modal */}
         {modalOpen && (
@@ -629,25 +628,18 @@ Asignaciones
                 getOptionLabel={(u) => u.nombre_Usuario ?? "Sin nombre"}
                 getOptionValue={(u) => u.iD_Usuario}
               />
-  {/* Periodo */}
-<AutocompleteSelect
-  label="Periodo Académico"
-  value={formData.IdPeriodo}
-  onChange={(val) =>
-    setFormData((prev) => ({ ...prev, IdPeriodo: val }))
-  }
-  options={listas.periodos?.map((p) => ({
-    value: p.idPeriodoAcademico, // ⚡ cambiar a idPeriodoAcademico
-    label: p.nombrePeriodo,
-  }))}
-/>
-
-
-
-
-
-
-
+                {/* Periodo */}
+              <AutocompleteSelect
+                label="Periodo Académico"
+                value={formData.IdPeriodo}
+                onChange={(val) =>
+                  setFormData((prev) => ({ ...prev, IdPeriodo: val }))
+                }
+                options={listas.periodos?.map((p) => ({
+                  value: p.idPeriodoAcademico, // ⚡ cambiar a idPeriodoAcademico
+                  label: p.nombrePeriodo,
+                }))}
+              />
 
               <AutocompleteSelect
                 label="Materia"
