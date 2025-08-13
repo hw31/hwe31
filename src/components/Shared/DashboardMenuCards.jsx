@@ -96,23 +96,21 @@ const DashboardMenuCards = () => {
     padding-right: 1rem;
   }
 
-  @media (max-width: 1200px) {
-    .auto-fit-grid {
-      padding-left: 5rem;
-      grid-template-columns: repeat(4, 1fr);
-    }
+@media (max-width: 767px) {
+  .auto-fit-grid {
+    padding-left: 0; /* Quita margen izquierdo */
+    padding-right: 0; /* Quita margen derecho */
+    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+    justify-items: center; /* Centra las cards */
+    gap: 0.5rem;
   }
+  .card {
+    padding-top: 1rem;
+    width: 100%; /* Ocupa todo el espacio posible */
+    max-width: 120px; /* Máximo ancho de cada card */
+  }
+}
 
-  @media (max-width: 767px) {
-    .auto-fit-grid {
-      padding-left: 1rem;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 0.5rem;
-    }
-    .card {
-      padding-top: 1rem;
-    }
-  }
 
   .card {
     display: flex;

@@ -4,6 +4,7 @@ import { useSelector, useDispatch } from "react-redux";
 import { Moon, Sun, LogOut, Settings } from "lucide-react";
 import authService from "../../services/authService";
 import styled from "styled-components";
+import DashboardContent from "./DashboardContent";
 
 import { fetchFotoPerfil, selectFotoPerfilUrl } from "../../features/Profile/profileSlice";
 
@@ -22,10 +23,10 @@ const DashboardWelcome = styled.div`
   display: flex;
   flex-direction: column;
   align-items: center;
-  margin-top: 10rem;
+  margin-top: 2rem;
 
   @media (max-width: 767px) {
-    margin-top: 12rem; /* más espacio arriba en móvil */
+    margin-top: 4rem; /* más espacio arriba en móvil */
     padding: 0 2rem;  /* más espacio a los lados en móvil */
   }
 
@@ -364,24 +365,25 @@ const Dashboard = () => {
     
   }}
 >
+  <DashboardContent>
+    {mostrarBienvenida && (
+      <DashboardWelcome role="region" aria-live="polite">
+        <h1 className="text-2xl sm:text-3xl font-bold mb-6 text-center">
+          ¡Bienvenido, {nombre} {apellido}!
+        </h1>
 
-        {mostrarBienvenida && (
-          <DashboardWelcome role="region" aria-live="polite" className="dashboard-welcome">
-            <h1 className="text-2xl sm:text-3xl font-bold mb-6 text-center">
-              ¡Bienvenido, {nombre} {apellido}!
-            </h1>
-
-            {rolLower === "administrador" && (
-              <div className="flex flex-wrap justify-center gap-6 w-full max-w-screen-xl px-4 md:px-8 mx-auto">
-                <DashboardMenuCards className="flex-grow min-w-[280px]" />
-                <DashboardCards modoOscuro={modoOscuro} />
-              </div>
-            )}
-          </DashboardWelcome>
+        {rolLower === "administrador" && (
+          <div className="flex flex-wrap justify-center gap-6 w-full max-w-screen-xl px-4 md:px-8 mx-auto">
+            <DashboardMenuCards className="flex-grow min-w-[280px]" />
+            <DashboardCards modoOscuro={modoOscuro} />
+          </div>
         )}
+      </DashboardWelcome>
+    )}
 
-        <Outlet />
-      </main>
+    <Outlet />
+  </DashboardContent>
+</main>
     </div>
   );
 };

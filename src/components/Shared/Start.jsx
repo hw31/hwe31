@@ -5,11 +5,11 @@ import Loader from './Loader';
 
 const fadeOut = keyframes`
   from {
-    transform: translateY(0);
+    opacity: 1;
     visibility: visible;
   }
   to {
-    transform: translateY(40px);
+    opacity: 0;
     visibility: hidden;
   }
 `;
@@ -18,11 +18,11 @@ const Container = styled.div`
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: flex-start; /* colocamos arriba */
-  padding-top: 80px; /* espacio desde arriba */
+  justify-content: center; /* centrado vertical */
   height: 100vh;
-  background: #f3f3f3;
-  color: black;
+  width: 100vw;
+  background: black; /* Fondo negro */
+  color: white;
   font-family: 'Poppins', 'Segoe UI', sans-serif;
   font-size: 1.5rem;
   text-align: center;
@@ -34,30 +34,8 @@ const Container = styled.div`
     `}
 `;
 
-const Title = styled.h1`
-  font-size: 3.2rem;
-  font-weight: 900;
-  margin-bottom: 3rem;
-
-  background: linear-gradient(to right, #00da72, #00e0ed);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-
-  text-shadow: 
-    1px 1px 2px rgba(0,0,0,0.15), 
-    2px 2px 4px rgba(0,0,0,0.1); /* Sombra tipo botón */
-
-  animation: fadeInText 1.5s ease;
-
-  @keyframes fadeInText {
-    from { opacity: 0; transform: translateY(-10px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-`;
-
 const LoaderWrapper = styled.div`
   transform: scale(1.4);
-  margin-top: 2rem;
 `;
 
 export default function WelcomeLoader() {
@@ -75,7 +53,6 @@ export default function WelcomeLoader() {
 
   return (
     <Container fade={fadeOutStarted}>
-      <Title>INGRESANDO</Title>
       <LoaderWrapper>
         <Loader />
       </LoaderWrapper>
