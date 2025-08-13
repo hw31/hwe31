@@ -12,6 +12,7 @@ import FilaEstudiante from "./FilaEstudiante";
 import ExportButtons from "./ExportButtons";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import ResumenFinal from "./ResumenFinal";
 const Calificacion = ({
   filtroGeneral,
   onMostrarListaEstudiantes,
@@ -31,11 +32,13 @@ const Calificacion = ({
   const [tiposCalificacion, setTiposCalificacion] = useState([]);
   const [calificaciones, setCalificaciones] = useState([]);
   const [statusGuardado, setStatusGuardado] = useState({});
-  const [periodo, setPeriodo] = useState({ id: null, nombre: "" });
+const [periodo, setPeriodo] = useState({ id: null, nombre: "" });
+
   const [inscritosPorMateria, setInscritosPorMateria] = useState({});
   const [filtroAprobado, setFiltroAprobado] = useState("");
   const [filasPorPagina, setFilasPorPagina] = useState(10); // default 10 filas
   const [paginaActual, setPaginaActual] = useState(1);
+
 
   // Cuando cambia materia o estudiantes actualiza botón mostrar lista
     useEffect(() => {
@@ -44,16 +47,17 @@ const Calificacion = ({
     }
   }, [estudiantes, materiaSeleccionada]);
 
-  useEffect(() => {
+ useEffect(() => {
     const cargarPeriodo = async () => {
       try {
-        const response = await listarPeriodosAcademicos();
+        const response = await listarPeriodosAcademicos(); // tu servicio
         const periodos = response.resultado || [];
         const activo = periodos.find((p) => p.activo === true);
         if (activo) {
           setPeriodo({ id: activo.idPeriodoAcademico, nombre: activo.nombrePeriodo });
         } else {
           console.warn("No hay período académico activo.");
+          setPeriodo({ id: null, nombre: "" });
         }
       } catch (error) {
         console.error("Error cargando período académico:", error.message);
@@ -78,19 +82,20 @@ const Calificacion = ({
         const inscripciones = await inscripcionesService.listarInscripciones();
 
         // Contar inscritos por materia
-        const inscritosCount = {};
-        asigns.forEach((asig) => {
-          const { idMateria, idGrupo } = asig;
-          const inscritosMateria = inscripciones.filter((insc) =>
-            inscMat.some(
-              (im) =>
-                im.iD_Grupo === idGrupo &&
-                im.idMateria === idMateria &&
-                im.idInscripcion === insc.iD_Inscripcion
-            )
-          );
-          inscritosCount[idMateria] = inscritosMateria.length;
-        });
+      const inscritosCount = {};
+asigns.forEach((asig) => {
+  const { idMateria, idGrupo } = asig;
+  const inscritosMateria = inscripciones.filter((insc) =>
+    inscMat.some(
+      (im) =>
+        im.iD_Grupo === idGrupo &&
+        im.idMateria === idMateria &&
+        im.idInscripcion === insc.iD_Inscripcion
+    )
+  );
+  inscritosCount[`${idGrupo}_${idMateria}`] = inscritosMateria.length;
+});
+
 
         setInscritosPorMateria(inscritosCount);
       } catch (error) {
@@ -101,48 +106,57 @@ const Calificacion = ({
     cargarDatosIniciales();
   }, []);
 
-  // Cargar estudiantes y calificaciones cuando cambia materiaSeleccionada
-  useEffect(() => {
-    const cargarDatosMateria = async () => {
-      if (!materiaSeleccionada) return;
+useEffect(() => {
+  const cargarDatosMateria = async () => {
+    if (!materiaSeleccionada) return;
 
-      setEstudiantes([]);
-      setCalificaciones([]);
+    setEstudiantes([]);
+    setCalificaciones([]);
 
-      try {
-        const inscMat = await inscripcionesMateriasService.listarInscripcionesMaterias();
-        const inscripciones = await inscripcionesService.listarInscripciones();
+    try {
+      const inscMat = await inscripcionesMateriasService.listarInscripcionesMaterias();
+      const inscripciones = await inscripcionesService.listarInscripciones();
 
-        const inscMatFiltradas = inscMat.filter(
-          (im) => im.iD_Grupo === materiaSeleccionada.idGrupo && im.idMateria === materiaSeleccionada.idMateria
-        );
+      // 1. Filtrar inscMat por grupo y materia, y estado activo
+      const inscMatFiltradas = inscMat.filter(
+        (im) =>
+          im.iD_Grupo === materiaSeleccionada.idGrupo &&  // compara con propiedad exacta
+          im.idMateria === materiaSeleccionada.idMateria &&
+          im.idEstado === 1 // solo activas
+      );
 
-        const inscritos = inscripciones.filter((insc) =>
-          inscMatFiltradas.some((im) => im.idInscripcion === insc.iD_Inscripcion)
-        );
+      // 2. Obtener solo los idInscripcion que corresponden
+      const idInscripcionesValidas = inscMatFiltradas.map((im) => im.idInscripcion);
 
-        setEstudiantes(inscritos);
+      // 3. Filtrar estudiantes inscritos SOLO con esos idInscripcion
+      const inscritos = inscripciones.filter((insc) =>
+        idInscripcionesValidas.includes(insc.iD_Inscripcion)
+      );
 
-        const resCalifs = await calificacionService.listarCalificacion();
-        if (resCalifs.success) {
-          const califsFiltradas = resCalifs.data.filter(
-            (c) =>
-              c.idMateria === materiaSeleccionada.idMateria &&
-              inscritos.some((e) => e.iD_Inscripcion === c.idInscripcion)
-          );
-          setCalificaciones(califsFiltradas);
-        } else {
-          setCalificaciones([]);
-        }
-      } catch (error) {
-        console.error("Error al cargar inscripciones o calificaciones:", error);
-        setEstudiantes([]);
+      setEstudiantes(inscritos);
+
+      // 4. Filtrar calificaciones para esos estudiantes y materia
+      const resCalifs = await calificacionService.listarCalificacion();
+      if (resCalifs.success) {
+    const califsFiltradas = resCalifs.data.filter(
+  (c) =>
+    c.idMateria === materiaSeleccionada.idMateria &&
+    idInscripcionesValidas.includes(c.idInscripcion)
+);
+
+        setCalificaciones(califsFiltradas);
+      } else {
         setCalificaciones([]);
       }
-    };
+    } catch (error) {
+      console.error("Error al cargar inscripciones o calificaciones:", error);
+      setEstudiantes([]);
+      setCalificaciones([]);
+    }
+  };
 
-    cargarDatosMateria();
-  }, [materiaSeleccionada]);
+  cargarDatosMateria();
+}, [materiaSeleccionada]);
 
   // Extracción y filtrados de grupos y materias
   const gruposUnicos = [];
@@ -157,6 +171,7 @@ const Calificacion = ({
     }
   });
 
+  
   const gruposFiltrados = !grupoSeleccionado
     ? gruposUnicos.filter((grupo) =>
         grupo.nombreGrupo.toLowerCase().includes((filtroGeneral || "").toLowerCase())
@@ -172,6 +187,11 @@ const Calificacion = ({
         m.nombreMateria.toLowerCase().includes((filtroGeneral || "").toLowerCase())
       )
     : [];
+    const materiasDelGrupoPreparadas = asignaciones.map(asig => ({
+  idMateria: asig.idMateria,
+  nombreMateria: asig.nombreMateria,
+}));
+
 
   // Manejar selección materia
   const handleSeleccionarMateria = async (materia) => {
@@ -210,6 +230,51 @@ const Calificacion = ({
       setCalificaciones([]);
     }
   };
+useEffect(() => {
+  if (!grupoSeleccionado && !materiaSeleccionada) {
+    const cargarDatosGlobales = async () => {
+      try {
+        // Cargar asignaciones, tipos, inscripciones, calificaciones
+        const asigns = await asignacionDocenteService.listarAsignaciones();
+        setAsignaciones(asigns);
+
+        const tipos = await tipoCalificacionService.listarTiposCalificacion();
+        setTiposCalificacion(
+          (tipos.resultado || []).filter((tipo) => tipo.activo === true || tipo.activo === 1)
+        );
+
+        const inscMat = await inscripcionesMateriasService.listarInscripcionesMaterias();
+        const inscripciones = await inscripcionesService.listarInscripciones();
+
+        // Unificar estudiantes inscritos para todas las asignaciones (podrías filtrar según necesites)
+        const estudiantesUnicos = [];
+        const idsEstudiantes = new Set();
+
+        inscripciones.forEach((insc) => {
+          if (!idsEstudiantes.has(insc.iD_Inscripcion)) {
+            idsEstudiantes.add(insc.iD_Inscripcion);
+            estudiantesUnicos.push(insc);
+          }
+        });
+        setEstudiantes(estudiantesUnicos);
+
+        // Cargar calificaciones para todas las materias/inscripciones
+        const resCalifs = await calificacionService.listarCalificacion();
+        if (resCalifs.success) {
+          setCalificaciones(resCalifs.data);
+        } else {
+          setCalificaciones([]);
+        }
+      } catch (error) {
+        console.error("Error cargando datos globales:", error);
+        setEstudiantes([]);
+        setCalificaciones([]);
+      }
+    };
+
+    cargarDatosGlobales();
+  }
+}, [grupoSeleccionado, materiaSeleccionada]);
 
   // Funciones para notas y estado guardado (igual que antes)
   const obtenerNota = (idInscripcion, idTipoCalificacion) => {
@@ -336,36 +401,24 @@ const guardarNota = async (idInscripcion, idTipoCalificacion, nota) => {
           // Cambia 'iD_Usuario' por la propiedad correcta que veas en el console.log
           const estId = String(est.iD_Usuario || est.idUsuario || est.ID_Usuario || est.userId || "");
           const coincide = estId === String(idUsuario);
-
-     
-
           if (!coincide) return false;
         }
-
         // Filtro por nombre según filtroGeneral
         if (!est.nombreEstudiante.toLowerCase().includes((filtroGeneral || "").toLowerCase())) {
           return false;
         }
-
       if (filtroAprobado !== "") {
         const aprobado = aprobadoPorEstudiante(est.iD_Inscripcion);
         if (filtroAprobado === "si" && !aprobado) return false;
         if (filtroAprobado === "no" && aprobado) return false;
       }
-
       return true;
     })
   : [];
-
-
-
   const indiceUltimaFila = paginaActual * filasPorPagina;
   const indicePrimeraFila = indiceUltimaFila - filasPorPagina;
-
 // Extraer solo las filas para la página actual
   const estudiantesPaginados = estudiantesFiltrados.slice(indicePrimeraFila, indiceUltimaFila);
-
-
   const claseStatusInput = (clave) => {
     switch (statusGuardado[clave]) {
       case "ok":
@@ -378,7 +431,6 @@ const guardarNota = async (idInscripcion, idTipoCalificacion, nota) => {
         return "border-gray-300";
     }
   };
-
   const clasesCard = `rounded-2xl shadow-md p-4 sm:p-6 transition-all duration-300 w-full max-w-full mx-auto ${
     modoOscuro ? "bg-gray-900 text-white" : "bg-white text-gray-800"
   }`;
@@ -417,10 +469,38 @@ const guardarNota = async (idInscripcion, idTipoCalificacion, nota) => {
 
     return fila;
   });
+// Filtrar solo calificaciones activas (idEstado === 1) y únicas por idInscripcion + idTipoCalificacion
+const calificacionesFiltradas = (() => {
+  const mapa = new Map();
+
+  calificaciones.forEach(c => {
+    if (c.idEstado !== 1) return; // solo activas
+
+    const key = `${c.idInscripcion}_${c.idTipoCalificacion}`;
+
+    const actual = mapa.get(key);
+
+    if (!actual) {
+      mapa.set(key, c);
+    } else {
+      // si hay más de una activa, toma la calificación con mayor nota o más reciente
+      if (c.calificacion > actual.calificacion) {
+        mapa.set(key, c);
+      } else if (
+        c.calificacion === actual.calificacion &&
+        new Date(c.fechaModificacion) > new Date(actual.fechaModificacion)
+      ) {
+        mapa.set(key, c);
+      }
+    }
+  });
+
+  return Array.from(mapa.values());
+})();
 
   return (
     <>
-      {!grupoSeleccionado && (
+      {!grupoSeleccionado && periodo.id && (
         <>
           <div className={clasesCardGrid}>
             {gruposFiltrados.map((grupo) => (
@@ -480,9 +560,10 @@ const guardarNota = async (idInscripcion, idTipoCalificacion, nota) => {
                   </p>
                   <p className="mt-1 text-sm opacity-80">
                     Estudiantes inscritos:{" "}
-                    <span className="font-semibold">
-                      {inscritosPorMateria[m.idMateria] ?? 0}
-                    </span>
+                   <span className="font-semibold">
+  {inscritosPorMateria[`${grupoSeleccionado.idGrupo}_${m.idMateria}`] ?? 0}
+</span>
+
                   </p>
                 </div>
                 <button
@@ -664,13 +745,13 @@ const guardarNota = async (idInscripcion, idTipoCalificacion, nota) => {
                   </td>
                 </tr>
               )}
-             {estudiantesPaginados.map((est, index) => (
+           {estudiantesPaginados.map((est, index) => (
   <FilaEstudiante
     key={est.iD_Inscripcion}
     estudiante={est}
     index={index}
     tiposCalificacion={tiposCalificacion}
-    calificaciones={calificaciones}
+    calificaciones={calificacionesFiltradas} // <--- uso filtrado aquí
     setCalificaciones={setCalificaciones}
     obtenerNota={obtenerNota}
     guardarNota={guardarNota}
@@ -682,7 +763,6 @@ const guardarNota = async (idInscripcion, idTipoCalificacion, nota) => {
     modoOscuro={modoOscuro}
   />
 ))}
-
 
             </tbody>
           </table>
@@ -740,6 +820,21 @@ const guardarNota = async (idInscripcion, idTipoCalificacion, nota) => {
       pauseOnHover
       theme={modoOscuro ? "dark" : "light"}
     />
+{!grupoSeleccionado &&
+ !materiaSeleccionada &&
+ periodo.id && (
+  <ResumenFinal
+    estudiantes={estudiantes}
+    calificaciones={calificaciones}
+    tiposCalificacion={tiposCalificacion}
+    materiasDelGrupo={materiasDelGrupoPreparadas}
+    modoOscuro={modoOscuro}
+    idUsuario={idUsuario}
+    rol={rolLower}
+    periodoId={periodo.id} // 👈 aquí pasas el id
+  />
+)}
+
   </>
 
   );

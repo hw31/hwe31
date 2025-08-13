@@ -243,15 +243,15 @@ const PeriodoAcademico = () => {
           }
           .periodos-table-container table th:nth-child(1),
           .periodos-table-container table td:nth-child(1) {
-            max-width: 80px;
+            max-width: 90px;
             width: 50px;
             overflow: hidden;
             text-overflow: ellipsis;
           }
           .periodos-table-container table th:nth-child(2),
           .periodos-table-container table td:nth-child(2) {
-            width: 80px;
-            max-width: 80px;
+            width: 20px;
+            max-width: 20px;
             text-align: center;
           }
           .periodos-table-container table th:nth-child(3),

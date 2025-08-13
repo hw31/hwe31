@@ -16,10 +16,6 @@ import {
 import SidebarMenu from "../Shared/SidebarMenu";
 import DashboardMenuCards from "../Shared/DashboardMenuCards";
 
-import CardInscripcionesConfirmadas from "../Shared/CardInscripcionesConfirmadas";
-import CardUsuariosKPI from "../Shared/CardUsuariosKPI";
-import CardTransacciones from "../Shared/CardTransacciones";
-
 import Checkbox from "../Shared/Checkbox";
 import DashboardCards from "./DashboardCards";
 const DashboardWelcome = styled.div`

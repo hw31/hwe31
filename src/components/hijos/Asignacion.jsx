@@ -7,11 +7,11 @@ import grupoService from "../../services/Grupos"; // listarGrupos
 import aulaService from "../../services/Aulas"; // listarAula
 import horarioService from "../../services/Horarios"; // listarHorarios
 import estadoService from "../../services/Estado"; // listarEstados
-import { Users, ArrowLeft } from "lucide-react"; // Iconos
+
 import { FaPlus, FaEdit, FaUser, FaUserCheck, FaUserTimes, FaCheckCircle, FaTimesCircle } from "react-icons/fa";
 import Swal from "sweetalert2";
 import AutocompleteSelect from "../Shared/AutocompleteSelect";
-
+import periodoService from "../../services/PeriodoAcademico";
 const AsignacionDocenteList = () => {
   const modoOscuro = useSelector((state) => state.theme.modoOscuro);
   const [busqueda, setBusqueda] = useState("");
@@ -39,6 +39,7 @@ console.log("ROL:", rol, "ROL LOWER:", rolLower, "LOADING:", loading);
     IdGrupo: "",
     IdAula: "",
     IdHorario: "",
+     IdPeriodo: "",
     IdEstado: "",
   });
 
@@ -48,10 +49,70 @@ console.log("ROL:", rol, "ROL LOWER:", rolLower, "LOADING:", loading);
     grupos: [],
     aulas: [],
     horarios: [],
+      periodos: [],
     estados: [],
   });
 
-  const cargarAsignaciones = async () => {
+ 
+const cargarListas = async () => {
+  try {
+    const [
+      usuariosRolesTodos,
+      materias,
+      grupos,
+      aulasResult,
+      horariosResult,
+      estadosResult,
+      periodosResult
+    ] = await Promise.all([
+      usuarioService.listarUsuariosRoles(),
+      materiaService.listarMaterias(),
+      grupoService.listarGrupos(),
+      aulaService.listarAula(),
+      horarioService.listarHorarios(),
+      estadoService.listarEstados(),
+      periodoService.listarPeriodosAcademicos()
+    ]);
+
+    const usuariosRoles = (usuariosRolesTodos ?? []).filter(
+      (u) => u.iD_Rol === 2
+    );
+
+    const estadosRaw = estadosResult?.data ?? [];
+    const estados = estadosRaw.map((e) => ({
+      idEstado: e.iD_Estado ?? e.idEstado,
+      nombreEstado: e.nombre_Estado ?? e.nombreEstado,
+    }));
+
+    const horariosRaw = Array.isArray(horariosResult)
+      ? horariosResult
+      : horariosResult?.resultado ?? [];
+
+    const horarios = horariosRaw.map((h) => ({
+      idHorario: h.iD_Horario ?? h.idHorario,
+      nombreHorario: h.nombreDiaSemana ?? "",
+      descripcionHorario: `${h.nombreDiaSemana ?? "Día"} ${h.horaInicio ?? ""} - ${h.horaFin ?? ""}`,
+    }));
+
+    // ✅ Aquí corregido para leer "resultado" y filtrar activos
+    const periodosRaw = periodosResult?.resultado ?? [];
+    const periodos = periodosRaw.filter(p => p.activo === true);
+
+    setListas({
+      usuariosRoles,
+      materias: materias ?? [],
+      grupos: grupos ?? [],
+      aulas: aulasResult?.data ?? [],
+      horarios,
+      estados,
+      periodos,
+    });
+  } catch (err) {
+    console.error("Error al cargar listas:", err);
+  }
+};
+
+ const cargarAsignaciones = async () => {
     try {
       setLoading(true);
       const data = await asignacionDocenteService.listarAsignaciones();
@@ -64,62 +125,14 @@ console.log("ROL:", rol, "ROL LOWER:", rolLower, "LOADING:", loading);
     }
   };
 
-  const cargarListas = async () => {
-    try {
-      const [
-        usuariosRolesTodos,
-        materias,
-        grupos,
-        aulasResult,
-        horariosResult,
-        estadosResult,
-      ] = await Promise.all([
-        usuarioService.listarUsuariosRoles(),
-        materiaService.listarMaterias(),
-        grupoService.listarGrupos(),
-        aulaService.listarAula(),
-        horarioService.listarHorarios(),
-        estadoService.listarEstados(),
-      ]);
-
-      const usuariosRoles = (usuariosRolesTodos ?? []).filter(
-        (u) => u.iD_Rol === 2 // Solo docentes
-      );
-
-      const estadosRaw = estadosResult?.data ?? [];
-      const estados = estadosRaw.map((e) => ({
-        idEstado: e.iD_Estado ?? e.idEstado,
-        nombreEstado: e.nombre_Estado ?? e.nombreEstado,
-      }));
-
-      const horariosRaw = Array.isArray(horariosResult)
-        ? horariosResult
-        : horariosResult?.resultado ?? [];
-
-      const horarios = horariosRaw.map((h) => ({
-        idHorario: h.iD_Horario ?? h.idHorario,
-        nombreHorario: h.nombreDiaSemana ?? "",
-        descripcionHorario: `${h.nombreDiaSemana ?? "Día"} ${h.horaInicio ?? ""} - ${h.horaFin ?? ""}`,
-      }));
-
-      setListas({
-        usuariosRoles,
-        materias: materias ?? [],
-        grupos: grupos ?? [],
-        aulas: aulasResult?.data ?? [],
-        horarios,
-        estados,
-      });
-    } catch (err) {
-      console.error("Error al cargar listas:", err);
-    }
-  };
-
   const handleBusquedaChange = (e) => setBusqueda(e.target.value);
 
   useEffect(() => {
-    cargarAsignaciones();
-    cargarListas();
+    const init = async () => {
+      await cargarListas();
+      await cargarAsignaciones();
+    };
+    init();
   }, []);
 
   const cerrarModal = () => {
@@ -134,54 +147,62 @@ console.log("ROL:", rol, "ROL LOWER:", rolLower, "LOADING:", loading);
       IdGrupo: "",
       IdAula: "",
       IdHorario: "",
+      IdPeriodo: "",
       IdEstado: "",
     });
   };
- 
-  const abrirModalNuevo = () => {
-    setModoEdicion(false);
-    setAsignacionSeleccionada(null);
-    setFormData({
-      UsuarioDocente: "",
-      IdMateria: "",
-      IdGrupo: "",
-      IdAula: "",
-      IdHorario: "",
-      IdEstado: "",
-    });
-    setFormError("");
-    setModalOpen(true);
-  };
+const abrirModalNuevo = () => {
+  const periodoActivo = listas.periodos?.[0]; // primer periodo activo
+  setFormData({
+    UsuarioDocente: "", // aquí el select debe asignar iD_Usuario
+    IdMateria: "",
+    IdGrupo: "",
+    IdAula: "",
+    IdHorario: "",
+    IdPeriodo: periodoActivo?.idPeriodoAcademico || "", // CORRECTO
+    IdEstado: "",
+  });
+  setModoEdicion(false);
+  setAsignacionSeleccionada(null);
+  setFormError("");
+  setModalOpen(true);
+};
 
-  const abrirModalEditar = (asignacion) => {
-    setModoEdicion(true);
-    setAsignacionSeleccionada(asignacion);
-    setFormData({
-      UsuarioDocente: asignacion.usuarioDocenteId || "",
-      IdMateria: asignacion.idMateria || "",
-      IdGrupo: asignacion.idGrupo || "",
-      IdAula: asignacion.idAula || "",
-      IdHorario: asignacion.idHorario || "",
-      IdEstado: asignacion.idEstado || "",
-    });
-    setFormError("");
-    setModalOpen(true);
-  };
+const abrirModalEditar = (asignacion) => {
+  setModoEdicion(true);
+  setAsignacionSeleccionada(asignacion);
+  setFormData({
+    UsuarioDocente: asignacion.usuarioDocenteId || "",
+    IdMateria: asignacion.idMateria || "",
+    IdGrupo: asignacion.idGrupo || "",
+    IdAula: asignacion.idAula || "",
+    IdHorario: asignacion.idHorario || "",
+    IdPeriodo: asignacion.idPeriodo || "", // ⚡ coincide con tu API
+    IdEstado: asignacion.idEstado || "",
+  });
+  setFormError("");
+  setModalOpen(true);
+};
+
+
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const validarFormulario = () => {
-    const { UsuarioDocente, IdMateria, IdGrupo, IdAula, IdHorario, IdEstado } = formData;
-    if (!UsuarioDocente || !IdMateria || !IdGrupo || !IdAula || !IdHorario || !IdEstado) {
-      setFormError("Por favor, complete todos los campos.");
-      return false;
-    }
-    setFormError("");
-    return true;
-  };
+const validarFormulario = () => {
+  const { UsuarioDocente, IdMateria, IdGrupo, IdAula, IdHorario, IdPeriodo, IdEstado } = formData;
+
+  if (!UsuarioDocente || !IdMateria || !IdGrupo || !IdAula || !IdHorario || !IdPeriodo || !IdEstado) {
+    setFormError("Por favor, complete todos los campos, incluido el periodo académico.");
+    return false;
+  }
+
+  setFormError("");
+  return true;
+};
+
 
   const handleGuardar = async () => {
     if (!validarFormulario()) return;
@@ -230,20 +251,20 @@ console.log("ROL:", rol, "ROL LOWER:", rolLower, "LOADING:", loading);
     }
   };
 
-  const asignacionesFiltradas = asignaciones.filter((asig) => {
-    const textoBusqueda = busqueda.toLowerCase();
+ // ---------- FILTRAR ASIGNACIONES POR PERIODO ACTIVO + BUSQUEDA ----------
+  const asignacionesFiltradas = (asignaciones || []).filter(a => {
+    const periodosActivosIds = (listas.periodos || []).map(p => p.idPeriodoAcademico);
+    if (!periodosActivosIds.includes(a.idPeriodo)) return false; // solo periodo activo
+
+    const texto = busqueda.toLowerCase();
     return (
-      (asig.nombreDocente?.toLowerCase().includes(textoBusqueda)) ||
-      (listas.usuariosRoles.find((u) => u.iD_Usuario === asig.usuarioDocenteId)?.nombre_Usuario
-        ?.toLowerCase()
-        .includes(textoBusqueda)) ||
-      (asig.nombreMateria?.toLowerCase().includes(textoBusqueda)) ||
-      (asig.nombreGrupo?.toLowerCase().includes(textoBusqueda)) ||
-      (asig.nombreAula?.toLowerCase().includes(textoBusqueda)) ||
-      (listas.horarios.find((h) => h.idHorario === asig.idHorario)?.descripcionHorario
-        ?.toLowerCase()
-        .includes(textoBusqueda)) ||
-      (asig.nombreEstado?.toLowerCase().includes(textoBusqueda))
+      (a.nombreDocente?.toLowerCase().includes(texto)) ||
+      (listas.usuariosRoles.find(u => u.iD_Usuario === a.usuarioDocenteId)?.nombre_Usuario?.toLowerCase().includes(texto)) ||
+      (a.nombreMateria?.toLowerCase().includes(texto)) ||
+      (a.nombreGrupo?.toLowerCase().includes(texto)) ||
+      (a.nombreAula?.toLowerCase().includes(texto)) ||
+      (listas.horarios.find(h => h.idHorario === a.idHorario)?.descripcionHorario?.toLowerCase().includes(texto)) ||
+      (a.nombreEstado?.toLowerCase().includes(texto))
     );
   });
 
@@ -476,6 +497,7 @@ Asignaciones
           <th className="px-4 py-2 text-left text-sm font-semibold">Grupo</th>
           <th className="px-4 py-2 text-left text-sm font-semibold">Aula</th>
           <th className="px-4 py-2 text-left text-sm font-semibold">Horario</th>
+           <th className="px-4 py-2 text-left text-sm font-semibold">Periodo</th>
           {rolLower === "administrador" && (
             <th className="px-4 py-2 text-left text-sm font-semibold">Estado</th>
           )}
@@ -518,7 +540,12 @@ Asignaciones
                 );
                 return horario ? horario.descripcionHorario : "N/D";
               })()}
+              
             </td>
+              <td className={`px-4 py-2 text-sm ${texto}`}>
+  {asig.nombrePeriodo || "N/D"}
+</td>
+
             {rolLower === "administrador" && (
               <td className="px-4 py-2 text-center">
                 {asig.nombreEstado?.toLowerCase() === "activo" ? (
@@ -602,6 +629,25 @@ Asignaciones
                 getOptionLabel={(u) => u.nombre_Usuario ?? "Sin nombre"}
                 getOptionValue={(u) => u.iD_Usuario}
               />
+  {/* Periodo */}
+<AutocompleteSelect
+  label="Periodo Académico"
+  value={formData.IdPeriodo}
+  onChange={(val) =>
+    setFormData((prev) => ({ ...prev, IdPeriodo: val }))
+  }
+  options={listas.periodos?.map((p) => ({
+    value: p.idPeriodoAcademico, // ⚡ cambiar a idPeriodoAcademico
+    label: p.nombrePeriodo,
+  }))}
+/>
+
+
+
+
+
+
+
 
               <AutocompleteSelect
                 label="Materia"

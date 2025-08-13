@@ -46,13 +46,6 @@ const Inscripcion = () => {
   const [paginaActual, setPaginaActual] = useState(1);
   const [filasPorPagina, setFilasPorPagina] = useState(10);
 const inscripcionesConfirmadas = inscripciones.filter((i) => i.idEstado === 10);
-const [periodoActivo, setPeriodoActivo] = useState(null);
-useEffect(() => {
-  if (periodos.length > 0) {
-    const activo = periodos.find(p => p.activo === true);
-    setPeriodoActivo(activo || null);
-  }
-}, [periodos]);
 
 
   // Filtrado estudiantes activos (rol=3)
@@ -129,24 +122,63 @@ const seleccionarEstudiante = (id, nombre) => {
   };
 
   // Cargar inscripciones enriquecidas con nombres y fechas formateadas
- const cargarInscripciones = async (usuarios = usuariosRoles, periodosList = periodos) => {
+const cargarInscripciones = async () => {
   setLoading(true);
   try {
+    // 1. Traer periodos académicos y encontrar el activo
+    const periodosRes = await periodoService.listarPeriodosAcademicos();
+    const periodosList = periodosRes.resultado || [];
+    setPeriodos(periodosList);
+    const periodoActivo = periodosList.find((p) => p.activo);
+
+    if (!periodoActivo) {
+      setInscripciones([]); // no hay periodo activo
+      return;
+    }
+
+    // 2. Traer usuarios roles solo si es admin
+    let usuariosList = [];
+    if (rolLower === "administrador") {
+      const usuariosRolesRes = await usuariosRolesService.listarUsuariosRoles();
+      usuariosList = usuariosRolesRes || [];
+      setUsuariosRoles(usuariosList);
+    }
+
+    // 3. Traer inscripciones
     const res = await inscripcionService.listarInscripciones();
-    if (Array.isArray(res)) {
-      const mapeadas = res.map((i) => {
+    if (!Array.isArray(res)) {
+      setInscripciones([]);
+      return;
+    }
+
+    // 4. Filtrar y mapear inscripciones
+    const mapeadas = res
+      .filter((i) => {
         const idUsuario = i.iD_Usuario ?? i.idUsuario;
         const idPeriodo = i.iD_PeriodoAcademico ?? i.idPeriodoAcademico;
-        const usuarioRol = usuarios.find((ur) => ur.iD_Usuario === idUsuario);
-        const periodo = periodosList.find((p) => p.idPeriodoAcademico === idPeriodo);
+
+        // Solo periodo activo
+        if (idPeriodo !== periodoActivo.idPeriodoAcademico) return false;
+
+        // Estudiante ve solo sus propias inscripciones
+        if (rolLower === "estudiante") {
+          return idUsuario === parseInt(idUsuarioLogueado);
+        }
+
+        // Admin ve todas
+        return true;
+      })
+      .map((i) => {
+        const idUsuario = i.iD_Usuario ?? i.idUsuario;
+        const usuarioRol = usuariosList.find((ur) => ur.iD_Usuario === idUsuario);
         const idEstado = i.iD_Estado ?? i.idEstado;
 
         return {
           idInscripcion: i.iD_Inscripcion ?? i.idInscripcion,
           idUsuario,
           nombreEstudiante: i.nombreEstudiante ?? usuarioRol?.nombre_Usuario ?? "Desconocido",
-          idPeriodoAcademico: idPeriodo,
-          nombrePeriodo: i.nombrePeriodo ?? periodo?.nombrePeriodo ?? "Sin nombre",
+          idPeriodoAcademico: i.iD_PeriodoAcademico ?? i.idPeriodoAcademico,
+          nombrePeriodo: i.nombrePeriodo ?? periodoActivo.nombrePeriodo,
           fechaInscripcion: formatearFecha(i.fechaInscripcion),
           idCreador: i.iD_Creador ?? i.idCreador,
           creador: i.creador ?? "ND",
@@ -159,10 +191,8 @@ const seleccionarEstudiante = (id, nombre) => {
           estadoIcono: getEstadoIcon(idEstado),
         };
       });
-      setInscripciones(mapeadas);
-    } else {
-      setInscripciones([]);
-    }
+
+    setInscripciones(mapeadas);
   } catch (error) {
     Swal.fire("Error", "No se pudieron cargar las inscripciones", "error");
   } finally {
@@ -335,21 +365,15 @@ const seleccionarEstudiante = (id, nombre) => {
   ];
 
   // Filtrar inscripciones según rol y búsqueda
- const datosFiltrados = inscripciones.filter((i) => {
-  if (!periodoActivo) return false; // No hay periodo activo, no mostrar nada
-
-  if (rolLower === "estudiante") {
-    return i.idUsuario === parseInt(idUsuarioLogueado) && i.idPeriodoAcademico === periodoActivo.idPeriodoAcademico;
-  }
-
-  // Admin y otros roles: buscar por nombre y filtrar por periodo activo
-  return (
-    (i.nombreEstudiante?.toLowerCase().includes(busqueda.toLowerCase()) ||
-     i.nombrePeriodo?.toLowerCase().includes(busqueda.toLowerCase())) &&
-    i.idPeriodoAcademico === periodoActivo.idPeriodoAcademico
-  );
-});
-
+  const datosFiltrados = inscripciones.filter((i) => {
+    if (rolLower === "estudiante") {
+      return i.idUsuario === parseInt(idUsuarioLogueado);
+    }
+    return (
+      i.nombreEstudiante?.toLowerCase().includes(busqueda.toLowerCase()) ||
+      i.nombrePeriodo?.toLowerCase().includes(busqueda.toLowerCase())
+    );
+  });
 
   // Paginación: calcular índices y datos actuales
   const indexUltimaFila = paginaActual * filasPorPagina;
@@ -408,7 +432,7 @@ const seleccionarEstudiante = (id, nombre) => {
         </>
       )}
 
-   {rolLower === "administrador" && (
+{rolLower === "administrador" && (
   <div className="flex items-center justify-between gap-4 text-sm mt-2">
     {/* Parte izquierda: label + select en fila */}
     <div className="flex items-center gap-2 whitespace-nowrap">
@@ -437,6 +461,7 @@ const seleccionarEstudiante = (id, nombre) => {
       titulo="Listado de Inscripciones Confirmadas"
     />
   </div>
+
 )}
 
 
