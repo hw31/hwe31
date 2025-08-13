@@ -1,704 +1,540 @@
-import React, { useEffect, useState } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
+import Swal from "sweetalert2";
 import { useSelector } from "react-redux";
-import inscripcionesmateriaService from "../../services/InscripcionesMaterias";
+import { FaCheckCircle, FaTimesCircle } from "react-icons/fa";
+
+import ContadoresBase from "../Shared/Contadores";
+import TablaBase from "../Shared/TablaBase";
+import ModalBase from "../Shared/ModalBase";
+import FormularioBase from "../Shared/FormularioBase";
+import BuscadorBase from "../Shared/BuscadorBase";
+
+import inscripcionMateriaService from "../../services/InscricipcionesxMateria";
 import inscripcionService from "../../services/Inscripcion";
 import materiaService from "../../services/Materias";
-import estadoService from "../../services/Estado";
-import usuarioService from "../../services/Usuario";
 import grupoService from "../../services/Grupos";
-
-import periodoService from "../../services/PeriodoAcademico"; // <-- Importa tu servicio
-import Swal from "sweetalert2";
-import { FaEdit, FaPlus, FaUserCheck, FaUserTimes, FaUser, FaCheckCircle, FaTimesCircle } from "react-icons/fa";
+import estadoService from "../../services/Estado";
 
 const InscripcionesMaterias = () => {
-  const modoOscuro = useSelector((state) => state.theme.modoOscuro);
-
+  const { modoOscuro } = useSelector(state => state.theme);
   const [inscripcionesMaterias, setInscripcionesMaterias] = useState([]);
-  const [listas, setListas] = useState({
-    grupos: [],
-    materias: [],
-    inscripciones: [],
-    estados: [],
-    usuarios: [], // Añadido para consistencia
+  const [inscripciones, setInscripciones] = useState([]);
+  const [materias, setMaterias] = useState([]);
+  const [grupos, setGrupos] = useState([]);
+  const [estados, setEstados] = useState([]);
+
+  // --- FILTRO TABLA (usa BuscadorBase) ---
+  const [filtroTablaEstudiante, setFiltroTablaEstudiante] = useState("");
+
+  // --- AUTOCOMPLETE FORMULARIO ---
+  const [busquedaEstudiante, setBusquedaEstudiante] = useState("");
+  const [busquedaMateria, setBusquedaMateria] = useState("");
+  const [busquedaGrupo, setBusquedaGrupo] = useState("");
+
+  // Mostrar dropdowns de autocomplete formulario
+  const [mostrarDropdownEstudiante, setMostrarDropdownEstudiante] = useState(false);
+  const [mostrarDropdownMateria, setMostrarDropdownMateria] = useState(false);
+  const [mostrarDropdownGrupo, setMostrarDropdownGrupo] = useState(false);
+
+  const [form, setForm] = useState({
+    idInscripcionMateria: 0,
+    idInscripcion: 0,
+    idMateria: 0,
+    idGrupo: 0,
+    idEstado: 1, // activo por defecto
   });
 
-  const [periodosAcademicos, setPeriodosAcademicos] = useState([]); // Estado para periodos
-
-  const [loadingListas, setLoadingListas] = useState(false);
-  const [busqueda, setBusqueda] = useState("");
   const [modalOpen, setModalOpen] = useState(false);
   const [modoEdicion, setModoEdicion] = useState(false);
-  const [formData, setFormData] = useState({
-    idInscripcion: "",
-    idMateria: "",
-    idGrupo: "",    // Homogenizado nombre a "idGrupo"
-    idEstado: "",
-  });
-  const [inscripcionSeleccionada, setInscripcionSeleccionada] = useState(null);
-
   const [formError, setFormError] = useState("");
-  const [loading, setLoading] = useState(false);
   const [formLoading, setFormLoading] = useState(false);
-  const [error, setError] = useState("");
-  
+  const [loading, setLoading] = useState(false);
 
-  // Cargar listas maestras (materias, estados, usuarios)
-const cargarListas = async () => {
-  setLoadingListas(true);
-  try {
-  const [materiasResp, estadosResp, grupoResp, usuariosResp] = await Promise.all([
-  materiaService.listarMaterias(),
-  estadoService.listarEstados(),
-  grupoService.listarGrupos(),
-  usuarioService.listarUsuario(),
-]);
+  // Paginación
+  const [paginaActual, setPaginaActual] = useState(1);
+  const [filasPorPagina, setFilasPorPagina] = useState(10);
 
-const grupos = grupoResp ?? []; // ✅ ya es un array directamente
-
-    const materias = materiasResp?.resultado ?? materiasResp ?? [];
-    const estados = estadosResp.success ? estadosResp.data : [];
-
-    const usuarios = usuariosResp.success ? usuariosResp.data : [];
-
-    setListas((prev) => ({
-      ...prev,
-      materias,
-      estados,
-      grupos,
-      usuarios,
-    }));
-  } catch (err) {
-    console.error("Error al cargar listas:", err);
-    setError("Error al cargar listas.");
-  } finally {
-    setLoadingListas(false);
-  }
-};
-
- // Funciones para obtener nombres según IDs
-  const buscarNombreEstudiante = (idInscripcion) =>
-    listas.inscripciones.find((i) => Number(i.iD_Inscripcion) === Number(idInscripcion))
-      ?.nombreEstudiante ?? "N/A";
-
-const buscarNombreGrupo = (idGrupo) =>
-  listas.grupos.find((g) => Number(g.idGrupo) === Number(idGrupo))?.codigoGrupo ?? "N/A";
-
-  const buscarNombrePeriodo = (idPeriodo) => {
-    const periodo = periodosAcademicos.find(
-      (p) => p.idPeriodoAcademico === Number(idPeriodo)
-    );
-    return periodo ? periodo.nombrePeriodo : "";
-  };
-
-  const buscarNombreMateria = (id) =>
-    listas.materias.find((m) => Number(m.idMateria) === Number(id))?.nombreMateria ?? "";
-
-  const buscarNombreEstado = (id) => {
-    const e = listas.estados.find((e) => Number(e.iD_Estado ?? e.idEstado) === Number(id));
-    return e?.nombre_Estado ?? e?.nombreEstado ?? "";
-  };
-
-  const buscarNombreUsuario = (id) => {
-    const usuario = listas.usuarios.find((u) => Number(u.id_Usuario) === Number(id));
-    return usuario?.usuario ?? `ID: ${id}`;
-  };
-  // Cargar inscripciones para obtener nombres de estudiantes y el idPeriodoAcademico
-  const cargarInscripciones = async () => {
-    try {
-      const resultado = await inscripcionService.listarInscripciones();
-      setListas((prev) => ({
-        ...prev,
-        inscripciones: resultado.resultado ?? resultado ?? [],
-      }));
-    } catch (err) {
-      console.error(err);
-      setError("Error al listar inscripciones.");
-    }
-  };
-
-  // Cargar períodos académicos
-  const cargarPeriodosAcademicos = async () => {
-    try {
-      const res = await periodoService.listarPeriodosAcademicos();
-      setPeriodosAcademicos(res.resultado ?? []);
-    } catch (err) {
-      console.error("Error al cargar periodos académicos:", err);
-    }
-  };
-
-const cargarInscripcionesMaterias = async () => {
-  try {
-    setLoading(true);
-    setError("");
-    const data = await inscripcionesmateriaService.listarInscripcionesMaterias();
-
-    // Transformamos el campo iD_Grupo a idGrupo para uniformidad
-    const dataTransformada = data.map((item) => ({
-      ...item,
-      idGrupo: item.iD_Grupo ?? 0,  // Asegura que idGrupo esté siempre definido
-    }));
-
-    setInscripcionesMaterias(dataTransformada);
-
-    console.log("Datos inscripciones materias transformados:", dataTransformada);
-  } catch (err) {
-    console.error(err);
-    setError("Error al listar inscripciones materias.");
-  } finally {
-    setLoading(false);
-  }
-};
+  // Referencias para cerrar dropdowns al hacer click fuera
+  const estudianteRef = useRef(null);
+  const materiaRef = useRef(null);
+  const grupoRef = useRef(null);
 
   useEffect(() => {
-    cargarListas();
-    cargarInscripciones();
-    cargarPeriodosAcademicos();
-
-     console.log(" Listas.grupos en el estado:", listas.grupos);
-    cargarInscripcionesMaterias();
+    cargarDatos();
   }, []);
 
- 
-const inscripcionesFiltradas = inscripcionesMaterias.filter((i) => {
-  const texto = busqueda.toLowerCase();
+  useEffect(() => {
+    // Cerrar dropdowns al click fuera
+    const handleClickOutside = (e) => {
+      if (estudianteRef.current && !estudianteRef.current.contains(e.target)) {
+        setMostrarDropdownEstudiante(false);
+      }
+      if (materiaRef.current && !materiaRef.current.contains(e.target)) {
+        setMostrarDropdownMateria(false);
+      }
+      if (grupoRef.current && !grupoRef.current.contains(e.target)) {
+        setMostrarDropdownGrupo(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
-  const periodoId = listas.inscripciones.find(insc => insc.iD_Inscripcion === i.idInscripcion)?.iD_PeriodoAcademico || "";
-  const periodoNombre = buscarNombrePeriodo(periodoId).toLowerCase();
+  const cargarDatos = async () => {
+    setLoading(true);
+    try {
+      const [
+        insMatRes,
+        insRes,
+        matRes,
+        grpRes,
+        estRes,
+      ] = await Promise.all([
+        inscripcionMateriaService.listarInscripcionesMaterias(),
+        inscripcionService.listarInscripciones(),
+        materiaService.listarMaterias(),
+        grupoService.listarGrupos(),
+        estadoService.listarEstados(),
+      ]);
+      setInscripcionesMaterias(insMatRes);
+      setInscripciones(insRes);
+      setMaterias(matRes);
+      setGrupos(grpRes);
+      // Solo estados Activo (1) e Inactivo (2)
+      setEstados(estRes.data.filter(e => e.iD_Estado === 1 || e.iD_Estado === 2));
+    } catch (error) {
+      Swal.fire("Error", "No se pudieron cargar los datos.", "error");
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  return (
-    buscarNombreGrupo(i.idGrupo).toLowerCase().includes(texto) ||
-    buscarNombreMateria(i.idMateria).toLowerCase().includes(texto) ||
-    buscarNombreEstado(i.idEstado).toLowerCase().includes(texto) ||
-    buscarNombreEstudiante(i.idInscripcion).toLowerCase().includes(texto) ||
-    periodoNombre.includes(texto)
+  const formatearFecha = (fecha) => {
+    if (!fecha) return "-";
+    const d = new Date(fecha);
+    return d.toLocaleDateString("es-NI", {
+      year: "numeric",
+      month: "short",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
+
+  // Filtros para autocompletados formulario (no filtran tabla)
+  const estudiantesFiltrados = inscripciones.filter((i) =>
+    i.nombreEstudiante.toLowerCase().includes(busquedaEstudiante.toLowerCase())
   );
-});
+  const materiasFiltradas = materias.filter((m) =>
+    m.nombreMateria.toLowerCase().includes(busquedaMateria.toLowerCase())
+  );
+  const gruposFiltrados = grupos.filter((g) =>
+    g.codigoGrupo.toLowerCase().includes(busquedaGrupo.toLowerCase())
+  );
 
-  // Contadores para estado
-  const activos = inscripcionesMaterias.filter((i) => Number(i.idEstado) === 1).length;
-  const inactivos = inscripcionesMaterias.filter((i) => Number(i.idEstado) !== 1).length;
-  const total = inscripcionesMaterias.length;
-
-  // Manejo inputs
-  const handleBusquedaChange = (e) => setBusqueda(e.target.value);
+  // Selección en autocompletados formulario
+  const seleccionarEstudiante = (idInscripcion, nombre) => {
+    setForm((f) => ({ ...f, idInscripcion }));
+    setBusquedaEstudiante(nombre);
+    setMostrarDropdownEstudiante(false);
+  };
+  const seleccionarMateria = (idMateria, nombre) => {
+    setForm((f) => ({ ...f, idMateria }));
+    setBusquedaMateria(nombre);
+    setMostrarDropdownMateria(false);
+  };
+  const seleccionarGrupo = (idGrupo, codigo) => {
+    setForm((f) => ({ ...f, idGrupo }));
+    setBusquedaGrupo(codigo);
+    setMostrarDropdownGrupo(false);
+  };
 
   // Abrir modal nuevo
-   const abrirModalNuevo = () => {
-    setModoEdicion(false);
-    setFormData({ idInscripcion: "", idMateria: "", idEstado: "", idGrupo: "" });
-    setInscripcionSeleccionada(null);
-    setFormError("");
-    setModalOpen(true);
-  };
-
-  // Abrir modal editar
-  const abrirModalEditar = (inscripcion) => {
-    setModoEdicion(true);
-    setFormData({
-      idInscripcion: inscripcion.idInscripcion,
-      idMateria: inscripcion.idMateria,
-      idEstado: inscripcion.idEstado,
-      idGrupo: inscripcion.idGrupo,  // corregido a idGrupo (minúscula)
+  const abrirModalNuevo = () => {
+    setForm({
+      idInscripcionMateria: 0,
+      idInscripcion: 0,
+      idMateria: 0,
+      idGrupo: 0,
+      idEstado: 1,
     });
-    setInscripcionSeleccionada(inscripcion);
+    setBusquedaEstudiante("");
+    setBusquedaMateria("");
+    setBusquedaGrupo("");
+    setModoEdicion(false);
     setFormError("");
     setModalOpen(true);
   };
 
-  const cerrarModal = () => {
-    setModalOpen(false);
+  // Editar fila
+  const handleEditar = (item) => {
+    const inscripcion = inscripciones.find(i => i.iD_Inscripcion === item.idInscripcion);
+    const materia = materias.find(m => m.idMateria === item.idMateria);
+    const grupo = grupos.find(g => g.idGrupo === item.iD_Grupo);
+
+    setForm({
+      idInscripcionMateria: item.idInscripcionMateria,
+      idInscripcion: item.idInscripcion,
+      idMateria: item.idMateria,
+      idGrupo: item.iD_Grupo,
+      idEstado: item.idEstado,
+    });
+    setBusquedaEstudiante(inscripcion?.nombreEstudiante || "");
+    setBusquedaMateria(materia?.nombreMateria || "");
+    setBusquedaGrupo(grupo?.codigoGrupo || "");
+    setModoEdicion(true);
     setFormError("");
-    setFormLoading(false);
+    setModalOpen(true);
   };
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-  };
-
-const validarFormulario = () => {
-    if (!formData.idInscripcion) {
-      setFormError("Debe seleccionar una inscripción válida.");
-      return false;
-    }
-    if (!formData.idMateria) {
-      setFormError("Debe seleccionar una materia.");
-      return false;
-    }
-    if (!formData.idEstado) {
-      setFormError("Debe seleccionar un estado.");
-      return false;
-    }
-    if (!formData.idGrupo) {
-      setFormError("Debe seleccionar un grupo.");
-      return false;
-    }
-    setFormError("");
-    return true;
-  };
-
+  // Guardar formulario
   const handleGuardar = async () => {
-    if (!validarFormulario()) return;
+    if (!form.idInscripcion) return setFormError("Debe seleccionar un estudiante");
+    if (!form.idMateria) return setFormError("Debe seleccionar una materia");
+    if (!form.idGrupo) return setFormError("Debe seleccionar un grupo");
+    if (![1, 2].includes(form.idEstado)) return setFormError("Debe seleccionar un estado válido");
 
+    setFormLoading(true);
+    setFormError("");
     try {
-      setFormLoading(true);
       let res;
-
-      if (modoEdicion && inscripcionSeleccionada) {
-        res = await inscripcionesmateriaService.actualizarInscripcionMateria({
-          idInscripcionMateria: inscripcionSeleccionada.idInscripcionMateria,
-          ...formData,
-        });
+      if (modoEdicion) {
+        res = await inscripcionMateriaService.actualizarInscripcionMateria(form);
       } else {
-        res = await inscripcionesmateriaService.insertarInscripcionMateria(formData);
+        res = await inscripcionMateriaService.insertarInscripcionMateria(form);
       }
 
       if (res.success) {
-        await cargarInscripcionesMaterias();
-        cerrarModal();
-        Swal.fire({
-          icon: "success",
-          title: modoEdicion ? "Actualizado" : "Guardado",
-          timer: 1500,
-          showConfirmButton: false,
-        });
+        Swal.fire("¡Éxito!", "Registro guardado correctamente.", "success");
+        cargarDatos();
+        setModalOpen(false);
       } else {
-        cerrarModal();
-        Swal.fire({
-          icon: "error",
-          title: "Error",
-          text: res.mensaje || "Ocurrió un error",
-        });
+        Swal.fire("Error", res.mensaje || "Error al guardar", "error");
       }
-    } catch (err) {
-      cerrarModal();
-      const mensaje = err.response?.data?.mensaje || err.message || "Error inesperado";
-      Swal.fire({
-        icon: "error",
-        title: "Error",
-        text: mensaje,
-      });
+    } catch (error) {
+      Swal.fire("Error", error.message || "Error inesperado", "error");
     } finally {
       setFormLoading(false);
     }
   };
 
-  // Estilos condicionales
-  const fondo = modoOscuro ? "bg-gray-900" : "bg-white";
-  const texto = modoOscuro ? "text-gray-200" : "text-gray-800";
-  const encabezado = modoOscuro ? "bg-gray-700 text-gray-200" : "bg-gray-100 text-gray-700";
+  // Columnas tabla
+  const columnas = [
+   //{ key: "idInscripcionMateria", label: "ID" },
+    {
+      key: "idInscripcion",
+      label: "Estudiante",
+      render: (item) => {
+        const inscripcion = inscripciones.find(i => i.iD_Inscripcion === item.idInscripcion);
+        return inscripcion ? inscripcion.nombreEstudiante : "-";
+      }
+    },
+    {
+      key: "idMateria",
+      label: "Materia",
+      render: (item) => {
+        const materia = materias.find(m => m.idMateria === item.idMateria);
+        return materia ? materia.nombreMateria : "-";
+      }
+    },
+    {
+      key: "iD_Grupo",
+      label: "Grupo",
+      render: (item) => {
+        const grupo = grupos.find(g => g.idGrupo === item.iD_Grupo);
+        return grupo ? grupo.codigoGrupo : "-";
+      }
+    },
+    {
+      key: "fechaCreacion",
+      label: "Fecha Creación",
+      render: (item) => formatearFecha(item.fechaCreacion),
+    },
+    {
+      key: "fechaModificacion",
+      label: "Fecha Modificación",
+      render: (item) => formatearFecha(item.fechaModificacion),
+    },
+     {
+      key: "idEstado",
+      label: "Estado",
+      render: (item) => {
+        const estado = estados.find(e => e.iD_Estado === item.idEstado);
+        if (!estado) return "-";
+        return (
+          <span className="flex items-center">
+            {item.idEstado === 1 ? (
+              <FaCheckCircle className="text-green-600" />
+            ) : (
+              <FaTimesCircle className="text-red-600" />
+            )}
+          </span>
+        );
+      }
+    },
+  ];
+
+  // Filtrar datos tabla con filtroTablaEstudiante (no usar busquedaEstudiante)
+  const datosFiltrados = inscripcionesMaterias.filter((im) => {
+    const inscripcion = inscripciones.find(i => i.iD_Inscripcion === im.idInscripcion);
+    if (!inscripcion) return false;
+    return inscripcion.nombreEstudiante.toLowerCase().includes(filtroTablaEstudiante.toLowerCase());
+  });
+
+  // Paginación tabla
+  const indexUltimaFila = paginaActual * filasPorPagina;
+  const indexPrimeraFila = indexUltimaFila - filasPorPagina;
+  const datosPaginados = datosFiltrados.slice(indexPrimeraFila, indexUltimaFila);
+  const totalPaginas = Math.ceil(datosFiltrados.length / filasPorPagina);
+
+  const cambiarPagina = (numPagina) => {
+    if (numPagina < 1 || numPagina > totalPaginas) return;
+    setPaginaActual(numPagina);
+  };
+
+  useEffect(() => {
+    setPaginaActual(1);
+  }, [filasPorPagina, filtroTablaEstudiante]);
+
+  // Contadores
+  const activosCount = inscripcionesMaterias.filter(i => i.idEstado === 1).length;
+  const inactivosCount = inscripcionesMaterias.filter(i => i.idEstado === 2).length;
+  const totalCount = inscripcionesMaterias.length;
+
+  // Clases input
+  const inputClass =
+  "w-full px-3 py-2 border rounded focus:outline-none transition " +
+  (modoOscuro
+    ? "bg-gray-800 border-gray-600 text-gray-200 placeholder-gray-400 focus:ring-indigo-400"
+    : "bg-white border-gray-300 text-gray-900 placeholder-gray-500 focus:ring-indigo-600");
 
   return (
-    
-<>
-<div
-  style={{
-    maxWidth: 800,
-    margin: "0 auto 20px",
-    width: "90%",
-    display: "flex",
-    alignItems: "center",
-    gap: "20px", // <-- ajusta este valor para acercar o alejar
-  }}
->
-  <h2
-    style={{
-      fontSize: "1.75rem",
-      fontWeight: "800",
-      color: modoOscuro ? "#fff" : "#2d2d2d",
-      margin: 0,
-    }}
-  >
-   Inscripciones Materias
-  </h2>
+    <>
+      {/* Filtro tabla con BuscadorBase */}
+      <BuscadorBase
+        titulo="Inscripciones Materias"
+        valor={filtroTablaEstudiante}
+        onChange={(e) => setFiltroTablaEstudiante(e.target.value)}
+        placeholder="Buscar estudiante..."
+      />
 
-  <input
-    type="text"
-    placeholder="Buscar..."
-    value={busqueda}
-    onChange={handleBusquedaChange}
-    style={{
-      width: "380px",
-      padding: "8px 16px",
-      fontSize: 16,
-      borderRadius: "9999px",
-       border: `1.2px solid ${modoOscuro ? "#444" : "#ccc"}`,
-               outline: "none",
-               boxShadow: modoOscuro
-                 ? "inset 0 1px 4px rgba(234, 227, 227, 0.1)"
-                 : "inset 0 1px 4px rgba(0,0,0,0.1)",
-               color: texto,
-             
-               transition: "border-color 0.3s ease",
-               display: "block",
-               margin: "0 auto",
-             }}
-             onFocus={(e) =>
-               (e.target.style.borderColor = modoOscuro ? "#90caf9" : "#1976d2")
-             }
-             onBlur={(e) =>
-               (e.target.style.borderColor = modoOscuro ? "#444" : "#ccc")
-             }
-  />
-</div>
+       <ContadoresBase
+        activos={activosCount}
+        inactivos={inactivosCount}
+        total={totalCount}
+        onNuevo={abrirModalNuevo}
+        texto="inscripciones materias"
+      />
 
-   <div className="flex flex-wrap justify-between items-center mb-6 gap-4">
-     {/* Contenedores de contadores centrados */}
-     <div className="flex flex-wrap justify-center gap-6 flex-grow min-w-[250px]">
-       {/* Activos */}
-       <div
-         style={{
-           background: "linear-gradient(135deg, #127f45ff, #0c0b0bff)",
-           color: "white",
-           padding: "14px 24px",
-           borderRadius: 10,
-           fontWeight: "700",
-           fontSize: 18,
-           minWidth: 140,
-           textAlign: "center",
-           boxShadow: "0 3px 8px rgba(2, 79, 33, 0.4)",
-           display: "flex",
-           alignItems: "center",
-           justifyContent: "center",
-           gap: 8,
-           userSelect: "none",
-           cursor: "pointer",
-           transition: "background 0.3s ease",
-         }}
-         aria-label={`Usuarios activos: ${activos}`}
-         onMouseEnter={(e) =>
-           (e.currentTarget.style.background =
-             "linear-gradient(135deg, #0c0b0bff,  #084b27 )")
-         }
-         onMouseLeave={(e) =>
-           (e.currentTarget.style.background =
-             "linear-gradient(135deg, #127f45ff, #0c0b0bff)")
-         }
-       >
-         <FaUserCheck /> Activos
-         <div style={{ fontSize: 26, marginLeft: 8 }}>{activos}</div>
-       </div>
-   
-       {/* Inactivos */}
-       <div
-         style={{
-           background: "linear-gradient(135deg, #ef5350, #0c0b0bff)",
-           color: "white",
-           padding: "14px 24px",
-           borderRadius: 10,
-           fontWeight: "700",
-           fontSize: 18,
-           minWidth: 140,
-           textAlign: "center",
-           boxShadow: "0 3px 8px rgba(244,67,54,0.4)",
-           display: "flex",
-           alignItems: "center",
-           justifyContent: "center",
-           gap: 8,
-           userSelect: "none",
-           cursor: "pointer",
-           transition: "background 0.3s ease",
-         }}
-         aria-label={`Usuarios inactivos: ${inactivos}`}
-         onMouseEnter={(e) =>
-           (e.currentTarget.style.background =
-             "linear-gradient(135deg, #101010ff, #de1717ff)")
-         }
-         onMouseLeave={(e) =>
-           (e.currentTarget.style.background =
-             "linear-gradient(135deg, #ef5350, #0c0b0bff)")
-         }
-       >
-         <FaUserTimes /> Inactivos
-         <div style={{ fontSize: 26, marginLeft: 8 }}>{inactivos}</div>
-       </div>
-   
-       {/* Total */}
-       <div
-         style={{
-           background: "linear-gradient(135deg, #0960a8ff, #20262dff)",
-           color: "white",
-           padding: "14px 24px",
-           borderRadius: 10,
-           fontWeight: "700",
-           fontSize: 18,
-           minWidth: 140,
-           textAlign: "center",
-           boxShadow: "0 3px 8px rgba(25,118,210,0.4)",
-           display: "flex",
-           alignItems: "center",
-           justifyContent: "center",
-           gap: 8,
-           userSelect: "none",
-           cursor: "pointer",
-           transition: "background 0.3s ease",
-         }}
-         aria-label={`Total de usuarios: ${total}`}
-         onMouseEnter={(e) =>
-           (e.currentTarget.style.background =
-             "linear-gradient(135deg, #20262dff, #0d47a1)")
-         }
-         onMouseLeave={(e) =>
-           (e.currentTarget.style.background =
-             "linear-gradient(135deg, #0960a8ff, #20262dff)")
-         }
-       >
-         <FaUser /> Total
-         <div style={{ fontSize: 26, marginLeft: 8 }}>{total}</div>
-       </div>
-     </div>
-   
-     {/* Botón "Nuevo" alineado a la derecha */}
-     <button
-       onClick={abrirModalNuevo}
-       style={{
-         backgroundColor: "#1976d2",
-         border: "none",
-         color: "#fff",
-         padding: "12px 22px",
-         borderRadius: 8,
-         cursor: "pointer",
-         fontWeight: "600",
-         fontSize: 20,
-         display: "flex",
-         alignItems: "center",
-         gap: 10,
-         userSelect: "none",
-         transition: "background-color 0.3s ease",
-         whiteSpace: "nowrap",
-         marginTop: "8px",
-       }}
-       onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "#115293")}
-       onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "#1976d2")}
-       type="button"
-       aria-label="Agregar nueva asignación docente"
-     >
-       <FaPlus /> Nuevo
-     </button>
-   </div>
-
-        {/* Tabla */}
-        {!loading && inscripcionesMaterias.length > 0 && (
-          <div className="scroll-modern overflow-x-auto">
-            <table className="min-w-full border-collapse rounded overflow-hidden">
-              <thead className={encabezado}>
-                <tr>
-                  <th className="px-4 py-2 text-left text-sm font-semibold">Estudiante</th>
-                  <th className="px-4 py-2 text-left text-sm font-semibold">Materia</th>
-                  <th className="px-4 py-2 text-left text-sm font-semibold">Grupo</th>
-                  <th className="px-4 py-2 text-left text-sm font-semibold">Creador</th>
-                  <th className="px-4 py-2 text-left text-sm font-semibold">Modificador</th>
-                  <th className="px-4 py-2 text-left text-sm font-semibold">Creado</th>
-                  <th className="px-4 py-2 text-left text-sm font-semibold">Modificado</th>
-                  <th className="px-4 py-2 text-left text-sm font-semibold">Estado</th>
-                  <th className="px-4 py-2 text-left text-sm font-semibold">Acciones</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {inscripcionesFiltradas.map((i) => (
-                  <tr
-                    key={i.idInscripcionMateria}
-                    className={`transition-colors ${modoOscuro ? "hover:bg-gray-700" : "hover:bg-blue-50"}`}
-                  >
-                    <td className={`px-4 py-2 text-sm ${texto}`}>
-                      <div>{buscarNombreEstudiante(i.idInscripcion)}</div>
-                      <div
-                        style={{
-                          fontSize: "0.75rem",
-                          color: modoOscuro ? "#ccc" : "#666",
-                        }}
-                      >
-                        {buscarNombrePeriodo(
-                          listas.inscripciones.find(insc => insc.iD_Inscripcion === i.idInscripcion)?.iD_PeriodoAcademico
-                        )}
-                      </div>
-                    </td>
-       
-                    <td className={`px-4 py-2 text-sm ${texto}`}>{buscarNombreMateria(i.idMateria)}</td>
-                    <td className={`px-4 py-2 text-sm ${texto}`}>
-                    {buscarNombreGrupo(i.idGrupo)}
-                    </td>
-
-                    <td className={`px-4 py-2 text-sm ${texto}`}>{buscarNombreUsuario(i.idCreador)}</td>
-                    <td className={`px-4 py-2 text-sm ${texto}`}>{buscarNombreUsuario(i.idModificador)}</td>
-                    <td className={`px-4 py-2 text-sm ${texto}`}>{new Date(i.fechaCreacion).toLocaleString()}</td>
-                    <td className={`px-4 py-2 text-sm ${texto}`}>{new Date(i.fechaModificacion).toLocaleString()}</td>
-                    <td className="px-4 py-2 text-center">
-                      {buscarNombreEstado(i.idEstado).toLowerCase() === "activo" ? (
-                        <FaCheckCircle className="text-green-500 text-xl mx-auto" />
-                      ) : (
-                        <FaTimesCircle className="text-red-500 text-xl mx-auto" />
-                      )}
-                    </td>
-                    <td className="px-4 py-2 text-sm">
-                      <button
-                        className="text-blue-600 hover:text-blue-800 text-xl flex justify-center items-center w-full"
-                        onClick={() => abrirModalEditar(i)}
-                        aria-label="Editar inscripción"
-                      >
-                        <FaEdit />
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-
-        {/* Modal */}
-        {modalOpen && (
-          <div
-            style={{
-              position: "fixed",
-              top: 0,
-              left: 0,
-              width: "100vw",
-              height: "100vh",
-              backgroundColor: "rgba(0,0,0,0.5)",
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-              zIndex: 9999,
-            }}
-            aria-modal="true"
-            role="dialog"
+     {/* Select filas por página */}
+        <div className="mb-4 flex items-center gap-2 max-w-[200px] ml-0">
+          <label htmlFor="filasPorPagina" className="font-semibold">
+            Filas por página:
+          </label>
+          <select
+            id="filasPorPagina"
+            className={inputClass + " max-w-[5rem]"}
+            value={filasPorPagina}
+            onChange={(e) => setFilasPorPagina(Number(e.target.value))}
           >
-            <div
-              style={{
-                backgroundColor: modoOscuro ? "#121212" : "white",
-                padding: 20,
-                borderRadius: 10,
-                width: 350,
-                maxWidth: "90%",
-                boxShadow: "0 3px 8px rgba(0,0,0,0.25)",
-              }}
+            {[5, 10, 20, 50].map((n) => (
+              <option key={n} value={n}>
+                {n}
+              </option>
+            ))}
+          </select>
+        </div>
+
+      {/* Tabla */}
+      <div className="overflow-x-auto w-full">
+        <TablaBase
+          datos={datosPaginados}
+          columnas={columnas}
+          loading={loading}
+          puedeEditar={() => true}
+          onEditar={handleEditar}
+          modoOscuro={modoOscuro} 
+        />
+      </div>
+
+              {/* Paginación */}
+          <div className="flex justify-between items-center mt-4 gap-4 w-full px-4">
+            <button
+              onClick={() => cambiarPagina(paginaActual - 1)}
+              disabled={paginaActual === 1}
+              className={`px-4 py-2 rounded transition ${
+                paginaActual === 1
+                  ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                  : "bg-blue-600 text-white hover:bg-blue-700"
+              }`}
             >
-              <h2 className={`mb-4 text-xl font-semibold ${texto}`}>
-                {modoEdicion ? "Editar Inscripción" : "Nueva Inscripción"}
-              </h2>
-              <form
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  handleGuardar();
-                }}
-              >
-                <label className={`${texto} block mb-1 font-semibold`} htmlFor="idInscripcion">
-                  Estudiante (Inscripción)
-                </label>
-                <select
-                  id="idInscripcion"
-                  name="idInscripcion"
-                  value={formData.idInscripcion}
-                  onChange={handleChange}
-                  className={`w-full mb-3 p-2 rounded border ${
-                    modoOscuro ? "bg-gray-800 border-gray-600 text-gray-200" : "bg-white border-gray-300"
-                  }`}
-                  aria-required="true"
-                >
-                  <option value="">Seleccione un estudiante</option>
-                  {listas.inscripciones.map((insc) => (
-                    <option key={insc.iD_Inscripcion} value={insc.iD_Inscripcion}>
-                      {insc.nombreEstudiante} - {buscarNombrePeriodo(insc.iD_PeriodoAcademico)}
-                    </option>
-                  ))}
-                </select>
+              Anterior
+            </button>
 
-                {/* Los demás selects y botones igual que antes */}
-
-                <label className={`${texto} block mb-1 font-semibold`} htmlFor="idMateria">
-                  Materia
-                </label>
-                <select
-                  id="idMateria"
-                  name="idMateria"
-                  value={formData.idMateria}
-                  onChange={handleChange}
-                  className={`w-full mb-3 p-2 rounded border ${
-                    modoOscuro ? "bg-gray-800 border-gray-600 text-gray-200" : "bg-white border-gray-300"
-                  }`}
-                  aria-required="true"
-                >
-                  <option value="">Seleccione una materia</option>
-                  {listas.materias.map((m) => (
-                    <option key={m.idMateria} value={m.idMateria}>
-                      {m.nombreMateria}
-                    </option>
-                  ))}
-                </select>
-               <label className={`${texto} block mb-1 font-semibold`} htmlFor="idGrupo">
-                  Grupo
-                </label>
-                <select
-                  id="idGrupo"
-                  name="idGrupo"
-                  value={formData.idGrupo}
-                  onChange={handleChange}
-                  className={`w-full mb-3 p-2 rounded border ${
-                    modoOscuro ? "bg-gray-800 border-gray-600 text-gray-200" : "bg-white border-gray-300"
-                  }`}
-                  aria-required="true"
-                >
-                  <option value="">Seleccione un grupo</option>
-                  {listas.grupos.map((g) => (
-                    <option key={g.idGrupo} value={g.idGrupo}>
-                      {g.codigoGrupo}
-                    </option>
-                  ))}
-                </select>
-
-
-                <label className={`${texto} block mb-1 font-semibold`} htmlFor="idEstado">
-                  Estado
-                </label>
-                <select
-                  id="idEstado"
-                  name="idEstado"
-                  value={formData.idEstado}
-                  onChange={handleChange}
-                  className={`w-full mb-3 p-2 rounded border ${
-                    modoOscuro ? "bg-gray-800 border-gray-600 text-gray-200" : "bg-white border-gray-300"
-                  }`}
-                  aria-required="true"
-                >
-                  <option value="">Seleccione un estado</option>
-                  {listas.estados
-                    .filter((e) => (e.iD_Estado ?? e.idEstado) === 1 || (e.iD_Estado ?? e.idEstado) === 2)
-                    .map((e) => (
-                      <option key={e.iD_Estado ?? e.idEstado} value={e.iD_Estado ?? e.idEstado}>
-                        {e.nombre_Estado ?? e.nombreEstado}
-                      </option>
-                    ))}
-                </select>
-
-                {formError && <p className="text-red-500 mb-3">{formError}</p>}
-
-                <div className="flex justify-end gap-4">
-                  <button
-                    type="button"
-                    onClick={cerrarModal}
-                    className="px-4 py-2 rounded bg-gray-400 hover:bg-gray-500 text-white"
-                    disabled={formLoading}
-                  >
-                    Cancelar
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={formLoading}
-                    className="px-4 py-2 rounded bg-blue-600 hover:bg-blue-700 text-white"
-                  >
-                    {formLoading ? "Guardando..." : modoEdicion ? "Actualizar" : "Guardar"}
-                  </button>
-                </div>
-              </form>
+            <div className="font-semibold">
+              Página {paginaActual} de {totalPaginas || 1}
             </div>
+
+            <button
+              onClick={() => cambiarPagina(paginaActual + 1)}
+              disabled={paginaActual === totalPaginas || totalPaginas === 0}
+              className={`px-4 py-2 rounded transition ${
+                paginaActual === totalPaginas || totalPaginas === 0
+                  ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                  : "bg-blue-600 text-white hover:bg-blue-700"
+              }`}
+            >
+              Siguiente
+            </button>
           </div>
-        )}
- </>
+
+      {/* Modal formulario */}
+      <ModalBase
+        isOpen={modalOpen} onClose={() => setModalOpen(false)} modoOscuro={modoOscuro}
+      >
+        <FormularioBase
+          modoEdicion={modoEdicion}
+          onCancel={() => setModalOpen(false)}
+          onSubmit={handleGuardar}
+          modoOscuro={modoOscuro}
+          loading={formLoading}
+          titulo={modoEdicion ? "Inscripcion Por materia" : "Inscripcion Por materia"}
+        >
+          <div className="space-y-4">
+            {/* Estudiante con autocomplete */}
+            <div className="relative" ref={estudianteRef}>
+              <label className="font-semibold block mb-1">Estudiante</label>
+              <input
+                type="text"
+                placeholder="Buscar estudiante..."
+                value={busquedaEstudiante}
+                onChange={(e) => {
+                  setBusquedaEstudiante(e.target.value);
+                  setMostrarDropdownEstudiante(true);
+                  setForm((f) => ({ ...f, idInscripcion: 0 }));
+                }}
+                className={inputClass}
+                autoComplete="off"
+              />
+                {mostrarDropdownEstudiante && estudiantesFiltrados.length > 0 && (
+                 <ul
+                   className={`absolute z-10 w-full max-h-52 overflow-auto border rounded shadow-lg
+                        ${modoOscuro
+                          ? "bg-gray-800 border-gray-600 text-gray-200"
+                          : "bg-white border-gray-300 text-gray-900"
+                        }`}
+                    >
+                  {estudiantesFiltrados.map((e) => (
+                    <li
+                      key={e.iD_Inscripcion}
+                      onClick={() => seleccionarEstudiante(e.iD_Inscripcion, e.nombreEstudiante)}
+                      className="cursor-pointer px-3 py-2 hover:bg-blue-100"
+                    >
+                      {e.nombreEstudiante}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+
+            {/* Materia con autocomplete */}
+            <div className="relative" ref={materiaRef}>
+              <label className="font-semibold block mb-1">Materia</label>
+              <input
+                type="text"
+                placeholder="Buscar materia..."
+                value={busquedaMateria}
+                onChange={(e) => {
+                  setBusquedaMateria(e.target.value);
+                  setMostrarDropdownMateria(true);
+                  setForm((f) => ({ ...f, idMateria: 0 }));
+                }}
+                className={inputClass}
+                autoComplete="off"
+              />
+              {mostrarDropdownMateria && materiasFiltradas.length > 0 && (
+                <ul
+                    className={`absolute z-10 w-full max-h-52 overflow-auto border rounded shadow-lg
+                      ${modoOscuro
+                        ? "bg-gray-800 border-gray-600 text-gray-200"
+                        : "bg-white border-gray-300 text-gray-900"
+                      }`}
+                  >
+                  {materiasFiltradas.map((m) => (
+                    <li
+                      key={m.idMateria}
+                      onClick={() => seleccionarMateria(m.idMateria, m.nombreMateria)}
+                      className="cursor-pointer px-3 py-2 hover:bg-blue-100"
+                    >
+                      {m.nombreMateria}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+
+            {/* Grupo con autocomplete */}
+            <div className="relative" ref={grupoRef}>
+              <label className="font-semibold block mb-1">Grupo</label>
+              <input
+                type="text"
+                placeholder="Buscar grupo..."
+                value={busquedaGrupo}
+                onChange={(e) => {
+                  setBusquedaGrupo(e.target.value);
+                  setMostrarDropdownGrupo(true);
+                  setForm((f) => ({ ...f, idGrupo: 0 }));
+                }}
+                className={inputClass}
+                autoComplete="off"
+              />
+              {mostrarDropdownGrupo && gruposFiltrados.length > 0 && (
+                <ul
+                    className={`absolute z-10 w-full max-h-52 overflow-auto border rounded shadow-lg
+                      ${modoOscuro
+                        ? "bg-gray-800 border-gray-600 text-gray-200"
+                        : "bg-white border-gray-300 text-gray-900"
+                      }`}
+                  >
+                  {gruposFiltrados.map((g) => (
+                    <li
+                      key={g.idGrupo}
+                      onClick={() => seleccionarGrupo(g.idGrupo, g.codigoGrupo)}
+                      className="cursor-pointer px-3 py-2 hover:bg-blue-100"
+                    >
+                      {g.codigoGrupo}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+
+            {/* Estado */}
+            <div>
+              <label className="font-semibold block mb-1">Estado</label>
+              <select
+                className={inputClass}
+                value={form.idEstado}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, idEstado: Number(e.target.value) }))
+                }
+              >
+                {estados.map((e) => (
+                  <option key={e.iD_Estado} value={e.iD_Estado}>
+                    {e.nombre_Estado}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {formError && (
+              <p className="text-red-600 font-semibold text-center">{formError}</p>
+            )}
+          </div>
+        </FormularioBase>
+      </ModalBase>
+    </>
   );
 };
 
 export default InscripcionesMaterias;
-
-
