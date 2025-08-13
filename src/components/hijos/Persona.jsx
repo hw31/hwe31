@@ -11,7 +11,7 @@ import FormularioBase from "../Shared/FormularioBase";
 import estadoService from "../../services/Estado";
 import { FaCheckCircle } from "react-icons/fa";
 
-const FrmPersonas = ({ busqueda }) => {
+const FrmPersonas = ({ busqueda, onResultados }) => {
   const modoOscuro = useSelector((state) => state.theme.modoOscuro);
   const fondo = modoOscuro ? "bg-gray-900" : "bg-white";
   const texto = modoOscuro ? "text-gray-200" : "text-gray-800";
@@ -170,6 +170,7 @@ const FrmPersonas = ({ busqueda }) => {
     } else Swal.fire("Error", res.message, "error");
   };
 
+  // Filtrado según búsqueda y filtros
   const textoBusqueda = (busqueda || "").trim().toLowerCase();
   const datosFiltrados = personas.filter((p) => {
     const coincideTexto = `${p.primerNombre} ${p.segundoNombre} ${p.primerApellido} ${p.segundoApellido} ${p.numeroDocumento}`.toLowerCase().includes(textoBusqueda);
@@ -179,6 +180,17 @@ const FrmPersonas = ({ busqueda }) => {
     const coincideEstado = !filtros.estado || (filtros.estado === "Activo" ? p.activo : !p.activo);
     return coincideTexto && coincideTipoDoc && coincideGenero && coincideNacionalidad && coincideEstado;
   });
+
+  // Informar al padre si hay resultados filtrados
+useEffect(() => {
+  if (typeof onResultados === "function") {
+    onResultados(datosFiltrados.length > 0);
+  }
+}, [datosFiltrados, onResultados]);
+if (datosFiltrados.length === 0) {
+  return null; // o podrías retornar un mensaje
+}
+
 
   const inicio = (paginaActual - 1) * itemsPorPagina;
   const fin = inicio + itemsPorPagina;
@@ -209,134 +221,135 @@ const FrmPersonas = ({ busqueda }) => {
         ),
     },
   ];
+
   return (
-  <>
-        <div className="flex justify-between items-center mb-4">
-          <h2
-            className={`text-2xl md:text-3xl font-extrabold tracking-wide ${
-              modoOscuro ? "text-white" : "text-gray-800"
-            }`}
-          >
-            Persona
-          </h2>
-        </div>
- 
-      
-        <div id="personasContent" className="mt-4">
-          {/* FILTROS */}
-          <div className="grid grid-cols-1 md:grid-cols-6 gap-4 mb-4">
-            
+    <>
+      <div className="flex justify-between items-center mb-4">
+        <h2
+          className={`text-2xl md:text-3xl font-extrabold tracking-wide ${
+            modoOscuro ? "text-white" : "text-gray-800"
+          }`}
+        >
+          Persona
+        </h2>
+      </div>
+
+      <div id="personasContent" className="mt-4">
+        {/* FILTROS */}
+        <div className="flex flex-row flex-wrap gap-4 mb-4 overflow-x-auto">
+          {/* Mostrar */}
+          <div className="flex items-center flex-shrink-0">
+            <label className={`mr-2 ${texto}`}>Mostrar:</label>
             <select
-              value={filtros.tipoDocumento}
-              onChange={(e) => setFiltros({ ...filtros, tipoDocumento: e.target.value })}
-              className="px-3 py-2 border rounded dark:bg-gray-700 dark:text-white dark:border-gray-600"
+              value={itemsPorPagina}
+              onChange={(e) => {
+                setItemsPorPagina(Number(e.target.value));
+                setPaginaActual(1);
+              }}
+              className="px-2 py-1 border rounded dark:bg-gray-700 dark:text-white dark:border-gray-600 w-20"
             >
-              <option value="">Tipo Doc.</option>
-              {tiposDocumento.map((td) => (
-                <option key={td.idCatalogo} value={td.descripcionCatalogo}>
-                  {td.descripcionCatalogo}
-                </option>
-              ))}
-            </select>
-            <select
-              value={filtros.genero}
-              onChange={(e) => setFiltros({ ...filtros, genero: e.target.value })}
-              className="px-3 py-2 border rounded dark:bg-gray-700 dark:text-white dark:border-gray-600"
-            >
-              <option value="">Género</option>
-              {generos.map((g) => (
-                <option key={g.idCatalogo} value={g.descripcionCatalogo}>
-                  {g.descripcionCatalogo}
-                </option>
-              ))}
-            </select>
-            <select
-              value={filtros.nacionalidad}
-              onChange={(e) => setFiltros({ ...filtros, nacionalidad: e.target.value })}
-              className="px-3 py-2 border rounded dark:bg-gray-700 dark:text-white dark:border-gray-600"
-            >
-              <option value="">Nacionalidad</option>
-              {nacionalidades.map((n) => (
-                <option key={n.idCatalogo} value={n.descripcionCatalogo}>
-                  {n.descripcionCatalogo}
-                </option>
-              ))}
-            </select>
-            <select
-              value={filtros.estado}
-              onChange={(e) => setFiltros({ ...filtros, estado: e.target.value })}
-              className="px-3 py-2 border rounded dark:bg-gray-700 dark:text-white dark:border-gray-600"
-            >
-              <option value="">Estado</option>
-              <option value="Activo">Activo</option>
-              <option value="Inactivo">Inactivo</option>
+              <option value={10}>10</option>
+              <option value={20}>20</option>
+              <option value={50}>50</option>
+              <option value={100}>100</option>
             </select>
           </div>
-           <div className="mb-4">
-          <label className={`mr-2 ${texto}`}>Mostrar:</label>
+
+          {/* Filtros */}
           <select
-            value={itemsPorPagina}
-            onChange={(e) => {
-              setItemsPorPagina(Number(e.target.value));
-              setPaginaActual(1);
-            }}
-            className="px-2 py-1 border rounded"
+            value={filtros.tipoDocumento}
+            onChange={(e) => setFiltros({ ...filtros, tipoDocumento: e.target.value })}
+            className="px-3 py-2 border rounded dark:bg-gray-700 dark:text-white dark:border-gray-600 flex-shrink-0 w-36"
           >
-            <option value={10}>10</option>
-            <option value={20}>20</option>
-            <option value={50}>50</option>
-            <option value={100}>100</option>
+            <option value="">Tipo Doc.</option>
+            {tiposDocumento.map((td) => (
+              <option key={td.idCatalogo} value={td.descripcionCatalogo}>
+                {td.descripcionCatalogo}
+              </option>
+            ))}
+          </select>
+
+          <select
+            value={filtros.genero}
+            onChange={(e) => setFiltros({ ...filtros, genero: e.target.value })}
+            className="px-3 py-2 border rounded dark:bg-gray-700 dark:text-white dark:border-gray-600 flex-shrink-0 w-36"
+          >
+            <option value="">Género</option>
+            {generos.map((g) => (
+              <option key={g.idCatalogo} value={g.descripcionCatalogo}>
+                {g.descripcionCatalogo}
+              </option>
+            ))}
+          </select>
+
+          <select
+            value={filtros.nacionalidad}
+            onChange={(e) => setFiltros({ ...filtros, nacionalidad: e.target.value })}
+            className="px-3 py-2 border rounded dark:bg-gray-700 dark:text-white dark:border-gray-600 flex-shrink-0 w-36"
+          >
+            <option value="">Nacionalidad</option>
+            {nacionalidades.map((n) => (
+              <option key={n.idCatalogo} value={n.descripcionCatalogo}>
+                {n.descripcionCatalogo}
+              </option>
+            ))}
+          </select>
+
+          <select
+            value={filtros.estado}
+            onChange={(e) => setFiltros({ ...filtros, estado: e.target.value })}
+            className="px-3 py-2 border rounded dark:bg-gray-700 dark:text-white dark:border-gray-600 flex-shrink-0 w-36"
+          >
+            <option value="">Estado</option>
+            <option value="Activo">Activo</option>
+            <option value="Inactivo">Inactivo</option>
           </select>
         </div>
+      </div>
 
+      <ContadoresBase
+        activos={personas.filter((p) => p.activo).length}
+        inactivos={personas.filter((p) => !p.activo).length}
+        total={personas.length}
+        modoOscuro={modoOscuro}
+        mostrarNuevo={false} // oculto aquí según tu comentario
+      />
 
-          {/* CONTADORES */}
-          <ContadoresBase
-            activos={personas.filter((p) => p.activo).length}
-            inactivos={personas.filter((p) => !p.activo).length}
-            total={personas.length}
-            onNuevo={abrirModalNuevo}
-            modoOscuro={modoOscuro}
-          />
+      {/* TABLA */}
+      <TablaBase
+        datos={datosPaginados}
+        columnas={columnas}
+        modoOscuro={modoOscuro}
+        onEditar={abrirModalEditar}
+        loading={loading}
+        texto={texto}
+        encabezadoClase={encabezado}
+      />
 
-          {/*cantida *//* TABLA */}
-          <TablaBase
-        
-            datos={datosPaginados}
-            columnas={columnas}
-            modoOscuro={modoOscuro}
-            onEditar={abrirModalEditar}
-            loading={loading}
-            texto={texto}
-            encabezadoClase={encabezado}
-          />
-                  {/* Paginación */}
-        <div className="mt-4 flex justify-between items-center">
-          <button
-            onClick={() => setPaginaActual((prev) => Math.max(prev - 1, 1))}
-            className="px-4 py-1 bg-gray-300 rounded disabled:opacity-50"
-            disabled={paginaActual === 1}
-          >
-            Anterior
-          </button>
-          <span className={texto}>
-            Página {paginaActual} de {Math.ceil(datosFiltrados.length / itemsPorPagina)}
-          </span>
-          <button
-            onClick={() =>
-              setPaginaActual((prev) =>
-                prev < Math.ceil(datosFiltrados.length / itemsPorPagina) ? prev + 1 : prev
-              )
-            }
-            className="px-4 py-1 bg-gray-300 rounded disabled:opacity-50"
-            disabled={paginaActual >= Math.ceil(datosFiltrados.length / itemsPorPagina)}
-          >
-            Siguiente
-          </button>
-        </div>
-
-        </div>
-    
+      {/* Paginación */}
+      <div className="mt-4 flex justify-between items-center">
+        <button
+          onClick={() => setPaginaActual((prev) => Math.max(prev - 1, 1))}
+          className="px-4 py-1 bg-gray-300 rounded disabled:opacity-50"
+          disabled={paginaActual === 1}
+        >
+          Anterior
+        </button>
+        <span className={texto}>
+          Página {paginaActual} de {Math.ceil(datosFiltrados.length / itemsPorPagina)}
+        </span>
+        <button
+          onClick={() =>
+            setPaginaActual((prev) =>
+              prev < Math.ceil(datosFiltrados.length / itemsPorPagina) ? prev + 1 : prev
+            )
+          }
+          className="px-4 py-1 bg-gray-300 rounded disabled:opacity-50"
+          disabled={paginaActual >= Math.ceil(datosFiltrados.length / itemsPorPagina)}
+        >
+          Siguiente
+        </button>
+      </div>
 
       {/* MODAL */}
       <ModalBase
@@ -354,82 +367,110 @@ const FrmPersonas = ({ busqueda }) => {
           modoEdicion={modoEdicion}
           titulo="Persona"
         >
-         
+          <div className="space-y-4">
+            <input
+              type="text"
+              name="primerNombre"
+              placeholder="Primer Nombre"
+              value={form.primerNombre}
+              onChange={handleInputChange}
+              className="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white dark:border-gray-600"
+              autoFocus
+            />
+            <input
+              type="text"
+              name="segundoNombre"
+              placeholder="Segundo Nombre"
+              value={form.segundoNombre}
+              onChange={handleInputChange}
+              className="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white dark:border-gray-600"
+            />
+            <input
+              type="text"
+              name="primerApellido"
+              placeholder="Primer Apellido"
+              value={form.primerApellido}
+              onChange={handleInputChange}
+              className="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white dark:border-gray-600"
+            />
+            <input
+              type="text"
+              name="segundoApellido"
+              placeholder="Segundo Apellido"
+              value={form.segundoApellido}
+              onChange={handleInputChange}
+              className="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white dark:border-gray-600"
+            />
+            <select
+              name="idGenero"
+              value={form.idGenero}
+              onChange={handleInputChange}
+              className="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white dark:border-gray-600"
+            >
+              <option value="">Seleccione Género</option>
+              {generos.map((g) => (
+                <option key={g.idCatalogo} value={g.idCatalogo}>
+                  {g.descripcionCatalogo}
+                </option>
+              ))}
+            </select>
 
-            <div className="space-y-4">
-              <input type="text" name="primerNombre" placeholder="Primer Nombre" value={form.primerNombre} onChange={handleInputChange} className="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white dark:border-gray-600" autoFocus />
-              <input type="text" name="segundoNombre" placeholder="Segundo Nombre" value={form.segundoNombre} onChange={handleInputChange} className="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white dark:border-gray-600" />
-              <input type="text" name="primerApellido" placeholder="Primer Apellido" value={form.primerApellido} onChange={handleInputChange} className="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white dark:border-gray-600" />
-              <input type="text" name="segundoApellido" placeholder="Segundo Apellido" value={form.segundoApellido} onChange={handleInputChange} className="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white dark:border-gray-600" />
-             <select
-  name="idGenero"
-  value={form.idGenero}
-  onChange={handleInputChange}
-  className="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white dark:border-gray-600"
->
-  <option value="">Seleccione Género</option>
-  {generos.map((g) => (
-    <option key={g.idCatalogo} value={g.idCatalogo}>
-      {g.descripcionCatalogo}
-    </option>
-  ))}
-</select>
+            <select
+                name="idTipoDocumento"
+                value={form.idTipoDocumento}
+                onChange={handleInputChange}
+                className="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white dark:border-gray-600"
+              >
+                <option value="">Seleccione Tipo Documento</option>
+                {tiposDocumento.map((t) => (
+                  <option key={t.idCatalogo} value={t.idCatalogo}>
+                    {t.descripcionCatalogo}
+                  </option>
+                ))}
+              </select>
 
-<select
-  name="idTipoDocumento"
-  value={form.idTipoDocumento}
-  onChange={handleInputChange}
-  className="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white dark:border-gray-600"
->
-  <option value="">Seleccione Tipo Documento</option>
-  {tiposDocumento.map((t) => (
-    <option key={t.idCatalogo} value={t.idCatalogo}>
-      {t.descripcionCatalogo}
-    </option>
-  ))}
-</select>
+              <input
+                type="text"
+                name="numeroDocumento"
+                placeholder="Número de Documento"
+                value={form.numeroDocumento?.toString() ?? ""}
+                onChange={handleInputChange}
+                className="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white dark:border-gray-600"
+              />
 
-<input
-  type="text"
-  name="numeroDocumento"
-  placeholder="Número de Documento"
-  value={form.numeroDocumento?.toString() ?? ""}
-  onChange={handleInputChange}
-  className="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white dark:border-gray-600"
-/>
+              <select
+                name="idNacionalidad"
+                value={form.idNacionalidad}
+                onChange={handleInputChange}
+                className="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white dark:border-gray-600"
+              >
+                <option value="">Seleccione Nacionalidad</option>
+                {nacionalidades.map((n) => (
+                  <option key={n.idCatalogo} value={n.idCatalogo}>
+                    {n.descripcionCatalogo}
+                  </option>
+                ))}
+              </select>
 
-<select
-  name="idNacionalidad"
-  value={form.idNacionalidad}
-  onChange={handleInputChange}
-  className="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white dark:border-gray-600"
->
-  <option value="">Seleccione Nacionalidad</option>
-  {nacionalidades.map((n) => (
-    <option key={n.idCatalogo} value={n.idCatalogo}>
-      {n.descripcionCatalogo}
-    </option>
-  ))}
-</select>
-<select
-  name="estado"
-  value={form.estado}
-  onChange={handleInputChange}
-  className="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white dark:border-gray-600"
->
-  <option value="">Seleccione estado</option>
-  {estados
-   .filter(e => e.iD_Estado === 1 || e.iD_Estado === 2).map((e) => (
-    <option key={e.iD_Estado} value={e.iD_Estado}>
-      {e.nombre_Estado}
-    </option>
-  ))}
-</select>
-
+              <select
+                name="estado"
+                value={form.estado}
+                onChange={handleInputChange}
+                className="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white dark:border-gray-600"
+              >
+                <option value="">Seleccione estado</option>
+                {estados
+                  .filter((e) => e.iD_Estado === 1 || e.iD_Estado === 2)
+                  .map((e) => (
+                    <option key={e.iD_Estado} value={e.iD_Estado}>
+                      {e.nombre_Estado}
+                    </option>
+                  ))}
+              </select>
             </div>
-          </FormularioBase>
-        </ModalBase>
-</>
+        </FormularioBase>
+      </ModalBase>
+    </>
   );
 };
 

@@ -15,7 +15,7 @@ import ContadoresBase from "../Shared/Contadores";
 import ModalBase from "../Shared/ModalBase";
 import FormularioBase from "../Shared/FormularioBase";
 
-const FrmUsuarios = ({ busqueda }) => {
+const FrmUsuarios =  ({ busqueda, onResultados }) => {
   const modoOscuro = useSelector((state) => state.theme.modoOscuro);
   const fondo = modoOscuro ? "bg-gray-900" : "bg-white";
   const texto = modoOscuro ? "text-gray-200" : "text-gray-800";
@@ -276,7 +276,15 @@ const FrmUsuarios = ({ busqueda }) => {
 
   const activos = usuariosFiltrados.filter((u) => u.estado === 1).length;
   const inactivos = usuariosFiltrados.length - activos;
-
+  // Informar al padre si hay resultados filtrados
+useEffect(() => {
+  if (typeof onResultados === "function") {
+    onResultados(usuariosFiltrados.length > 0);
+  }
+}, [usuariosFiltrados, onResultados]);
+if (usuariosFiltrados.length === 0) {
+  return null; // o podrías retornar un mensaje
+}
   const columnas = [
     { key: "nombreUsuario", label: "Usuario" },
     { key: "nombreCompleto", label: "Nombre Completo" },
@@ -307,13 +315,13 @@ const FrmUsuarios = ({ busqueda }) => {
         </h2>
       </div>
 
-      <ContadoresBase
-        activos={activos}
-        inactivos={inactivos}
-        total={usuariosFiltrados.length}
-        modoOscuro={modoOscuro}
-        onNuevo={abrirModalNuevo}
-      />
+         <ContadoresBase
+  activos={personas.filter((p) => p.activo).length}
+  inactivos={personas.filter((p) => !p.activo).length}
+  total={personas.length}
+  modoOscuro={modoOscuro}
+  mostrarNuevo={false} // 👈 aquí lo ocultas solo en este módulo
+/>
 
       {/* Selector de filas por página */}
       <div className="mt-2 mb-4 flex flex-wrap items-center justify-center sm:justify-start gap-2 text-sm">

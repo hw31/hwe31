@@ -13,7 +13,7 @@ import ContadoresBase from "../Shared/Contadores";
 import ModalBase from "../Shared/ModalBase";
 import FormularioBase from "../Shared/FormularioBase";
 
-const UserPermiso = ({ busqueda }) => {
+const UserPermiso =  ({ busqueda, onResultados }) => {
   const modoOscuro = useSelector((state) => state.theme.modoOscuro);
   const fondo = modoOscuro ? "bg-gray-900" : "bg-white";
   const texto = modoOscuro ? "text-gray-200" : "text-gray-800";
@@ -209,7 +209,16 @@ const UserPermiso = ({ busqueda }) => {
 
   const activos = usuariosPermisoFiltrados.filter((u) => u.activo === true).length;
   const inactivos = usuariosPermisoFiltrados.length - activos;
+useEffect(() => {
+  if (typeof onResultados === "function") {
+    onResultados(usuariosPermisoFiltrados.length > 0);
+  }
+}, [usuariosPermisoFiltrados, onResultados]);
 
+  // Si no hay resultados y no está cargando, no mostrar nada
+  if (!loading && usuariosPermisoFiltrados.length === 0) {
+    return null;
+  }
   const columnas = [
     {
       key: "nombreUsuario",
@@ -258,7 +267,7 @@ const UserPermiso = ({ busqueda }) => {
     <>
       <div className="flex justify-between items-center mb-4">
         <h2 className={`text-2xl md:text-3xl font-extrabold tracking-wide ${modoOscuro ? "text-white" : "text-gray-800"}`}>
-          Usuario-Permiso
+          Usuario Permiso
         </h2>
       </div>
 

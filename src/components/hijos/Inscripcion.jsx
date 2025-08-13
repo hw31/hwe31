@@ -14,6 +14,7 @@ import BuscadorBase from "../Shared/BuscadorBase";
 import ModalBase from "../Shared/ModalBase";
 import FormularioBase from "../Shared/FormularioBase";
 import ContadoresInscripcion from "../Shared/ContadoresInscripcion";
+import Exportbtninscripcion from "./Exportbtninscripcion";
 
 const Inscripcion = () => {
   const modoOscuro = useSelector((state) => state.theme.modoOscuro);
@@ -44,6 +45,14 @@ const Inscripcion = () => {
   // Paginación
   const [paginaActual, setPaginaActual] = useState(1);
   const [filasPorPagina, setFilasPorPagina] = useState(10);
+const inscripcionesConfirmadas = inscripciones.filter((i) => i.idEstado === 10);
+const [periodoActivo, setPeriodoActivo] = useState(null);
+useEffect(() => {
+  if (periodos.length > 0) {
+    const activo = periodos.find(p => p.activo === true);
+    setPeriodoActivo(activo || null);
+  }
+}, [periodos]);
 
 
   // Filtrado estudiantes activos (rol=3)
@@ -326,15 +335,21 @@ const seleccionarEstudiante = (id, nombre) => {
   ];
 
   // Filtrar inscripciones según rol y búsqueda
-  const datosFiltrados = inscripciones.filter((i) => {
-    if (rolLower === "estudiante") {
-      return i.idUsuario === parseInt(idUsuarioLogueado);
-    }
-    return (
-      i.nombreEstudiante?.toLowerCase().includes(busqueda.toLowerCase()) ||
-      i.nombrePeriodo?.toLowerCase().includes(busqueda.toLowerCase())
-    );
-  });
+ const datosFiltrados = inscripciones.filter((i) => {
+  if (!periodoActivo) return false; // No hay periodo activo, no mostrar nada
+
+  if (rolLower === "estudiante") {
+    return i.idUsuario === parseInt(idUsuarioLogueado) && i.idPeriodoAcademico === periodoActivo.idPeriodoAcademico;
+  }
+
+  // Admin y otros roles: buscar por nombre y filtrar por periodo activo
+  return (
+    (i.nombreEstudiante?.toLowerCase().includes(busqueda.toLowerCase()) ||
+     i.nombrePeriodo?.toLowerCase().includes(busqueda.toLowerCase())) &&
+    i.idPeriodoAcademico === periodoActivo.idPeriodoAcademico
+  );
+});
+
 
   // Paginación: calcular índices y datos actuales
   const indexUltimaFila = paginaActual * filasPorPagina;
@@ -393,27 +408,37 @@ const seleccionarEstudiante = (id, nombre) => {
         </>
       )}
 
-      {/* Select filas por página - Solo Admin */}
-      {rolLower === "administrador" && (
-        <div className="flex flex-wrap items-center justify-start gap-2 text-sm mt-2">
-          <label htmlFor="filasPorPagina" className="font-semibold">
-            Filas por página:
-          </label>
-          <select
-            id="filasPorPagina"
-            value={filasPorPagina}
-            onChange={(e) => setFilasPorPagina(parseInt(e.target.value))}
-            className={inputClass + " text-sm py-1 px-2"}
-            style={{ maxWidth: "5rem" }}
-          >
-            {[10, 30, 45, 60, 100].map((num) => (
-              <option key={num} value={num}>
-                {num}
-              </option>
-            ))}
-          </select>
-        </div>
-      )}
+   {rolLower === "administrador" && (
+  <div className="flex items-center justify-between gap-4 text-sm mt-2">
+    {/* Parte izquierda: label + select en fila */}
+    <div className="flex items-center gap-2 whitespace-nowrap">
+      <label htmlFor="filasPorPagina" className="font-semibold">
+        Filas por página:
+      </label>
+      <select
+        id="filasPorPagina"
+        value={filasPorPagina}
+        onChange={(e) => setFilasPorPagina(parseInt(e.target.value))}
+        className={inputClass + " text-sm py-1 px-2"}
+        style={{ maxWidth: "5rem" }}
+      >
+        {[10, 30, 45, 60, 100].map((num) => (
+          <option key={num} value={num}>
+            {num}
+          </option>
+        ))}
+      </select>
+    </div>
+
+    {/* Parte derecha: botones exportación */}
+    <Exportbtninscripcion
+      data={inscripcionesConfirmadas}
+      fileName="Inscripciones_Confirmadas"
+      titulo="Listado de Inscripciones Confirmadas"
+    />
+  </div>
+)}
+
 
       {/* Tabla */}
       <div className="overflow-x-auto w-full mt-4">

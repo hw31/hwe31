@@ -13,7 +13,7 @@ import ContadoresBase from "../Shared/Contadores";
 import ModalBase from "../Shared/ModalBase";
 import FormularioBase from "../Shared/FormularioBase";
 
-const FrmTitulosAcademicos = ({ busqueda }) => {
+const FrmTitulosAcademicos = ({ busqueda, onResultados }) => {
   const modoOscuro = useSelector((state) => state.theme.modoOscuro);
   const fondo = modoOscuro ? "bg-gray-900" : "bg-white";
   const texto = modoOscuro ? "text-gray-200" : "text-gray-800";
@@ -209,7 +209,16 @@ const FrmTitulosAcademicos = ({ busqueda }) => {
 
   const activos = titulosFiltrados.filter((t) => t.idEstado === 1).length;
   const inactivos = titulosFiltrados.length - activos;
+useEffect(() => {
+  if (typeof onResultados === "function") {
+    onResultados(titulosFiltrados.length > 0);
+  }
+}, [titulosFiltrados, onResultados]);
 
+  // Si no hay resultados y no está cargando, no mostrar nada
+  if (!loading && titulosFiltrados.length === 0) {
+    return null;
+  }
   const columnas = [
     { key: "nombrePersona", label: "Persona" },
     { key: "nivelAcademico", label: "Nivel Académico" },

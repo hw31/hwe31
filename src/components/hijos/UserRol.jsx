@@ -13,7 +13,7 @@ import ContadoresBase from "../Shared/Contadores";
 import ModalBase from "../Shared/ModalBase";
 import FormularioBase from "../Shared/FormularioBase";
 
-const UserRol = ({ busqueda }) => {
+const UserRol =  ({ busqueda, onResultados }) => {
   const modoOscuro = useSelector((state) => state.theme.modoOscuro);
   const fondo = modoOscuro ? "bg-gray-900" : "bg-white";
   const texto = modoOscuro ? "text-gray-200" : "text-gray-800";
@@ -214,12 +214,21 @@ const UserRol = ({ busqueda }) => {
   ];
 
   const usuariosFiltrados = usuarios.filter((u) => u.usuario.toLowerCase().includes(busquedaUsuario.toLowerCase()));
+useEffect(() => {
+  if (typeof onResultados === "function") {
+    onResultados(usuariosRolesFiltrados.length > 0);
+  }
+}, [usuariosRolesFiltrados, onResultados]);
 
+  // Si no hay resultados y no está cargando, no mostrar nada
+  if (!loading && usuariosRolesFiltrados.length === 0) {
+    return null;
+  }
   return (
     <>
       <div className="flex justify-between items-center mb-4">
         <h2 className={`text-2xl md:text-3xl font-extrabold tracking-wide ${modoOscuro ? "text-white" : "text-gray-800"}`}>
-          Usuarios-Roles
+          Usuarios Roles
         </h2>
       </div>
 

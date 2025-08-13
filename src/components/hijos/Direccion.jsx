@@ -14,7 +14,7 @@ import ContadoresBase from "../Shared/Contadores";
 import ModalBase from "../Shared/ModalBase";
 import FormularioBase from "../Shared/FormularioBase";
 
-const FrmDirecciones = ({ busqueda }) => {
+const FrmDirecciones = ({ busqueda, onResultados }) => {
   const modoOscuro = useSelector((state) => state.theme.modoOscuro);
   const fondo = modoOscuro ? "bg-gray-900" : "bg-white";
   const texto = modoOscuro ? "text-gray-200" : "text-gray-800";
@@ -189,6 +189,16 @@ const personasFiltradas = personas.filter((p) =>
       detalle.includes(textoBusqueda)
     );
   });
+
+  // Informar al padre si hay resultados filtrados
+useEffect(() => {
+  if (typeof onResultados === "function") {
+    onResultados(direccionesFiltradas.length > 0);
+  }
+}, [direccionesFiltradas, onResultados]);
+if (direccionesFiltradas.length === 0) {
+  return null; // o podrías retornar un mensaje
+}
 
   const totalPaginas = Math.ceil(direccionesFiltradas.length / filasPorPagina);
   const inicio = (paginaActual - 1) * filasPorPagina;

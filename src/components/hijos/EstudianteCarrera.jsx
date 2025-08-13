@@ -15,7 +15,7 @@ import ContadoresBase from "../Shared/Contadores";
 import ModalBase from "../Shared/ModalBase";
 import FormularioBase from "../Shared/FormularioBase";
 
-const EstudianteCarrera = () => {
+const EstudianteCarrera = ({ busqueda = "", onResultados }) => {
   const modoOscuro = useSelector((state) => state.theme.modoOscuro);
 
   const [datos, setDatos] = useState([]);
@@ -217,47 +217,41 @@ const EstudianteCarrera = () => {
     });
   };
 
-  const usuariosFiltrados = usuarios.filter((u) =>
-    (u.nombre_Usuario || u.usuario || "").toLowerCase().includes(busquedaUsuario.toLowerCase())
-  );
+  // Filtrado global de datos para la tabla, según busqueda (prop)
+  const datosFiltrados = datos.filter((item) => {
+    const usuarioMatch = item.usuario?.toLowerCase().includes(busqueda.toLowerCase());
+    const carreraMatch = item.nombreCarrera?.toLowerCase().includes(busqueda.toLowerCase());
+    return usuarioMatch || carreraMatch;
+  });
 
-  const carrerasFiltradas = carreras.filter(
-    (c) =>
-      !busquedaCarrera.trim() ||
-      (c.nombreCarrera || "").toLowerCase().includes(busquedaCarrera.toLowerCase())
-  );
-
-  const datosPaginados = datos.slice(
+  // Paginar sobre datos filtrados
+  const datosPaginados = datosFiltrados.slice(
     (paginaActual - 1) * filasPorPagina,
     paginaActual * filasPorPagina
   );
-  const totalPaginas = Math.ceil(datos.length / filasPorPagina);
-  const activos = datos.filter((d) => d.iD_Estado === 1).length;
 
-  const exportarPorCarrera = (idCarrera) => {
-    const estudiantes = datos.filter(
-      (d) => d.iD_Carrera === idCarrera && d.iD_Estado === 1
-    );
-    const csv = [
-      ["Usuario", "Carrera", "Fecha Inicio", "Fecha Fin"],
-      ...estudiantes.map((e) => [
-        e.usuario,
-        e.nombreCarrera,
-        formatearFecha(e.fecha_Inicio),
-        formatearFecha(e.fecha_Fin),
-      ]),
-    ]
-      .map((fila) => fila.join(","))
-      .join("\n");
+  const totalPaginas = Math.ceil(datosFiltrados.length / filasPorPagina);
+  const activos = datosFiltrados.filter((d) => d.iD_Estado === 1).length;
 
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-    const link = document.createElement("a");
-    link.href = URL.createObjectURL(blob);
-    link.setAttribute("download", `estudiantes_carrera_${idCarrera}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
+  // Autocompletados para modal (sin relación directa con la búsqueda global)
+  const usuariosFiltrados = usuarios.filter((u) =>
+    (u.nombre_Usuario || u.usuario || "").toLowerCase().includes(busquedaUsuario.toLowerCase())
+  );
+  const carrerasFiltradas = carreras.filter((c) =>
+    c.nombreCarrera.toLowerCase().includes(busquedaCarrera.toLowerCase())
+  );
+
+  // Avisar al padre si hay resultados en tabla filtrada
+  useEffect(() => {
+    if (typeof onResultados === "function") {
+      onResultados(datosFiltrados.length > 0);
+    }
+  }, [datosFiltrados, onResultados]);
+
+  // Si no hay resultados y no está cargando, no mostrar nada
+  if (!loading && datosFiltrados.length === 0) {
+    return null;
+  }
 
   const columnas = [
     {
@@ -304,18 +298,14 @@ const EstudianteCarrera = () => {
 
   return (
     <>
-      <h2
-        className={`text-2xl font-bold mb-4 ${
-          modoOscuro ? "text-white" : "text-gray-800"
-        }`}
-      >
-        Estudiantes - Carreras
+      <h2 className={`text-2xl font-bold mb-4 ${modoOscuro ? "text-white" : "text-gray-800"}`}>
+        Estudiantes Carreras
       </h2>
 
       <ContadoresBase
         activos={activos}
-        inactivos={datos.length - activos}
-        total={datos.length}
+        inactivos={datosFiltrados.length - activos}
+        total={datosFiltrados.length}
         modoOscuro={modoOscuro}
         onNuevo={abrirModalNuevo}
       />
