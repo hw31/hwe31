@@ -1,4 +1,3 @@
-// IMPORTS
 import React, { useState, useEffect, useRef } from "react";
 import { useSelector } from "react-redux";
 import Swal from "sweetalert2";
@@ -8,6 +7,8 @@ import estudianteCarreraService from "../../services/EstudiantesCarreras";
 import usuarioService from "../../services/Usuario";
 import carreraService from "../../services/Carreras";
 import estadoService from "../../services/Estado";
+import catalogoService from "../../services/Catalogos";
+import usuariosRolesService from "../../services/UsuariosRoles";
 
 import TablaBase from "../Shared/TablaBase";
 import ContadoresBase from "../Shared/Contadores";
@@ -20,6 +21,7 @@ const EstudianteCarrera = ({ busqueda = "", onResultados }) => {
   const [datos, setDatos] = useState([]);
   const [usuarios, setUsuarios] = useState([]);
   const [carreras, setCarreras] = useState([]);
+  const [turnos, setTurnos] = useState([]);
   const [estados, setEstados] = useState([]);
 
   const [modalOpen, setModalOpen] = useState(false);
@@ -33,11 +35,12 @@ const EstudianteCarrera = ({ busqueda = "", onResultados }) => {
 
   const [form, setForm] = useState({
     iD_EstudianteCarrera: 0,
-    iD_Usuario: "",
-    iD_Carrera: "",
+    iD_Usuario: 0,
+    iD_Carrera: 0,
+    iD_Turno: 0,
     fecha_Inicio: "",
     fecha_Fin: "",
-    iD_Estado: "",
+    iD_Estado: 0,
   });
 
   // Autocompletado
@@ -78,19 +81,45 @@ const EstudianteCarrera = ({ busqueda = "", onResultados }) => {
   const cargarDatos = async () => {
     setLoading(true);
     try {
-      const [resEC, resUsuarios, resCarreras, resEstados] = await Promise.all([
+      const [
+        resEC,
+        resUsuariosRoles,
+        resUsuarios,
+        resCarreras,
+        resEstados,
+        resTurnos,
+      ] = await Promise.all([
         estudianteCarreraService.listarTodos(),
+        usuariosRolesService.listarUsuariosRoles(),
         usuarioService.listarUsuario(),
         carreraService.listarCarreras(),
         estadoService.listarEstados(),
+        catalogoService.filtrarPorTipoCatalogo(10),
       ]);
 
+      const usuariosConRol3Ids = resUsuariosRoles
+        .filter((ur) => ur.iD_Rol === 3 && ur.id_Estado === 1)
+        .map((ur) => ur.iD_Usuario);
+
+      const usuariosEstudiantes = (resUsuarios?.data || []).filter(
+        (u) =>
+          usuariosConRol3Ids.includes(u.id_Usuario || u.iD_Usuario) &&
+          ((u.id_Estado === 1 || u.iD_Estado === 1) ?? false)
+      );
+
       setDatos(resEC || []);
-      setUsuarios(resUsuarios?.data?.filter((u) => u.id_Estado === 1) || []);
-      setCarreras(resCarreras?.resultado?.filter((c) => c.activo) || []);
+      setUsuarios(usuariosEstudiantes);
+      setCarreras(
+        (Array.isArray(resCarreras)
+          ? resCarreras
+          : resCarreras?.resultado || []
+        ).filter((c) => c.activo)
+      );
       setEstados(resEstados?.data || []);
+      setTurnos(resTurnos?.resultado.filter((t) => t.activo) || []);
     } catch (error) {
       console.error("Error al cargar datos:", error);
+      Swal.fire("Error", "No se pudieron cargar los datos", "error");
     } finally {
       setLoading(false);
     }
@@ -103,11 +132,12 @@ const EstudianteCarrera = ({ busqueda = "", onResultados }) => {
   const abrirModalNuevo = () => {
     setForm({
       iD_EstudianteCarrera: 0,
-      iD_Usuario: "",
-      iD_Carrera: "",
+      iD_Usuario: 0,
+      iD_Carrera: 0,
+      iD_Turno: 0,
       fecha_Inicio: "",
       fecha_Fin: "",
-      iD_Estado: "",
+      iD_Estado: 0,
     });
     setBusquedaUsuario("");
     setBusquedaCarrera("");
@@ -121,13 +151,16 @@ const EstudianteCarrera = ({ busqueda = "", onResultados }) => {
       iD_EstudianteCarrera: item.iD_EstudianteCarrera,
       iD_Usuario: item.iD_Usuario,
       iD_Carrera: item.iD_Carrera,
-      fecha_Inicio: item.fecha_Inicio?.slice(0, 10),
-      fecha_Fin: item.fecha_Fin?.slice(0, 10),
+      iD_Turno: item.iD_Turno,
+      fecha_Inicio: item.fecha_Inicio?.slice(0, 10) || "",
+      fecha_Fin: item.fecha_Fin?.slice(0, 10) || "",
       iD_Estado: item.iD_Estado,
     });
 
-    const usuario = usuarios.find((u) => u.id_Usuario === item.iD_Usuario);
-    setBusquedaUsuario(usuario?.usuario || "");
+    const usuario = usuarios.find(
+      (u) => u.iD_Usuario === item.iD_Usuario || u.id_Usuario === item.iD_Usuario
+    );
+    setBusquedaUsuario(usuario?.nombre_Usuario || usuario?.usuario || "");
 
     const carrera = carreras.find((c) => c.iD_Carrera === item.iD_Carrera);
     setBusquedaCarrera(carrera?.nombreCarrera || "");
@@ -202,7 +235,7 @@ const EstudianteCarrera = ({ busqueda = "", onResultados }) => {
 
   // Autocompletados para modal (sin relación directa con la búsqueda global)
   const usuariosFiltrados = usuarios.filter((u) =>
-    u.usuario.toLowerCase().includes(busquedaUsuario.toLowerCase())
+    (u.nombre_Usuario || u.usuario || "").toLowerCase().includes(busquedaUsuario.toLowerCase())
   );
   const carrerasFiltradas = carreras.filter((c) =>
     c.nombreCarrera.toLowerCase().includes(busquedaCarrera.toLowerCase())
@@ -230,6 +263,15 @@ const EstudianteCarrera = ({ busqueda = "", onResultados }) => {
       key: "carrera",
       label: "Carrera",
       render: (item) => item.nombreCarrera || "-",
+    },
+    {
+      key: "turno",
+      label: "Turno",
+      render: (item) => {
+        if (item.nombreTurno) return item.nombreTurno;
+        const turno = turnos.find((t) => t.idCatalogo === item.iD_Turno);
+        return turno ? turno.descripcionCatalogo : "-";
+      },
     },
     {
       key: "fechaInicio",
@@ -268,6 +310,26 @@ const EstudianteCarrera = ({ busqueda = "", onResultados }) => {
         onNuevo={abrirModalNuevo}
       />
 
+      {/* Controles arriba */}
+      <div className="flex justify-start items-center mb-3">
+        <label className="mr-2">Filas por página:</label>
+        <select
+          value={filasPorPagina}
+          onChange={(e) => {
+            setFilasPorPagina(Number(e.target.value));
+            setPaginaActual(1);
+          }}
+          className="border rounded px-2 py-1"
+        >
+          {[5, 10, 20, 50].map((num) => (
+            <option key={num} value={num}>
+              {num}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      {/* Tabla */}
       <TablaBase
         datos={datosPaginados}
         columnas={columnas}
@@ -276,7 +338,9 @@ const EstudianteCarrera = ({ busqueda = "", onResultados }) => {
         onEditar={abrirModalEditar}
       />
 
-      <div className="my-4 flex justify-between items-center text-sm">
+      {/* Paginación abajo */}
+      <div className="flex justify-between items-center mt-3">
+        {/* Botón anterior */}
         <button
           onClick={() => setPaginaActual((prev) => Math.max(prev - 1, 1))}
           disabled={paginaActual === 1}
@@ -284,11 +348,17 @@ const EstudianteCarrera = ({ busqueda = "", onResultados }) => {
         >
           Anterior
         </button>
+
+        {/* Info de página en el centro */}
         <span className="font-semibold">
           Página {paginaActual} de {totalPaginas || 1}
         </span>
+
+        {/* Botón siguiente */}
         <button
-          onClick={() => setPaginaActual((prev) => (prev < totalPaginas ? prev + 1 : prev))}
+          onClick={() =>
+            setPaginaActual((prev) => (prev < totalPaginas ? prev + 1 : prev))
+          }
           disabled={paginaActual === totalPaginas}
           className="px-4 py-2 rounded bg-blue-600 text-white disabled:bg-gray-400"
         >
@@ -296,6 +366,7 @@ const EstudianteCarrera = ({ busqueda = "", onResultados }) => {
         </button>
       </div>
 
+      {/* Modal */}
       <ModalBase isOpen={modalOpen} onClose={cerrarModal} modoOscuro={modoOscuro}>
         <FormularioBase
           onSubmit={handleGuardar}
@@ -304,7 +375,7 @@ const EstudianteCarrera = ({ busqueda = "", onResultados }) => {
           formError={formError}
           formLoading={formLoading}
           modoEdicion={modoEdicion}
-          titulo={modoEdicion ? "Editar Estudiante-Carrera" : "Nuevo Estudiante-Carrera"}
+          titulo={modoEdicion ? "Estudiante-Carrera" : "Estudiante-Carrera"}
         >
           <div className="space-y-4">
             {/* Autocompletado usuario */}
@@ -313,28 +384,41 @@ const EstudianteCarrera = ({ busqueda = "", onResultados }) => {
                 type="text"
                 placeholder="Buscar usuario..."
                 value={busquedaUsuario}
-                onChange={(e) => setBusquedaUsuario(e.target.value)}
+                onChange={(e) => {
+                  setBusquedaUsuario(e.target.value);
+                  setForm((prev) => ({ ...prev, iD_Usuario: 0 }));
+                }}
                 onFocus={() => setMostrarDropdownUsuario(true)}
                 ref={inputRefUsuario}
                 disabled={modoEdicion}
                 className="w-full px-3 py-2 border rounded"
+                autoComplete="off"
               />
               {mostrarDropdownUsuario && usuariosFiltrados.length > 0 && (
                 <ul
                   ref={dropdownRefUsuario}
-                  className="absolute z-10 w-full max-h-48 overflow-y-auto border rounded bg-white shadow"
+                  className={`absolute z-10 w-full max-h-52 overflow-auto border rounded shadow-lg ${
+                    modoOscuro
+                      ? "bg-gray-800 border-gray-600 text-gray-200"
+                      : "bg-white border-gray-300 text-gray-900"
+                  }`}
                 >
                   {usuariosFiltrados.map((u) => (
                     <li
-                      key={u.id_Usuario}
+                      key={u.iD_Usuario || u.id_Usuario}
                       onClick={() => {
-                        setForm((prev) => ({ ...prev, iD_Usuario: u.id_Usuario }));
-                        setBusquedaUsuario(u.usuario);
+                        setForm((prev) => ({
+                          ...prev,
+                          iD_Usuario: u.iD_Usuario || u.id_Usuario,
+                        }));
+                        setBusquedaUsuario(u.nombre_Usuario || u.usuario);
                         setMostrarDropdownUsuario(false);
                       }}
-                      className="px-3 py-2 hover:bg-gray-100 cursor-pointer"
+                      className={`px-3 py-2 cursor-pointer ${
+                        modoOscuro ? "hover:bg-gray-700" : "hover:bg-gray-100"
+                      }`}
                     >
-                      {u.usuario}
+                      {u.nombre_Usuario || u.usuario}
                     </li>
                   ))}
                 </ul>
@@ -347,15 +431,23 @@ const EstudianteCarrera = ({ busqueda = "", onResultados }) => {
                 type="text"
                 placeholder="Buscar carrera..."
                 value={busquedaCarrera}
-                onChange={(e) => setBusquedaCarrera(e.target.value)}
+                onChange={(e) => {
+                  setBusquedaCarrera(e.target.value);
+                  setForm((prev) => ({ ...prev, iD_Carrera: 0 }));
+                }}
                 onFocus={() => setMostrarDropdownCarrera(true)}
                 ref={inputRefCarrera}
                 className="w-full px-3 py-2 border rounded"
+                autoComplete="off"
               />
               {mostrarDropdownCarrera && carrerasFiltradas.length > 0 && (
                 <ul
                   ref={dropdownRefCarrera}
-                  className="absolute z-10 w-full max-h-48 overflow-y-auto border rounded bg-white shadow"
+                  className={`absolute z-10 w-full max-h-52 overflow-auto border rounded shadow-lg ${
+                    modoOscuro
+                      ? "bg-gray-800 border-gray-600 text-gray-200"
+                      : "bg-white border-gray-300 text-gray-900"
+                  }`}
                 >
                   {carrerasFiltradas.map((c) => (
                     <li
@@ -365,7 +457,9 @@ const EstudianteCarrera = ({ busqueda = "", onResultados }) => {
                         setBusquedaCarrera(c.nombreCarrera);
                         setMostrarDropdownCarrera(false);
                       }}
-                      className="px-3 py-2 hover:bg-gray-100 cursor-pointer"
+                      className={`px-3 py-2 cursor-pointer ${
+                        modoOscuro ? "hover:bg-gray-700" : "hover:bg-gray-100"
+                      }`}
                     >
                       {c.nombreCarrera}
                     </li>
@@ -373,6 +467,22 @@ const EstudianteCarrera = ({ busqueda = "", onResultados }) => {
                 </ul>
               )}
             </div>
+
+            {/* Autocompletado turno */}
+            <select
+              name="iD_Turno"
+              value={form.iD_Turno}
+              onChange={handleInputChange}
+              className="w-full px-3 py-2 border rounded"
+              required
+            >
+              <option value={0}>Seleccione Turno</option>
+              {turnos.map((t) => (
+                <option key={t.idCatalogo} value={t.idCatalogo}>
+                  {t.descripcionCatalogo}
+                </option>
+              ))}
+            </select>
 
             {/* Fecha inicio */}
             <input
@@ -402,7 +512,7 @@ const EstudianteCarrera = ({ busqueda = "", onResultados }) => {
               className="w-full px-3 py-2 border rounded"
               required
             >
-              <option value="">Seleccione Estado</option>
+              <option value={0}>Seleccione Estado</option>
               {estados
                 .filter((e) => e.iD_Estado === 1 || e.iD_Estado === 2)
                 .map((e) => (
