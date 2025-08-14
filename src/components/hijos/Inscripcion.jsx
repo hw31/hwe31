@@ -138,7 +138,7 @@ const cargarInscripciones = async () => {
 
     // 2. Traer usuarios roles solo si es admin
     let usuariosList = [];
-    if (rolLower === "administrador") {
+    if (rolLower === "administrador" || rolLower === "secretario") {
       const usuariosRolesRes = await usuariosRolesService.listarUsuariosRoles();
       usuariosList = usuariosRolesRes || [];
       setUsuariosRoles(usuariosList);
@@ -203,7 +203,7 @@ const cargarInscripciones = async () => {
 
   // Cargar datos auxiliares y luego inscripciones
   const cargarDatosIniciales = async () => {
-  if (rolLower === "administrador") {
+  if (rolLower === "administrador" || rolLower === "secretario") {
     const [usuariosRolesRes, periodosRes, estadosRes] = await Promise.all([
       usuariosRolesService.listarUsuariosRoles(),
       periodoService.listarPeriodosAcademicos(),
@@ -270,35 +270,40 @@ const cargarInscripciones = async () => {
 
   // Editar inscripción
   const handleEditar = (item) => {
-    if (rolLower === "estudiante" && item.estado === "Confirmado") return;
+  // Estudiante no puede editar si ya está confirmado
+  if (rolLower === "estudiante" && item.estado === "Confirmado") return;
 
-    const fechaValida = esFechaValida(item.fechaInscripcion)
-      ? item.fechaInscripcion.slice(0, 10)
-      : new Date().toISOString().slice(0, 10);
+  const fechaValida = esFechaValida(item.fechaInscripcion)
+    ? item.fechaInscripcion.slice(0, 10)
+    : new Date().toISOString().slice(0, 10);
 
-    setForm({
-      idInscripcion: item.idInscripcion,
-      idUsuario: item.idUsuario,
-      idPeriodoAcademico: item.idPeriodoAcademico,
-      idEstado: item.idEstado,
-      fechaInscripcion: fechaValida,
-      confirmar: false,
-    });
+  // Setear formulario base
+  setForm({
+    idInscripcion: item.idInscripcion,
+    idUsuario: item.idUsuario,
+    idPeriodoAcademico: item.idPeriodoAcademico,
+    idEstado: item.idEstado,
+    fechaInscripcion: fechaValida,
+    confirmar: false,
+  });
 
-    // Buscar el usuario en la lista para mostrar su nombre en el input
-    const usuarioRolSeleccionado = usuariosRoles.find((ur) => ur.iD_Usuario === item.idUsuario);
-    if (usuarioRolSeleccionado) {
-      setUsuarioInput(usuarioRolSeleccionado.nombre_Usuario);
-    } else {
-      setUsuarioInput("");
-    }
+  // Buscar estudiante seleccionado en la lista completa de estudiantes
+  // Usa estudiantesFiltrados o usuariosRoles según tu lista completa
+  const estudianteSeleccionado =
+    estudiantesFiltrados.find(
+      (e) => e.iD_Usuario === item.idUsuario || e.idUsuario === item.idUsuario
+    ) ||
+    usuariosRoles.find(
+      (ur) => ur.iD_Usuario === item.idUsuario || ur.idUsuario === item.idUsuario
+    );
 
-    setMostrarEstudiantes(false);
-    setModoEdicion(true);
-    setFormError("");
-    setModalOpen(true);
-  };
+  setUsuarioInput(estudianteSeleccionado?.nombre_Usuario || "");
 
+  setMostrarEstudiantes(false);
+  setModoEdicion(true);
+  setFormError("");
+  setModalOpen(true);
+};
   const handleGuardar = async () => {
   if (rolLower === "estudiante" && !form.confirmar)
     return setFormError("Debe confirmar su inscripción");
@@ -386,7 +391,7 @@ const cargarInscripciones = async () => {
   const indexUltimaFila = paginaActual * filasPorPagina;
   const indexPrimeraFila = indexUltimaFila - filasPorPagina;
   const datosPaginados =
-    rolLower === "administrador"
+    rolLower === "administrador" || rolLower === "secretario"
       ? datosFiltrados.slice(indexPrimeraFila, indexUltimaFila)
       : datosFiltrados;
   const totalPaginas = Math.ceil(datosFiltrados.length / filasPorPagina);
@@ -552,7 +557,7 @@ const cargarInscripciones = async () => {
         >
           <div className="space-y-5">
             {/* Formulario admin */}
-            {rolLower === "administrador" && (
+            {(rolLower === "administrador" || rolLower ==="secretario") && (
               <>
                 {/* Estudiante con autocompletado */}
               <div className="mb-4">

@@ -673,7 +673,7 @@ const calificacionesFiltradas = (() => {
   </div>
 
   {/* Botones exportar (derecha) */}
-  {(rolLower === "administrador" || rolLower === "secretario") && (
+  {(rolLower === "administrador" || rolLower === "secretario" || rolLower ==="docente") && (
     <ExportButtons
       data={datosExportar}
       fileName={`Calificaciones_${grupoSeleccionado.nombreGrupo}_${materiaSeleccionada.nombreMateria}`}
