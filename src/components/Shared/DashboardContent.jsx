@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
 import styled, { keyframes } from "styled-components";
 
+// Animaciones de entrada y salida
 const fadeOut = keyframes`
   from { opacity: 1; }
   to { opacity: 0; }
@@ -12,6 +13,7 @@ const fadeIn = keyframes`
   to { opacity: 1; }
 `;
 
+// Wrapper con animación condicional
 const PageWrapper = styled.div`
   animation: ${({ fadeType }) => (fadeType === "in" ? fadeIn : fadeOut)} 0.3s ease forwards;
 `;
@@ -22,13 +24,13 @@ const DashboardContent = ({ children }) => {
   const [displayChildren, setDisplayChildren] = useState(children);
 
   useEffect(() => {
-    // Detecta cambio de ruta
+    // Inicia fade-out cuando cambia la ruta
     setFadeType("out");
-  }, [location.pathname]);
+  }, [location.pathname, children]);
 
   const handleAnimationEnd = () => {
     if (fadeType === "out") {
-      // Cambia contenido después del fade-out
+      // Actualiza el contenido después del fade-out y hace fade-in
       setDisplayChildren(children);
       setFadeType("in");
     }
