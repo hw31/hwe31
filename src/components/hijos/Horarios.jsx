@@ -13,6 +13,8 @@ import { FaCheckCircle, FaTimesCircle } from "react-icons/fa";
 const Horarios = () => {
   const { modoOscuro } = useSelector((state) => state.theme);
   const { idUsuario } = useSelector((state) => state.auth.usuario);
+  const rolLower = useSelector((state) => state.auth?.rol?.toLowerCase()) || "";
+  const esAdministrador = rolLower === "administrador";
 
   const [horarios, setHorarios] = useState([]);
   const [usuarios, setUsuarios] = useState([]);
@@ -153,6 +155,61 @@ const Horarios = () => {
     }
   };
 
+ // Columnas base visibles para todos
+const columnasBase = [
+  { key: "nombreDiaSemana", label: "Día" },
+  { key: "horaInicio", label: "Hora Inicio" },
+  { key: "horaFin", label: "Hora Fin" },
+  {
+    key: "estado",
+    label: "Estado",
+    render: (item) => (
+      <div className="flex justify-center">
+        {item.idEstado === 1 ? (
+          <FaCheckCircle className="text-green-500 text-xl" />
+        ) : (
+          <FaTimesCircle className="text-red-500 text-xl" />
+        )}
+      </div>
+    ),
+  },
+];
+
+// Columnas adicionales solo para admin
+const columnasAdmin = [
+  {
+    key: "creador",
+    label: "Creador",
+    render: (item) => getNombreUsuario(item.idCreador),
+  },
+  {
+    key: "modificador",
+    label: "Modificador",
+    render: (item) => getNombreUsuario(item.idModificador),
+  },
+  {
+    key: "fechaCreacion",
+    label: "Fecha Creación",
+    render: (item) => formatearFecha(item.fechaCreacion),
+  },
+  {
+    key: "fechaModificacion",
+    label: "Fecha Modificación",
+    render: (item) => formatearFecha(item.fechaModificacion),
+  },
+];
+
+// Combinar columnas según rol
+const columnasTabla = esAdministrador
+  ? [
+      columnasBase[0], // Día
+      columnasBase[1], // Hora Inicio
+      columnasBase[2], // Hora Fin
+      ...columnasAdmin, // Creador, Modificador, Fechas
+      columnasBase[3], // Estado al final
+    ]
+  : columnasBase;
+
   return (
 
 <>
@@ -198,41 +255,7 @@ const Horarios = () => {
             <div className="min-w-full sm:min-w-[700px]">
             <TablaBase
               datos={datosPaginados}
-              columnas={[
-                { key: "nombreDiaSemana", label: "Día" },
-                { key: "horaInicio", label: "Hora Inicio" },
-                { key: "horaFin", label: "Hora Fin" },
-                {
-                  key: "creador",
-                  label: "Creador",
-                  render: (item) => getNombreUsuario(item.idCreador),
-                },
-                {
-                  key: "modificador",
-                  label: "Modificador",
-                  render: (item) => getNombreUsuario(item.idModificador),
-                },
-                {
-                  key: "fechaCreacion",
-                  label: "Fecha Creación",
-                  render: (item) => formatearFecha(item.fechaCreacion),
-                },
-                {
-                  key: "fechaModificacion",
-                  label: "Fecha Modificación",
-                  render: (item) => formatearFecha(item.fechaModificacion),
-                },
-                {
-                  key: "estado",
-                  label: "Estado",
-                  render: (item) =>
-                    item.idEstado === 1 ? (
-                      <FaCheckCircle className="text-green-500 text-xl mx-auto" />
-                    ) : (
-                      <FaTimesCircle className="text-red-500 text-xl mx-auto" />
-                    ),
-                },
-              ]}
+              columnas={columnasTabla}
               onEditar={handleEditar}
               modoOscuro={modoOscuro}
               encabezadoClase={encabezado}

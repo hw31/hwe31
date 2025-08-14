@@ -18,6 +18,7 @@ import FormularioBase from "../Shared/FormularioBase";
 
 const RescateEvaluacion = () => {
   const modoOscuro = useSelector((state) => state.theme.modoOscuro);
+  const rol = useSelector((state) => state.auth.rol);
   const fondo = modoOscuro ? "bg-gray-900" : "bg-white";
   const texto = modoOscuro ? "text-gray-200" : "text-gray-800";
   const encabezado = modoOscuro ? "bg-gray-700 text-gray-200" : "bg-gray-100 text-gray-700";
@@ -208,29 +209,41 @@ const RescateEvaluacion = () => {
     }
   };
 
-  const columnas = [
-    { key: "estudiante", label: "Estudiante" },
-    { key: "materia", label: "Materia" },
-    { key: "periodo", label: "Periodo" },
-    {
-      key: "observaciones",
-      label: "Observaciones",
-      render: (row) => (
-        <span title={row.observaciones}>
-          {row.observaciones?.length > 40
-            ? row.observaciones.slice(0, 40) + "..."
-            : row.observaciones || "-"}
-        </span>
-      ),
-    },
-    { key: "calificacionRescate", label: "Calificación" },
-    { key: "fechaSolicitud", label: "Fecha Solicitud" },
-    { key: "creador", label: "Creado por" },
-    { key: "fechaCreacion", label: "Fecha Creación" },
-    { key: "modificador", label: "Modificado por" },
-    { key: "fechaModificacion", label: "Fecha Modificación" },
-    { key: "estado", label: "Estado", render: (row) => renderEstadoIcono(row.idEstado) },
-  ];
+const rolLower = rol?.toLowerCase() || "";
+
+// Columnas visibles para todos
+const columnasBase = [
+  { key: "estudiante", label: "Estudiante" },
+  { key: "materia", label: "Materia" },
+  { key: "periodo", label: "Periodo" },
+  {
+    key: "observaciones",
+    label: "Observaciones",
+    render: (row) => (
+      <span title={row.observaciones}>
+        {row.observaciones?.length > 40
+          ? row.observaciones.slice(0, 40) + "..."
+          : row.observaciones || "-"}
+      </span>
+    ),
+  },
+  { key: "calificacionRescate", label: "Calificación" },
+  { key: "fechaSolicitud", label: "Fecha Solicitud" },
+  { key: "estado", label: "Estado", render: (row) => renderEstadoIcono(row.idEstado) },
+];
+
+// Columnas solo para admin
+const columnasExtraAdmin = [
+  { key: "creador", label: "Creado por" },
+  { key: "fechaCreacion", label: "Fecha Creación" },
+  { key: "modificador", label: "Modificado por" },
+  { key: "fechaModificacion", label: "Fecha Modificación" },
+];
+
+// Unir según rol
+const columnas = rolLower === "administrador"
+  ? [...columnasBase, ...columnasExtraAdmin]
+  : columnasBase;
 
   const abrirModalNuevo = () => {
     setForm({

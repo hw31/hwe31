@@ -15,6 +15,8 @@ import FormularioBase from "../Shared/FormularioBase";
 
 const FrmTitulosAcademicos = ({ busqueda, onResultados }) => {
   const modoOscuro = useSelector((state) => state.theme.modoOscuro);
+  const rol = useSelector((state) => state.auth?.rol);
+  const esAdmin = rol?.toLowerCase() === "administrador";
   const fondo = modoOscuro ? "bg-gray-900" : "bg-white";
   const texto = modoOscuro ? "text-gray-200" : "text-gray-800";
   const encabezado = modoOscuro ? "bg-gray-700 text-gray-200" : "bg-gray-100 text-gray-700";
@@ -219,38 +221,34 @@ useEffect(() => {
   if (!loading && titulosFiltrados.length === 0) {
     return null;
   }
-  const columnas = [
-    { key: "nombrePersona", label: "Persona" },
-    { key: "nivelAcademico", label: "Nivel Académico" },
-    { key: "especialidad", label: "Especialidad" },
-    { key: "creador", label: "Creador" },
-    {
-      key: "fechaCreacion",
-      label: "Fecha creación",
-      render: (item) => formatearFecha(item.fechaCreacion),
-    },
-    { key: "modificador", label: "Modificador" },
-    {
-      key: "fechaModificacion",
-      label: "Fecha modificación",
-      render: (item) => formatearFecha(item.fechaModificacion),
-    },
-    {
-      key: "estado",
-      label: "Estado",
-      className: "text-center w-20",
-      render: (item) =>
-        item.idEstado === 1 ? (
-          <span className="text-green-500 font-semibold flex justify-center">
-            <FaCheckCircle size={20} />
-          </span>
-        ) : (
-          <span className="text-red-500 font-semibold flex justify-center">
-            <FaTimesCircle size={20} />
-          </span>
-        ),
-    },
-  ];
+  const columnasBase = [
+  { key: "nombrePersona", label: "Persona" },
+  { key: "nivelAcademico", label: "Nivel Académico" },
+  { key: "especialidad", label: "Especialidad" },
+  { key: "estado", label: "Estado", className: "text-center w-20", render: (item) =>
+      item.idEstado === 1 ? (
+        <span className="text-green-500 font-semibold flex justify-center">
+          <FaCheckCircle size={20} />
+        </span>
+      ) : (
+        <span className="text-red-500 font-semibold flex justify-center">
+          <FaTimesCircle size={20} />
+        </span>
+      ),
+  },
+];
+
+const columnas = esAdmin
+  ? [
+      ...columnasBase.slice(0, 3),
+      { key: "creador", label: "Creador" },
+      { key: "fechaCreacion", label: "Fecha creación", render: (item) => formatearFecha(item.fechaCreacion) },
+      { key: "modificador", label: "Modificador" },
+      { key: "fechaModificacion", label: "Fecha modificación", render: (item) => formatearFecha(item.fechaModificacion) },
+      columnasBase[3], // estado
+    ]
+  : columnasBase;
+
 
   return (
     <div className="p-4">

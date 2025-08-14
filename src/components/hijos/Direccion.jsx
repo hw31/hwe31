@@ -16,6 +16,8 @@ import FormularioBase from "../Shared/FormularioBase";
 
 const FrmDirecciones = ({ busqueda, onResultados }) => {
   const modoOscuro = useSelector((state) => state.theme.modoOscuro);
+  const rol = useSelector((state) => state.auth?.rol);
+  const esAdmin = rol?.toLowerCase() === "administrador";
   const fondo = modoOscuro ? "bg-gray-900" : "bg-white";
   const texto = modoOscuro ? "text-gray-200" : "text-gray-800";
   const encabezado = modoOscuro ? "bg-gray-700 text-gray-200" : "bg-gray-100 text-gray-700";
@@ -207,41 +209,37 @@ if (direccionesFiltradas.length === 0) {
   const activos = direccionesFiltradas.filter((d) => d.idEstado === 1).length;
   const inactivos = direccionesFiltradas.length - activos;
 
-  const columnas = [
-    { key: "nombrePersona", label: "Persona" },
-    { key: "tipoDireccion", label: "Tipo Dirección" },
-    { key: "detalleDireccion", label: "Detalle" },
-    { key: "codigoPostal", label: "Código Postal" },
-    { key: "municipio", label: "Municipio" },
-    { key: "departamento", label: "Departamento" },
-    { key: "referencia", label: "Referencia" },
-    {
-      key: "fechaCreacion",
-      label: "Fecha creación",
-      render: (item) => item.fechaCreacion?.slice(0, 10),
-    },
-    {
-      key: "fechaModificacion",
-      label: "Fecha modificación",
-      render: (item) => item.fechaModificacion?.slice(0, 10),
-    },
-    {
-      key: "estado",
-      label: "Estado",
-      className: "text-center w-20",
-      render: (item) =>
-        item.idEstado === 1 ? (
-          <span className="text-green-500 font-semibold flex justify-center">
-            <FaCheckCircle size={20} />
-          </span>
-        ) : (
-          <span className="text-red-500 font-semibold flex justify-center">
-            <FaTimesCircle size={20} />
-          </span>
-        ),
-    },
-  ];
+ const columnasBase = [
+  { key: "nombrePersona", label: "Persona" },
+  { key: "tipoDireccion", label: "Tipo Dirección" },
+  { key: "detalleDireccion", label: "Detalle" },
+  { key: "codigoPostal", label: "Código Postal" },
+  { key: "municipio", label: "Municipio" },
+  { key: "departamento", label: "Departamento" },
+  { key: "referencia", label: "Referencia" },
+  { key: "estado", label: "Estado", className: "text-center w-20", render: (item) =>
+      item.idEstado === 1 ? (
+        <span className="text-green-500 font-semibold flex justify-center">
+          <FaCheckCircle size={20} />
+        </span>
+      ) : (
+        <span className="text-red-500 font-semibold flex justify-center">
+          <FaTimesCircle size={20} />
+        </span>
+      ),
+  },
+];
 
+const columnas = esAdmin
+  ? [
+      ...columnasBase.slice(0, 7),
+      { key: "fechaCreacion", label: "Fecha Creación", render: (item) => item.fechaCreacion?.slice(0, 10) },
+      { key: "fechaModificacion", label: "Fecha Modificación", render: (item) => item.fechaModificacion?.slice(0, 10) },
+      columnasBase[7], // estado
+    ]
+  : columnasBase;
+
+  
   return (
     <div className="p-4">
       <div className={`shadow-lg rounded-xl p-6 ${fondo}`}>

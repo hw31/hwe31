@@ -27,6 +27,7 @@ const Calificacion = ({
   const rol = useSelector((state) => state.auth.rol);
   const rolLower = rol?.toLowerCase() ?? "";
   const esEstudiante = rolLower === "estudiante";
+  const esSecretario = rolLower === "secretario";
 
   const [asignaciones, setAsignaciones] = useState([]);
   const [estudiantes, setEstudiantes] = useState([]);
@@ -672,7 +673,7 @@ const calificacionesFiltradas = (() => {
   </div>
 
   {/* Botones exportar (derecha) */}
-  {rolLower === "administrador" && (
+  {(rolLower === "administrador" || rolLower === "secretario") && (
     <ExportButtons
       data={datosExportar}
       fileName={`Calificaciones_${grupoSeleccionado.nombreGrupo}_${materiaSeleccionada.nombreMateria}`}

@@ -337,7 +337,7 @@ Asignaciones
 
 </div>
 
- {rolLower === "administrador" && (
+ {(rolLower === "administrador" || rolLower ==="secretario") && (
 <div className="flex flex-wrap justify-between items-center mb-6 gap-4">
   {/* Contenedores de contadores centrados */}
   
@@ -446,7 +446,7 @@ Asignaciones
   </div>
 
   {/* Botón "Nuevo" alineado a la derecha */}
-    {rolLower === "administrador" && (
+    {(rolLower === "administrador" || rolLower === "secretario") && (
   <button
     onClick={abrirModalNuevo}
     style={{
@@ -490,7 +490,7 @@ Asignaciones
       <thead className={encabezado}>
         <tr>
           {/* Mostrar columna Docente solo si es administrador o estudiante */}
-          {(rolLower === "administrador" || rolLower === "estudiante") && (
+          {(rolLower === "administrador" ||rolLower ==="secretario" || rolLower === "estudiante") && (
             <th className="px-4 py-2 text-left text-sm font-semibold">Docente</th>
           )}
           <th className="px-4 py-2 text-left text-sm font-semibold">Materia</th>
@@ -498,10 +498,10 @@ Asignaciones
           <th className="px-4 py-2 text-left text-sm font-semibold">Aula</th>
           <th className="px-4 py-2 text-left text-sm font-semibold">Horario</th>
            <th className="px-4 py-2 text-left text-sm font-semibold">Periodo</th>
-          {rolLower === "administrador" && (
+          {(rolLower === "administrador" || rolLower ==="secretario") && (
             <th className="px-4 py-2 text-left text-sm font-semibold">Estado</th>
           )}
-          {rolLower === "administrador" && (
+          {(rolLower === "administrador" || rolLower=== "secretario") && (
             <th className="px-4 py-2 text-left text-sm font-semibold">Acciones</th>
           )}
         </tr>
@@ -515,7 +515,7 @@ Asignaciones
               modoOscuro ? "hover:bg-gray-700" : "hover:bg-blue-50"
             }`}
           >
-            {(rolLower === "administrador" || rolLower === "estudiante") && (
+            {(rolLower === "administrador" ||rolLower ==="secretario" || rolLower === "estudiante") && (
               <td className={`px-4 py-2 text-sm ${texto}`}>
                 {
                   listas.usuariosRoles.find(
@@ -546,7 +546,7 @@ Asignaciones
               {asig.nombrePeriodo || "N/D"}
             </td>
 
-            {rolLower === "administrador" && (
+            {(rolLower === "administrador" || rolLower==="secretario") && (
               <td className="px-4 py-2 text-center">
                 {asig.nombreEstado?.toLowerCase() === "activo" ? (
                   <FaCheckCircle className="text-green-500 text-xl mx-auto" />
@@ -555,7 +555,7 @@ Asignaciones
                 )}
               </td>
             )}
-            {rolLower === "administrador" && (
+            {(rolLower === "administrador" || rolLower === "secretario") && (
               <td className="px-4 py-2 text-sm">
                 <button
                   className="text-blue-600 hover:text-blue-800 text-xl flex justify-center items-center w-full"

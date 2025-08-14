@@ -68,6 +68,19 @@ const FrmCarreras = () => {
           codigoCarrera: c.codigoCarrera,
           activo: c.activo,
         }));
+      }
+        else if (rolLower === "secretario") {
+      // Secretario: solo carreras activas
+      const res = await carreraService.listarCarreras();
+      data = res
+        .filter((c) => c.activo) // filtro por activas
+        .map((c) => ({
+          idCarrera: c.iD_Carrera,
+          nombreCarrera: c.nombreCarrera,
+          codigoCarrera: c.codigoCarrera,
+          activo: c.activo,
+        }));
+    
       } else {
         const res = await estudianteCarreraService.listarPorUsuario(idUsuario);
         data = res
@@ -367,7 +380,7 @@ const FrmCarreras = () => {
             Plan de estudio de {carreraSeleccionada?.nombreCarrera}
           </h2>
 
-          {rolLower === "administrador" && (
+          {rolLower === "administrador" ||rolLower ==="secretario"&& (
             <div className="flex justify-center mb-4 gap-3 flex-wrap">
               <button
                 onClick={() => setModalAgregarMateria(true)}
@@ -400,61 +413,57 @@ const FrmCarreras = () => {
                 }`}
               >
                 <thead>
-                  <tr className="border-b border-gray-300">
-                    <th className="px-6 py-4 font-semibold">Código</th>
-                    <th className="px-6 py-4 font-semibold">Materia</th>
-
-                    {rolLower === "administrador" && (
-                      <>
-                        <th className="px-6 py-4 font-semibold">Creador</th>
-                        <th className="px-6 py-4 font-semibold">Modificador</th>
-                        <th className="px-6 py-4 font-semibold">Fecha Creación</th>
-                        <th className="px-6 py-4 font-semibold">Fecha Modificación</th>
-                        <th className="px-6 py-4 font-semibold">Activo</th>
-                      </>
-                    )}
-                  </tr>
-                </thead>
-                <tbody>
-                  {materiasFiltradas.map((m) => (
-                    <tr
-                      key={m.idRelacion}
-                      className={`border-b border-gray-300 cursor-pointer rounded-xl transition
-                        ${
-                          modoOscuro
-                            ? "hover:bg-blue-400"
-                            : "hover:bg-blue-200"
-                        }
-                        ${
-                          filaPresionada === m.idRelacion
-                            ? "shadow-inner shadow-blue-400/60"
-                            : ""
-                        }
-                      `}
-                      onMouseDown={() => manejarPresionarFila(m.idRelacion)}
-                      onMouseUp={manejarSoltarFila}
-                      onMouseLeave={manejarSoltarFila}
-                    >
-                      <td className="px-6 py-4">{m.codigoMateria}</td>
-                      <td className="px-6 py-4">{m.nombreMateria}</td>
+                    <tr className="border-b border-gray-300">
+                      <th className="px-6 py-4 font-semibold">Código</th>
+                      <th className="px-6 py-4 font-semibold">Materia</th>
 
                       {rolLower === "administrador" && (
-                        <>                        
-                          <td className="px-6 py-4">{m.creador}</td>
-                          <td className="px-6 py-4">{m.modificador}</td>
-                          <td className="px-6 py-4">{formatearFecha(m.fechaCreacion)}</td>
-                          <td className="px-6 py-4">{formatearFecha(m.fechaModificacion)}</td>
+                        <>
+                          <th className="px-6 py-4 font-semibold">Creador</th>
+                          <th className="px-6 py-4 font-semibold">Modificador</th>
+                          <th className="px-6 py-4 font-semibold">Fecha Creación</th>
+                          <th className="px-6 py-4 font-semibold">Fecha Modificación</th>
+                        </>
+                      )}
+
+                      {(rolLower === "administrador" || rolLower === "secretario") && (
+                        <th className="px-6 py-4 font-semibold">Activo</th>
+                      )}
+                    </tr>
+                  </thead>
+                   <tbody>
+                    {materiasFiltradas.map((m) => (
+                      <tr key={m.idRelacion} className={`border-b border-gray-300 cursor-pointer rounded-xl transition
+                        ${modoOscuro ? "hover:bg-blue-400" : "hover:bg-blue-200"}
+                        ${filaPresionada === m.idRelacion ? "shadow-inner shadow-blue-400/60" : ""}
+                      `}
+                        onMouseDown={() => manejarPresionarFila(m.idRelacion)}
+                        onMouseUp={manejarSoltarFila}
+                        onMouseLeave={manejarSoltarFila}
+                      >
+                        <td className="px-6 py-4">{m.codigoMateria}</td>
+                        <td className="px-6 py-4">{m.nombreMateria}</td>
+
+                        {rolLower === "administrador" && (
+                          <>
+                            <td className="px-6 py-4">{m.creador}</td>
+                            <td className="px-6 py-4">{m.modificador}</td>
+                            <td className="px-6 py-4">{formatearFecha(m.fechaCreacion)}</td>
+                            <td className="px-6 py-4">{formatearFecha(m.fechaModificacion)}</td>
+                          </>
+                        )}
+
+                        {(rolLower === "administrador" || rolLower === "secretario") && (
                           <td className="px-6 py-4">
                             <Switch
                               checked={m.idEstado === 1}
                               onChange={() => toggleMateriaCarrera(m)}
                             />
                           </td>
-                        </>
-                      )}
-                    </tr>
-                  ))}
-                </tbody>
+                        )}
+                      </tr>
+                    ))}
+                  </tbody>
               </table>
             </div>
           )}

@@ -13,6 +13,8 @@ import FormularioBase from "../Shared/FormularioBase";
 const Grupos = () => {
   const { modoOscuro } = useSelector((state) => state.theme);
   const { idUsuario } = useSelector((state) => state.auth.usuario);
+  const rolLower = useSelector((state) => state.auth?.rol?.toLowerCase()) || "";
+  const esAdministrador = rolLower === "administrador";
 
   const [grupos, setGrupos] = useState([]);
   const [estados, setEstados] = useState([]);
@@ -226,6 +228,48 @@ const Grupos = () => {
     return null;
   };
 
+  const columnasBase = [
+  { key: "codigoGrupo", label: "Código" },
+  {
+    key: "idEstado",
+    label: "Estado",
+    render: (item) => renderEstadoIcono(item.idEstado),
+  },
+  {
+    key: "acciones",
+    label: "Acciones",
+    render: (item) => (
+      <button
+        onClick={() => abrirModalEditar(item)}
+        className="bg-blue-600 hover:bg-blue-700 px-3 py-1 rounded text-white transition-colors"
+        aria-label={`Editar grupo ${item.codigoGrupo}`}
+        type="button"
+      >
+        <FaEdit />
+      </button>
+    ),
+  },
+];
+
+const columnasAdmin = [
+  { key: "creador", label: "Creador" },
+  { key: "modificador", label: "Modificador" },
+  {
+    key: "fechaCreacion",
+    label: "Creación",
+    render: (item) => formatearFecha(item.fechaCreacion),
+  },
+  {
+    key: "fechaModificacion",
+    label: "Modificación",
+    render: (item) => formatearFecha(item.fechaModificacion),
+  },
+];
+
+const columnasTabla = esAdministrador
+  ? [columnasBase[0], ...columnasAdmin, columnasBase[1], columnasBase[2]]
+  : columnasBase;
+
   return (
     <>
   <div style={{ overflowX: "hidden", width: "100%" }}>
@@ -280,40 +324,7 @@ const Grupos = () => {
           <div className="min-w-full sm:min-w-[700px]">
             <TablaBase
               datos={datosPaginados}
-              columnas={[
-                { key: "codigoGrupo", label: "Código" },
-                { key: "creador", label: "Creador" },
-                { key: "modificador", label: "Modificador" },
-                {
-                  key: "fechaCreacion",
-                  label: "Creación",
-                  render: (item) => formatearFecha(item.fechaCreacion),
-                },
-                {
-                  key: "fechaModificacion",
-                  label: "Modificación",
-                  render: (item) => formatearFecha(item.fechaModificacion),
-                },
-                {
-                  key: "idEstado",
-                  label: "Estado",
-                  render: (item) => renderEstadoIcono(item.idEstado),
-                },
-                {
-                  key: "acciones",
-                  label: "Acciones",
-                  render: (item) => (
-                    <button
-                      onClick={() => abrirModalEditar(item)}
-                      className="bg-blue-600 hover:bg-blue-700 px-3 py-1 rounded text-white transition-colors"
-                      aria-label={`Editar grupo ${item.codigoGrupo}`}
-                      type="button"
-                    >
-                      <FaEdit />
-                    </button>
-                  ),
-                },
-              ]}
+              columnas={columnasTabla}
               modoOscuro={modoOscuro}
             />
           </div>

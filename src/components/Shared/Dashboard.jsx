@@ -369,15 +369,18 @@ const Dashboard = () => {
     {mostrarBienvenida && (
       <DashboardWelcome role="region" aria-live="polite">
         <h1 className="text-2xl sm:text-3xl font-bold mb-6 text-center">
-          ¡Bienvenido, {nombre} {apellido}!
+          ¡Bienvenido/a, {nombre}!
         </h1>
 
-        {rolLower === "administrador" && (
-          <div className="flex flex-wrap justify-center gap-6 w-full max-w-screen-xl px-4 md:px-8 mx-auto">
-            <DashboardMenuCards className="flex-grow min-w-[280px]" />
-            <DashboardCards modoOscuro={modoOscuro} />
+        <div className="flex flex-wrap justify-center gap-6 w-full max-w-screen-xl px-4 md:px-8 mx-auto">
+            {(rolLower === "administrador" || rolLower === "secretario") && (
+              <DashboardMenuCards className="flex-grow min-w-[280px]" />
+            )}
+
+            {rolLower === "administrador" && (
+              <DashboardCards modoOscuro={modoOscuro} />
+            )}
           </div>
-        )}
       </DashboardWelcome>
     )}
 

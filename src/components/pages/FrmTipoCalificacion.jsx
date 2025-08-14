@@ -339,7 +339,7 @@ useEffect(() => {
     try {
       await contactoService.actualizarContacto({
         idContacto: editandoId,
-        idPersona: idUsuario,
+        idPersona: idPersona,
         idTipoContacto: contactos.find(c => c.idContacto === editandoId)?.idTipoContacto || 1,
         valorContacto: valorEditado.trim(),
         idEstado: 1,

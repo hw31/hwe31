@@ -17,6 +17,7 @@ import estadoService from "../../services/Estado";
 
 const InscripcionesMaterias = () => {
   const { modoOscuro } = useSelector(state => state.theme);
+  const rol = useSelector((state) => state.auth.rol);
   const [inscripcionesMaterias, setInscripcionesMaterias] = useState([]);
   const [inscripciones, setInscripciones] = useState([]);
   const [materias, setMaterias] = useState([]);
@@ -53,6 +54,7 @@ const InscripcionesMaterias = () => {
   // Paginación
   const [paginaActual, setPaginaActual] = useState(1);
   const [filasPorPagina, setFilasPorPagina] = useState(10);
+  const rolLower = rol?.toLowerCase() || "";
 
   // Referencias para cerrar dropdowns al hacer click fuera
   const estudianteRef = useRef(null);
@@ -218,61 +220,79 @@ const InscripcionesMaterias = () => {
     }
   };
 
-  // Columnas tabla
-  const columnas = [
-   //{ key: "idInscripcionMateria", label: "ID" },
-    {
-      key: "idInscripcion",
-      label: "Estudiante",
-      render: (item) => {
-        const inscripcion = inscripciones.find(i => i.iD_Inscripcion === item.idInscripcion);
-        return inscripcion ? inscripcion.nombreEstudiante : "-";
-      }
-    },
-    {
-      key: "idMateria",
-      label: "Materia",
-      render: (item) => {
-        const materia = materias.find(m => m.idMateria === item.idMateria);
-        return materia ? materia.nombreMateria : "-";
-      }
-    },
-    {
-      key: "iD_Grupo",
-      label: "Grupo",
-      render: (item) => {
-        const grupo = grupos.find(g => g.idGrupo === item.iD_Grupo);
-        return grupo ? grupo.codigoGrupo : "-";
-      }
-    },
-    {
-      key: "fechaCreacion",
-      label: "Fecha Creación",
-      render: (item) => formatearFecha(item.fechaCreacion),
-    },
-    {
-      key: "fechaModificacion",
-      label: "Fecha Modificación",
-      render: (item) => formatearFecha(item.fechaModificacion),
-    },
-     {
-      key: "idEstado",
-      label: "Estado",
-      render: (item) => {
-        const estado = estados.find(e => e.iD_Estado === item.idEstado);
-        if (!estado) return "-";
-        return (
-          <span className="flex items-center">
-            {item.idEstado === 1 ? (
-              <FaCheckCircle className="text-green-600" />
-            ) : (
-              <FaTimesCircle className="text-red-600" />
-            )}
-          </span>
-        );
-      }
-    },
-  ];
+  /// Columnas que todos ven
+const columnasBase = [
+  {
+    key: "idInscripcion",
+    label: "Estudiante",
+    render: (item) => {
+      const inscripcion = inscripciones.find(i => i.iD_Inscripcion === item.idInscripcion);
+      return inscripcion ? inscripcion.nombreEstudiante : "-";
+    }
+  },
+  {
+    key: "idMateria",
+    label: "Materia",
+    render: (item) => {
+      const materia = materias.find(m => m.idMateria === item.idMateria);
+      return materia ? materia.nombreMateria : "-";
+    }
+  },
+  {
+    key: "iD_Grupo",
+    label: "Grupo",
+    render: (item) => {
+      const grupo = grupos.find(g => g.idGrupo === item.iD_Grupo);
+      return grupo ? grupo.codigoGrupo : "-";
+    }
+  },
+  {
+    key: "idEstado",
+    label: "Estado",
+    render: (item) => {
+      const estado = estados.find(e => e.iD_Estado === item.idEstado);
+      if (!estado) return "-";
+      return (
+        <span className="flex items-center">
+          {item.idEstado === 1 ? (
+            <FaCheckCircle className="text-green-600" />
+          ) : (
+            <FaTimesCircle className="text-red-600" />
+          )}
+        </span>
+      );
+    }
+  }
+];
+
+// Columnas extra solo para admin
+const columnasExtraAdmin = [
+  {
+    key: "creador",
+    label: "Creador",
+    render: (item) => item.creador || "-"
+  },
+  {
+    key: "modificador",
+    label: "Modificador",
+    render: (item) => item.modificador || "-"
+  },
+  {
+    key: "fechaCreacion",
+    label: "Fecha Creación",
+    render: (item) => formatearFecha(item.fechaCreacion),
+  },
+  {
+    key: "fechaModificacion",
+    label: "Fecha Modificación",
+    render: (item) => formatearFecha(item.fechaModificacion),
+  }
+];
+
+// Unir según rol
+const columnas = rolLower === "administrador"
+  ? [...columnasBase, ...columnasExtraAdmin]
+  : columnasBase;
 
   // Filtrar datos tabla con filtroTablaEstudiante (no usar busquedaEstudiante)
   const datosFiltrados = inscripcionesMaterias.filter((im) => {

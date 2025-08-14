@@ -15,6 +15,8 @@ import FormularioBase from "../Shared/FormularioBase";
 
 const FrmMaterias = () => {
   const { modoOscuro } = useSelector((state) => state.theme);
+  const rolLower = useSelector((state) => state.auth?.rol?.toLowerCase()) || "";
+  const esAdministrador = rolLower === "administrador";
 
   const [materias, setMaterias] = useState([]);
   const [estados, setEstados] = useState([]);
@@ -256,6 +258,60 @@ const FrmMaterias = () => {
     if (paginaActual < totalPaginas) setPaginaActual((p) => p + 1);
   };
 
+
+const columnasBase = [
+  { key: "codigoMateria", label: "Código" },
+  { key: "nombreMateria", label: "Nombre" },
+  { key: "descripcion", label: "Descripción" },
+  { key: "periodoAcademico", label: "Periodo Académico" },
+  {
+    key: "idEstado",
+    label: "Estado",
+    render: (item) => renderEstadoIcono(item.idEstado),
+  },
+  {
+    key: "acciones",
+    label: "Acciones",
+    render: (item) => (
+      <button
+        onClick={() => abrirModalEditar(item)}
+        className="bg-blue-600 hover:bg-blue-700 px-3 py-1 rounded text-white transition-colors"
+        aria-label={`Editar materia ${item.nombreMateria}`}
+        type="button"
+      >
+        <FaEdit />
+      </button>
+    ),
+  },
+];
+
+const columnasAdmin = [
+  { key: "creadoPor", label: "Creador" },
+  { key: "modificadoPor", label: "Modificador" },
+  {
+    key: "fechaCreacion",
+    label: "Fecha Creación",
+    render: (item) => formatearFecha(item.fechaCreacion),
+  },
+  {
+    key: "fechaModificacion",
+    label: "Fecha Modificación",
+    render: (item) => formatearFecha(item.fechaModificacion),
+  },
+];
+
+const columnasTabla = esAdministrador
+  ? [
+      columnasBase[0], // Código
+      columnasBase[1], // Nombre
+      columnasBase[2], // Descripción
+      columnasBase[3], // Periodo Académico
+      ...columnasAdmin,
+      columnasBase[4], // Estado
+      columnasBase[5], // Acciones
+    ]
+  : columnasBase;
+
   return (
   <>
     <div className="flex justify-between items-center mb-4">
@@ -313,43 +369,7 @@ const FrmMaterias = () => {
       ) : (
         <TablaBase
           datos={datosPaginados}
-          columnas={[
-            { key: "codigoMateria", label: "Código" },
-            { key: "nombreMateria", label: "Nombre" },
-            { key: "descripcion", label: "Descripción" },
-            { key: "periodoAcademico", label: "Periodo Académico" },
-            { key: "creadoPor", label: "Creador" },
-            { key: "modificadoPor", label: "Modificador" },
-            {
-              key: "fechaCreacion",
-              label: "Fecha Creación",
-              render: (item) => formatearFecha(item.fechaCreacion),
-            },
-            {
-              key: "fechaModificacion",
-              label: "Fecha Modificación",
-              render: (item) => formatearFecha(item.fechaModificacion),
-            },
-            {
-              key: "idEstado",
-              label: "Estado",
-              render: (item) => renderEstadoIcono(item.idEstado),
-            },
-            {
-              key: "acciones",
-              label: "Acciones",
-              render: (item) => (
-                <button
-                  onClick={() => abrirModalEditar(item)}
-                  className="bg-blue-600 hover:bg-blue-700 px-3 py-1 rounded text-white transition-colors"
-                  aria-label={`Editar materia ${item.nombreMateria}`}
-                  type="button"
-                >
-                  <FaEdit />
-                </button>
-              ),
-            },
-          ]}
+          columnas={columnasTabla}
           modoOscuro={modoOscuro}
         />
       )}

@@ -13,6 +13,8 @@ import { FaCheckCircle } from "react-icons/fa";
 
 const FrmPersonas = ({ busqueda, onResultados }) => {
   const modoOscuro = useSelector((state) => state.theme.modoOscuro);
+  const rol = useSelector((state) => state.auth?.rol);
+  const esAdmin = rol?.toLowerCase() === "administrador";
   const fondo = modoOscuro ? "bg-gray-900" : "bg-white";
   const texto = modoOscuro ? "text-gray-200" : "text-gray-800";
   const encabezado = modoOscuro ? "bg-gray-700 text-gray-200" : "bg-gray-100 text-gray-700";
@@ -196,32 +198,40 @@ if (datosFiltrados.length === 0) {
   const fin = inicio + itemsPorPagina;
   const datosPaginados = datosFiltrados.slice(inicio, fin);
 
-  const columnas = [
-    { key: "primerNombre", label: "Primer Nombre" },
-    { key: "segundoNombre", label: "Segundo Nombre" },
-    { key: "primerApellido", label: "Primer Apellido" },
-    { key: "segundoApellido", label: "Segundo Apellido" },
-    { key: "nombreGenero", label: "Género" },
-    { key: "nombreTipoDocumento", label: "Tipo Documento" },
-    { key: "numeroDocumento", label: "Número Documento" },
-    { key: "nombreNacionalidad", label: "Nacionalidad" },
-    { key: "nombreCreador", label: "Creador" },
-    { key: "nombreModificador", label: "Modificador" },
-    { key: "fechaCreacion", label: "Fecha Creación" },
-    { key: "fechaModificacion", label: "Fecha Modificación" },
-    { key: "activo", label: "Estado", render: (item) =>
-        item.activo ? (
-          <span className="text-green-500 font-semibold flex items-center gap-1">
-            <FaCheckCircle size={20} />
-          </span>
-        ) : (
-          <span className="text-red-500 font-semibold flex items-center gap-1">
-            <FaCheckCircle size={20} className="rotate-45" />
-          </span>
-        ),
-    },
-  ];
+  const columnasBase = [
+  { key: "primerNombre", label: "Primer Nombre" },
+  { key: "segundoNombre", label: "Segundo Nombre" },
+  { key: "primerApellido", label: "Primer Apellido" },
+  { key: "segundoApellido", label: "Segundo Apellido" },
+  { key: "nombreGenero", label: "Género" },
+  { key: "nombreTipoDocumento", label: "Tipo Documento" },
+  { key: "numeroDocumento", label: "Número Documento" },
+  { key: "nombreNacionalidad", label: "Nacionalidad" },
+  { key: "activo", label: "Estado", render: (item) =>
+      item.activo ? (
+        <span className="text-green-500 font-semibold flex items-center gap-1">
+          <FaCheckCircle size={20} />
+        </span>
+      ) : (
+        <span className="text-red-500 font-semibold flex items-center gap-1">
+          <FaCheckCircle size={20} className="rotate-45" />
+        </span>
+      ),
+  },
+];
 
+// Solo para admin agregamos estas columnas
+const columnas = esAdmin
+  ? [
+      ...columnasBase.slice(0, 8), // las primeras 8 columnas
+      { key: "nombreCreador", label: "Creador" },
+      { key: "nombreModificador", label: "Modificador" },
+      { key: "fechaCreacion", label: "Fecha Creación" },
+      { key: "fechaModificacion", label: "Fecha Modificación" },
+      columnasBase[8], // columna activo
+    ]
+  : columnasBase;
+  
   return (
     <>
       <div className="flex justify-between items-center mb-4">

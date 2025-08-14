@@ -17,6 +17,7 @@ import FormularioBase from "../Shared/FormularioBase";
 
 const FrmUsuarios =  ({ busqueda, onResultados }) => {
   const modoOscuro = useSelector((state) => state.theme.modoOscuro);
+  const rolLower = useSelector((state) => state.auth.rol)?.toLowerCase();
   const fondo = modoOscuro ? "bg-gray-900" : "bg-white";
   const texto = modoOscuro ? "text-gray-200" : "text-gray-800";
   const encabezado = modoOscuro ? "bg-gray-700 text-gray-200" : "bg-gray-100 text-gray-700";

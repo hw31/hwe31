@@ -30,7 +30,7 @@ const FrmInscripcion = () => {
           modoOscuro ? "bg-gray-900 shadow-gray-700" : "bg-white shadow-gray-300"
         }`}
       >
-        {rolLower === "administrador" && (
+        {(rolLower === "administrador" || rolLower ==="secretario") && (
           <>
             {/* Botones navegación */}
             <div className="flex flex-wrap gap-3 justify-center mb-5">

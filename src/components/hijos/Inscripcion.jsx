@@ -358,6 +358,13 @@ const cargarInscripciones = async () => {
     { key: "estadoIcono", label: "Estado" },
   ];
 
+  const columnasSecretario = [
+    { key: "nombreEstudiante", label: "Estudiante" },
+    { key: "nombrePeriodo", label: "Periodo" },
+    { key: "fechaInscripcion", label: "Fecha Inscripción" },
+    { key: "estadoIcono", label: "Estado" },
+  ];
+
   const columnasEstudiante = [
     { key: "nombrePeriodo", label: "Periodo" },
     { key: "estadoIcono", label: "Estado" },
@@ -412,7 +419,7 @@ const cargarInscripciones = async () => {
   return (
 <>
 
-      {rolLower === "administrador"&& (
+      {(rolLower === "administrador" || rolLower === "secretario") && (
         <>
           <BuscadorBase
             placeholder="Buscar..."
@@ -432,7 +439,7 @@ const cargarInscripciones = async () => {
         </>
       )}
 
-{rolLower === "administrador" && (
+{(rolLower === "administrador" || rolLower === "secretario") && (
   <div className="flex items-center justify-between gap-4 text-sm mt-2">
     {/* Parte izquierda: label + select en fila */}
     <div className="flex items-center gap-2 whitespace-nowrap">
@@ -468,14 +475,20 @@ const cargarInscripciones = async () => {
       {/* Tabla */}
       <div className="overflow-x-auto w-full mt-4">
         <div className="min-w-full sm:min-w-[700px]">
-          <TablaBase
-            datos={datosPaginados}
-            columnas={rolLower === "administrador" ? columnasAdmin : columnasEstudiante}
-            modoOscuro={modoOscuro}
-            puedeEditar={puedeEditarFila} 
-            onEditar={handleEditar}
-            loading={loading}
-          />
+         <TablaBase
+              datos={datosPaginados}
+              columnas={
+                rolLower === "administrador"
+                  ? columnasAdmin
+                  : rolLower === "secretario"
+                  ? columnasSecretario
+                  : columnasEstudiante
+              }
+              modoOscuro={modoOscuro}
+              puedeEditar={puedeEditarFila}
+              onEditar={handleEditar}
+              loading={loading}
+            />
         </div>
       </div>
 

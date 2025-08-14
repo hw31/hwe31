@@ -3,6 +3,7 @@ import Swal from "sweetalert2";
 import aulaService from "../../services/Aulas";
 import estadoService from "../../services/Estado";
 import catalogoService from "../../services/Catalogos";
+import usuarioService from "../../services/Usuario";
 import { useSelector } from "react-redux";
 import { FaEdit, FaCheckCircle, FaTimesCircle } from "react-icons/fa";
 import TablaBase from "../Shared/TablaBase";
@@ -16,10 +17,13 @@ const ID_TIPO_CATALOGO_AULA = 5;
 const Aulas = () => {
   const { modoOscuro } = useSelector((state) => state.theme);
   const { idUsuario } = useSelector((state) => state.auth.usuario);
+  const rolLower = useSelector((state) => state.auth?.rol?.toLowerCase()) || "";
+  const esAdministrador = rolLower === "administrador";
 
   const [aulas, setAulas] = useState([]);
   const [estados, setEstados] = useState([]);
   const [tiposAula, setTiposAula] = useState([]);
+  const [usuarios, setUsuarios] = useState([]);
   const [busqueda, setBusqueda] = useState("");
   const [modalOpen, setModalOpen] = useState(false);
   const [modoEdicion, setModoEdicion] = useState(false);
@@ -28,7 +32,7 @@ const Aulas = () => {
     idAula: 0,
     nombreAula: "",
     capacidad: 0,
-    tipoAula: 0, // <- Cambiado aquí a tipoAula
+    tipoAula: 0,
     idEstado: 1,
   });
 
@@ -52,6 +56,25 @@ const Aulas = () => {
       minute: "2-digit",
     });
   };
+
+  // Función para obtener nombre de usuario por id
+  const getNombreUsuario = (id) => {
+    const user = usuarios.find((u) => u.id_Usuario === id);
+    return user?.usuario?.trim() || "-";
+  };
+
+  // Cargar usuarios
+  useEffect(() => {
+    const cargarUsuarios = async () => {
+      try {
+        const res = await usuarioService.listarUsuario();
+        setUsuarios(res.data || []);
+      } catch (error) {
+        console.error(error);
+      }
+    };
+    cargarUsuarios();
+  }, []);
 
   const obtenerAulas = async () => {
     try {
@@ -88,19 +111,19 @@ const Aulas = () => {
     }
   };
 
-   const obtenerTiposAula = async () => {
-  try {
-    const res = await catalogoService.filtrarPorTipoCatalogo(ID_TIPO_CATALOGO_AULA);
-    if (res.numero === 0 && Array.isArray(res.resultado)) {
-      setTiposAula(res.resultado);
-    } else {
-      throw new Error("No se pudo cargar tipos de aula");
+  const obtenerTiposAula = async () => {
+    try {
+      const res = await catalogoService.filtrarPorTipoCatalogo(ID_TIPO_CATALOGO_AULA);
+      if (res.numero === 0 && Array.isArray(res.resultado)) {
+        setTiposAula(res.resultado);
+      } else {
+        throw new Error("No se pudo cargar tipos de aula");
+      }
+    } catch (error) {
+      console.error(error);
+      Swal.fire("Error", "No se pudieron cargar los tipos de aula", "error");
     }
-  } catch (error) {
-    console.error(error);
-    Swal.fire("Error", "No se pudieron cargar los tipos de aula", "error");
-  }
-};
+  };
 
   useEffect(() => {
     obtenerAulas();
@@ -108,7 +131,6 @@ const Aulas = () => {
     obtenerTiposAula();
   }, []);
 
-  // Filtrado simple por nombreAula
   const aulasFiltradas = aulas.filter((a) =>
     a.nombreAula?.toLowerCase().includes(busqueda.toLowerCase())
   );
@@ -132,7 +154,7 @@ const Aulas = () => {
       idAula: 0,
       nombreAula: "",
       capacidad: 0,
-      tipoAula: tiposAula.length > 0 ? tiposAula[0].idCatalogo : 0, // <- aquí también
+      tipoAula: tiposAula.length > 0 ? tiposAula[0].idCatalogo : 0,
       idEstado: 1,
     });
     setModalOpen(true);
@@ -144,7 +166,7 @@ const Aulas = () => {
       idAula: aula.idAula,
       nombreAula: aula.nombreAula,
       capacidad: aula.capacidad || 0,
-      tipoAula: aula.tipoAula || aula.id_TipoAula || 0, // intenta ambas propiedades
+      tipoAula: aula.tipoAula || aula.id_TipoAula || 0,
       idEstado: aula.idEstado,
     });
     setModalOpen(true);
@@ -183,7 +205,7 @@ const Aulas = () => {
       idAula: modoEdicion ? formData.idAula : undefined,
       nombreAula: formData.nombreAula.trim(),
       capacidad: formData.capacidad,
-      tipoAula: formData.tipoAula, // <- aquí es importante
+      tipoAula: formData.tipoAula,
       idEstado: formData.idEstado,
       idCreador: modoEdicion ? undefined : idUsuario,
       idModificador: modoEdicion ? idUsuario : undefined,
@@ -225,9 +247,74 @@ const Aulas = () => {
     return null;
   };
 
+  // Columnas base
+  const columnasBase = [
+    { key: "nombreAula", label: "Nombre" },
+    { key: "capacidad", label: "Capacidad" },
+    {
+      key: "tipoAula",
+      label: "Tipo",
+      render: (item) => {
+        const tipo = tiposAula.find((t) => t.idCatalogo === item.id_TipoAula);
+        return tipo ? tipo.descripcionCatalogo : "-";
+      },
+    },
+    {
+      key: "idEstado",
+      label: "Estado",
+      render: (item) => <div className="flex justify-center">{renderEstadoIcono(item.idEstado)}</div>,
+    },
+    {
+      key: "acciones",
+      label: "Acciones",
+      render: (item) => (
+        <button
+          onClick={() => abrirModalEditar(item)}
+          className="bg-blue-600 hover:bg-blue-700 px-3 py-1 rounded text-white transition-colors"
+        >
+          <FaEdit />
+        </button>
+      ),
+    },
+  ];
+
+  const columnasAdmin = [
+    {
+      key: "creador",
+      label: "Creador",
+      render: (item) => getNombreUsuario(item.idCreador),
+    },
+    {
+      key: "modificador",
+      label: "Modificador",
+      render: (item) => getNombreUsuario(item.idModificador),
+    },
+    {
+      key: "fechaCreacion",
+      label: "Creación",
+      render: (item) => formatearFecha(item.fechaCreacion),
+    },
+    {
+      key: "fechaModificacion",
+      label: "Modificación",
+      render: (item) => formatearFecha(item.fechaModificacion),
+    },
+  ];
+
+  const columnasTabla = esAdministrador
+    ? [
+        columnasBase[0],
+        columnasBase[1],
+        columnasBase[2],
+        ...columnasAdmin,
+        columnasBase[3],
+        columnasBase[4],
+      ]
+    : columnasBase;
+
   return (
     <>
-    <div style={{ overflowX: "hidden", width: "100%" }}>
+      <div style={{ overflowX: "hidden", width: "100%" }}>
         <BuscadorBase
           placeholder="Buscar..."
           valor={busqueda}
@@ -275,55 +362,7 @@ const Aulas = () => {
           <>
             <div className="overflow-x-auto w-full mt-4">
               <div className="min-w-full sm:min-w-[700px]">
-                <TablaBase
-                  datos={datosPaginados}
-                  columnas={[
-                    { key: "nombreAula", label: "Nombre" },
-                    { key: "capacidad", label: "Capacidad" },
-                    {
-                      key: "tipoAula",
-                      label: "Tipo",
-                      render: (item) => {
-                        const tipo = tiposAula.find(
-                          (t) => t.idCatalogo === item.id_TipoAula
-                        );
-                        return tipo ? tipo.descripcionCatalogo : "-";
-                      },
-                    },
-                    { key: "creador", label: "Creador" },
-                    { key: "modificador", label: "Modificador" },
-                    {
-                      key: "fechaCreacion",
-                      label: "Creación",
-                      render: (item) => formatearFecha(item.fechaCreacion),
-                    },
-                    {
-                      key: "fechaModificacion",
-                      label: "Modificación",
-                      render: (item) => formatearFecha(item.fechaModificacion),
-                    },
-                    {
-                      key: "idEstado",
-                      label: "Estado",
-                      render: (item) => renderEstadoIcono(item.idEstado),
-                    },
-                    {
-                      key: "acciones",
-                      label: "Acciones",
-                      render: (item) => (
-                        <button
-                          onClick={() => abrirModalEditar(item)}
-                          className="bg-blue-600 hover:bg-blue-700 px-3 py-1 rounded text-white transition-colors"
-                          aria-label={`Editar aula ${item.nombreAula}`}
-                          type="button"
-                        >
-                          <FaEdit />
-                        </button>
-                      ),
-                    },
-                  ]}
-                  modoOscuro={modoOscuro}
-                />
+                <TablaBase datos={datosPaginados} columnas={columnasTabla} modoOscuro={modoOscuro} />
               </div>
             </div>
 
@@ -443,8 +482,8 @@ const Aulas = () => {
             </label>
           </FormularioBase>
         </ModalBase>
-        </div>
- </>
+      </div>
+    </>
   );
 };
 

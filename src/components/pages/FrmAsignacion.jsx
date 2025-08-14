@@ -32,7 +32,7 @@ const FrmAsignacion = () => {
         }`}
       >
         {/* Botones visibles solo para el administrador */}
-        {rolLower === "administrador" && (
+        {(rolLower === "administrador" || rolLower==="secretario") && (
           <div className="flex flex-wrap gap-3 justify-center mb-4">
             {vista !== "asignacion" && (
               <button
