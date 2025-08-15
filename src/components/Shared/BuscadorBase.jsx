@@ -44,34 +44,35 @@ const BuscadorBase = ({
         </h2>
       )}
 
-      <input
-        type="text"
-        placeholder={placeholder}
-        value={valor}
-        onChange={onChange}
-        className={texto}
-        style={{
-          width: "70%",           // Más ancho para que no se vea pequeño
-          padding: "12px 20px",   // Más padding interno para mejor espacio
-          fontSize: 16,
-          borderRadius: "9999px",
-          border: `1.2px solid ${modoOscuro ? "#444" : "#ccc"}`,
-          outline: "none",
-          boxShadow: modoOscuro
-            ? "inset 0 1px 4px rgba(234, 227, 227, 0.1)"
-            : "inset 0 1px 4px rgba(0,0,0,0.1)",
-          color: texto,
-          transition: "border-color 0.3s ease",
-          display: "block",
-          margin: "0 auto",
-        }}
-        onFocus={(e) =>
-          (e.target.style.borderColor = modoOscuro ? "#90caf9" : "#1976d2")
-        }
-        onBlur={(e) =>
-          (e.target.style.borderColor = modoOscuro ? "#444" : "#ccc")
-        }
-      />
+     <input
+  type="text"
+  placeholder={placeholder}
+  value={valor}
+  onChange={onChange}
+  className="w-full" // solo clases de layout, no color
+  style={{
+    width: "70%",
+    padding: "12px 20px",
+    fontSize: 16,
+    borderRadius: "9999px",
+    border: `1.2px solid ${modoOscuro ? "#444" : "#ccc"}`,
+    outline: "none",
+    boxShadow: modoOscuro
+      ? "inset 0 1px 4px rgba(234, 227, 227, 0.1)"
+      : "inset 0 1px 4px rgba(0,0,0,0.1)",
+    color: modoOscuro ? "#fff" : "#111", // ✅ color según modoOscuro
+    transition: "border-color 0.3s ease",
+    display: "block",
+    margin: "0 auto",
+  }}
+  onFocus={(e) =>
+    (e.target.style.borderColor = modoOscuro ? "#90caf9" : "#1976d2")
+  }
+  onBlur={(e) =>
+    (e.target.style.borderColor = modoOscuro ? "#444" : "#ccc")
+  }
+/>
+
     </div>
   );
 };

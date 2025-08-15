@@ -22,16 +22,16 @@ const GestionCalificaciones = () => {
       className={`p-4 pb-20 min-h-screen rounded-xl ${
         modoOscuro ? "bg-gray-900 text-white" : "bg-white text-gray-900"
       }`}
-    >
+    >{(rolLower === "administrador" || rolLower === "secretario") && (
       <div className="mb-6">
         <BuscadorBase
-          placeholder="Buscar grupo, materia o estudiante"
+          placeholder="Buscar..."
           valor={filtroGeneral}
           onChange={(e) => setFiltroGeneral(e.target.value)}
           modoOscuro={modoOscuro}
         />
       </div>
-
+)}
       <div className="flex justify-end mb-4 gap-2">
         {rolLower === "administrador" && vista === "calificaciones" && (
           <button

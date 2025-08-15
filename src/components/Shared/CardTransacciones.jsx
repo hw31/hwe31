@@ -170,7 +170,7 @@ const ToggleHeader = styled.div`
   gap: 0.5rem;
   border-radius: 9999px;
   background-color: ${({ $modoOscuro }) =>
-    $modoOscuro ? "rgba(31, 41, 55, 0.9)" : "#ddd"};
+    $modoOscuro ? "rgba(31, 41, 55, 0.9)" : "#fff"};
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
   transition: all 0.25s ease;
 
@@ -181,6 +181,13 @@ const ToggleHeader = styled.div`
     outline: none;
     transform: scale(1.03);
   }
+
+  /* Ajustes para móvil */
+  @media (max-width: 640px) {
+    font-size: 0.85rem;
+    padding: 0.5rem 0.8rem;
+    gap: 0.3rem;
+  }
 `;
 
 const Icon = styled.span`
@@ -189,6 +196,11 @@ const Icon = styled.span`
   transform: ${({ open }) => (open ? "rotate(180deg)" : "rotate(0deg)")};
   font-size: 1.1rem;
   user-select: none;
+
+  /* Ajuste para móvil */
+  @media (max-width: 640px) {
+    font-size: 0.9rem;
+  }
 `;
 
 const BAR_COLORS = [

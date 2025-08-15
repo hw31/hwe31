@@ -13,6 +13,8 @@ const FilaEstudiante = ({
   porcentajePorEstudiante,
   aprobadoPorEstudiante,
   esEstudiante,
+
+  esSecretario,
   modoOscuro,
 }) => {
   const [errores, setErrores] = useState({});
@@ -48,7 +50,7 @@ const FilaEstudiante = ({
               modoOscuro ? "border-gray-700" : "border-gray-300"
             }`}
           >
-            {esEstudiante ? (
+            {esEstudiante || esSecretario ? (
               <div
                 className={`text-sm ${
                   modoOscuro ? "text-white" : "text-gray-800"

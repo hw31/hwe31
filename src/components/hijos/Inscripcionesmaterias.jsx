@@ -332,11 +332,13 @@ const columnas = rolLower === "administrador"
     <>
       {/* Filtro tabla con BuscadorBase */}
       <BuscadorBase
-        titulo="Inscripciones Materias"
-        valor={filtroTablaEstudiante}
-        onChange={(e) => setFiltroTablaEstudiante(e.target.value)}
-        placeholder="Buscar estudiante..."
-      />
+    titulo="Inscripciones Materias"
+    valor={filtroTablaEstudiante}
+    onChange={(e) => setFiltroTablaEstudiante(e.target.value)}
+    placeholder="Buscar..."
+    modoOscuro={modoOscuro} // ✅ aquí
+/>
+
 
        <ContadoresBase
         activos={activosCount}

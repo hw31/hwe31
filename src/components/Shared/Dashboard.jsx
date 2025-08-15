@@ -23,10 +23,9 @@ const DashboardWelcome = styled.div`
   display: flex;
   flex-direction: column;
   align-items: center;
-  margin-top: 2rem;
 
   @media (max-width: 767px) {
-    margin-top: 4rem; /* más espacio arriba en móvil */
+    margin-top: 1rem; /* más espacio arriba en móvil */
     padding: 0 2rem;  /* más espacio a los lados en móvil */
   }
 
@@ -268,9 +267,20 @@ const Dashboard = () => {
             alt="CAL-I Logo"
             className="w-10 h-10 sm:w-14 sm:h-14 object-contain"
           />
-          <h1 className="font-extrabold text-lg sm:text-3xl tracking-wide hidden sm:block">
-            CAL-I
-          </h1>
+         <h1
+  className="font-extrabold text-lg sm:text-3xl tracking-wide hidden sm:block"
+  style={{
+    color: !modoOscuro
+      ? sidebarOpen
+        ? "white"
+        : "black"
+      : "white",
+    transition: "color 0.3s ease",
+  }}
+>
+  CAL-I
+</h1>
+
         </div>
 
         <div className="ml-auto flex items-center gap-4 pr-4 relative" ref={dropdownRef}>
@@ -377,9 +387,13 @@ const Dashboard = () => {
               <DashboardMenuCards className="flex-grow min-w-[280px]" />
             )}
 
-            {rolLower === "administrador" && (
-              <DashboardCards modoOscuro={modoOscuro} />
-            )}
+             {(rolLower === "administrador" || rolLower === "secretario") && (
+  <DashboardCards
+    modoOscuro={modoOscuro}
+    esSecretario={rolLower === "secretario"}
+  />
+)}
+
           </div>
       </DashboardWelcome>
     )}

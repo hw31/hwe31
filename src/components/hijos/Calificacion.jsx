@@ -26,8 +26,10 @@ const Calificacion = ({
   const idUsuario = useSelector((state) => state.auth?.idUsuario);
   const rol = useSelector((state) => state.auth.rol);
   const rolLower = rol?.toLowerCase() ?? "";
-  const esEstudiante = rolLower === "estudiante";
-  const esSecretario = rolLower === "secretario";
+const esEstudiante = rolLower === "estudiante";
+const esSecretario = rolLower === "secretario";
+const puedeEditar = rolLower === "docente" || rolLower === "administrador";
+
 
   const [asignaciones, setAsignaciones] = useState([]);
   const [estudiantes, setEstudiantes] = useState([]);
@@ -747,22 +749,24 @@ const calificacionesFiltradas = (() => {
                 </tr>
               )}
            {estudiantesPaginados.map((est, index) => (
-                <FilaEstudiante
-                  key={est.iD_Inscripcion}
-                  estudiante={est}
-                  index={index}
-                  tiposCalificacion={tiposCalificacion}
-                  calificaciones={calificacionesFiltradas} // <--- uso filtrado aquí
-                  setCalificaciones={setCalificaciones}
-                  obtenerNota={obtenerNota}
-                  guardarNota={guardarNota}
-                  claseStatusInput={claseStatusInput}
-                  acumuladoPorEstudiante={acumuladoPorEstudiante}
-                  porcentajePorEstudiante={porcentajePorEstudiante}
-                  aprobadoPorEstudiante={aprobadoPorEstudiante}
-                  esEstudiante={esEstudiante} 
-                  modoOscuro={modoOscuro}
-                />
+               <FilaEstudiante
+                key={est.iD_Inscripcion}
+                estudiante={est}
+                index={index}
+                tiposCalificacion={tiposCalificacion}
+                calificaciones={calificacionesFiltradas}
+                setCalificaciones={setCalificaciones}
+                obtenerNota={obtenerNota}
+                guardarNota={guardarNota}
+                claseStatusInput={claseStatusInput}
+                acumuladoPorEstudiante={acumuladoPorEstudiante}
+                porcentajePorEstudiante={porcentajePorEstudiante}
+                aprobadoPorEstudiante={aprobadoPorEstudiante}
+                esEstudiante={esEstudiante}
+                modoOscuro={modoOscuro}
+                puedeEditar={puedeEditar} 
+                esSecretario={esSecretario} 
+              />
               ))}
 
             </tbody>

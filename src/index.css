@@ -35,37 +35,11 @@
 }
 
 /* Base */
-body {
-  margin: 0;
-  font-family: 'Outfit', 'Segoe UI', sans-serif;
-  background-color: var(--bg-light);
-  color: var(--text-light);
-  transition: background-color 0.3s ease, color 0.3s ease;
-
-  overflow-x: hidden;
-}
 
 
-.dark body {
-  background-color: var(--bg-dark);
-  color: var(--text-dark);
-}
+
 
 /* Inputs */
-input, textarea, select {
-  background-color: var(--input-bg-light);
-  color: var(--text-light);
-  border: 1px solid var(--input-border-light);
-  transition: all 0.3s ease;
-}
-
-.dark input, 
-.dark textarea, 
-.dark select {
-  background-color: var(--input-bg-dark);
-  color: var(--text-dark);
-  border: 1px solid var(--input-border-dark);
-}
 
 /* Dropdown */
 .dashboard-user-controls {
