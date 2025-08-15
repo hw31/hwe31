@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
 import styled, { keyframes } from "styled-components";
 
-// Animaciones de entrada y salida
+// Animaciones
 const fadeOut = keyframes`
   from { opacity: 1; }
   to { opacity: 0; }
@@ -13,8 +13,10 @@ const fadeIn = keyframes`
   to { opacity: 1; }
 `;
 
-// Wrapper con animación condicional
-const PageWrapper = styled.div`
+// Wrapper con animación condicional, filtrando la prop para el DOM
+const PageWrapper = styled.div.withConfig({
+  shouldForwardProp: (prop) => prop !== "fadeType"
+})`
   animation: ${({ fadeType }) => (fadeType === "in" ? fadeIn : fadeOut)} 0.3s ease forwards;
 `;
 
