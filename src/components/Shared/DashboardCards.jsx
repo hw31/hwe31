@@ -23,43 +23,36 @@ const DashboardCards = ({ modoOscuro, esSecretario }) => {
       initial="hidden"
       animate="visible"
       variants={containerVariants}
-      className="flex flex-col md:flex-row items-start justify-start transition-colors duration-300"
-      style={{ width: "100%", padding: "1rem" }}
+      className="flex flex-col items-start justify-start transition-colors duration-300 w-full p-4"
     >
-      <div className="grid w-full gap-6" style={{ width: "100%" }}>
-  {/* Desktop */}
-<div
-  className="hidden md:grid md:gap-6"
-  style={{
-    gridTemplateColumns: esSecretario ? "1fr 1fr" : "4fr 3fr",
-  }}
->
-  {!esSecretario && (
-    <motion.div variants={itemVariants}>
-      <CardTercera modoOscuro={modoOscuro} />
-    </motion.div>
-  )}
-
-  {esSecretario ? (
-    <>
-      <motion.div variants={itemVariants}>
-        <CardUsuariosKPI modoOscuro={modoOscuro} />
-      </motion.div>
-      <motion.div variants={itemVariants}>
-        <CardInscripcionesConfirmadas modoOscuro={modoOscuro} />
-      </motion.div>
-    </>
-  ) : (
-    <motion.div variants={itemVariants} className="flex flex-col gap-4">
-      <CardUsuariosKPI modoOscuro={modoOscuro} />
-      <CardInscripcionesConfirmadas modoOscuro={modoOscuro} />
-    </motion.div>
-  )}
-</div>
+      <div
+        className={`grid w-full gap-6 ${
+          esSecretario ? "grid-cols-1 md:grid-cols-2" : "grid-cols-1 md:grid-cols-2 lg:grid-cols-[4fr_3fr]"
+        }`}
+      >
+        {esSecretario ? (
+          <>
+            <motion.div variants={itemVariants}>
+              <CardUsuariosKPI modoOscuro={modoOscuro} />
+            </motion.div>
+            <motion.div variants={itemVariants}>
+              <CardInscripcionesConfirmadas modoOscuro={modoOscuro} />
+            </motion.div>
+          </>
+        ) : (
+          <>
+            <motion.div variants={itemVariants}>
+              <CardTercera modoOscuro={modoOscuro} />
+            </motion.div>
+            <motion.div variants={itemVariants} className="flex flex-col gap-4">
+              <CardUsuariosKPI modoOscuro={modoOscuro} />
+              <CardInscripcionesConfirmadas modoOscuro={modoOscuro} />
+            </motion.div>
+          </>
+        )}
       </div>
     </motion.div>
   );
 };
 
 export default DashboardCards;
-
