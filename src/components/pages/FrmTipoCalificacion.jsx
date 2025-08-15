@@ -216,7 +216,7 @@ const PerfilUsuario = () => {
   fotoPerfilService.obtenerMiFoto(idUsuario)
     .then((res) => {
       if (res.success && res.ruta) {
-        setFotoUrl(`http://localhost:5292${res.ruta}`);
+        setFotoUrl(`http://192.168.171.128:85${res.ruta}`);
         setImgError(false);
       } else {
         setFotoUrl(null);
@@ -262,23 +262,29 @@ useEffect(() => {
   };
 
   const handleSubirFoto = async () => {
-    if (!fotoFile) return;
-    try {
-      const res = await fotoPerfilService.subirFoto(fotoFile);
-      const nuevaRuta = `http://localhost:5292${res.Ruta || res.ruta}`;
+  if (!fotoFile) return;
 
-      toast.success("📷 Foto de perfil actualizada con éxito");
-      setPreviewUrl(null);
-      setFotoFile(null);
-      setFotoUrl(nuevaRuta);
-      setImgError(false);
+  try {
+    const res = await fotoPerfilService.subirFoto(fotoFile);
+    const nuevaRuta = `http://192.168.171.128:85${res.Ruta || res.ruta}`;
 
-      // Actualizamos la foto en Redux para reflejar inmediatamente el cambio
-      dispatch(setFotoPerfilUrl(nuevaRuta));
-    } catch {
-      toast.error("❌ Error al subir la foto");
+    toast.success("📷 Foto de perfil actualizada con éxito");
+    setPreviewUrl(null);
+    setFotoFile(null);
+    setFotoUrl(nuevaRuta);
+    setImgError(false);
+
+    dispatch(setFotoPerfilUrl(nuevaRuta));
+  } catch (error) {
+    console.error("Error al subir la foto:", error);
+
+    if (!error.response) {
+      toast.error("❌ Error de red o servidor. Revisa IIS/logs.");
+    } else {
+      toast.error(`❌ ${error.response.data?.Mensaje || error.message}`);
     }
-  };
+  }
+};
 
   useEffect(() => {
     setMostrarConfirmacion(contrasena.length > 0);
